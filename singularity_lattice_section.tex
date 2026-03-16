@@ -1,0 +1,37 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\newtheorem{proposition}{Proposition}
+
+\title{Interaction between Saddle Points and the Singularity Lattice}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+This section incorporates the numerical and analytic results on the QAOA action $\Phi(\theta) = -\theta^2/4 + \log A(\theta)$, with $A(\theta) = \cos(\beta/2) - i\sin(\beta/2)\, e^{\theta w}$, $w = \sqrt{-i\tilde{\gamma}/2}$, and the singularity lattice $\theta_k = (\log(-i\cot(\beta/2)) + 2\pi i k)/w$.
+
+\section{Saddle--singularity separation}
+
+Saddles (zeros of $\Phi'$) and singularities (zeros of $A$) never coincide. The Rouch\'e exclusion radius $\rho^*(\tilde{\gamma}) \gtrsim 0.55$ for tested $\tilde{\gamma}$ provides a rigorous lower bound on $|\theta^* - \theta_k|$. See Figure~1 (combined 2-panel figure: $d(\tilde{\gamma})$ measured, $\rho^*$, and landscape with exclusion zones).
+
+\section{Stokes transitions and saddle creation}
+
+The saddle count $N(\tilde{\gamma})$ is non-decreasing and jumps by $+2$ at each Stokes transition $\tilde{\gamma}_c$ (saddle-node bifurcation). Numerically, transitions are detected from the argument-principle count on a fine $\tilde{\gamma}$ grid; bisection yields $\tilde{\gamma}_c$, and the birth location $\theta_c$ is identified from the set of saddles just after the transition. Figure~2 shows: (a)~$N(\tilde{\gamma})$ as a step function, (b)~Re$\Phi(\theta_j^*)$ for each branch (tracked from birth forward), (c)~birth--singularity distance (and $|\theta_c - \theta_{k,\mathrm{nearest}}|/L(\tilde{\gamma}_c)$). Births occur within $O(1)$ lattice spacings of the nearest singularity.
+
+\section{Asymptotic cell fraction}
+
+The ratio $d(\tilde{\gamma})/L(\tilde{\gamma})$ (distance to nearest singularity over lattice spacing) is studied as $\tilde{\gamma} \to \infty$. The \emph{dominant} saddle (the one with largest Re$\Phi$) is used at each $\tilde{\gamma}$, since path continuation from $\theta^*(\tilde{\gamma}=0)=0$ can track a sub-dominant branch after a Stokes transition. Numerically, $c(\beta)$ is estimated by averaging $d/L$ over $\tilde{\gamma}/\pi \in [10, 20]$ for the dominant saddle; the dependence on $\beta$ is monotonic (e.g.\ $c$ increases as $\beta$ moves from $-3\pi/4$ toward $-\pi/4$). Whether $d/L$ tends to a strict limit $c(\beta)$ or grows slowly (e.g.\ logarithmically) at very large $\tilde{\gamma}$ is assessed by extending to $\tilde{\gamma} = 200\pi$ and fitting $d/L = c + a/\tilde{\gamma}^\alpha$ or growth laws; see the convergence-check figure and validation report. The saddle-point approximation remains controlled by the lattice scaling $L \sim \tilde{\gamma}^{-1/4}$; the cell fraction $c(\beta)$ (or its growth rate) quantifies how the dominant saddle sits within its cell.
+
+\section{Lattice sum structure of the Hessian}
+
+The second derivative has the Mittag--Leffler form $\Phi''(\theta) = -1/2 - \sum_k 1/(\theta - \theta_k)^2$. At the dominant saddle, the sum $\sum_k c_k$ with $c_k = 1/(\theta^* - \theta_k)^2$ exhibits partial cancellation from complex phases: contributions $c_k$ from different singularities are not aligned, so $R_{\mathrm{complex}} = |c_{\mathrm{nearest}}|/|\sum_k c_k|$ can exceed $1$. The magnitude-only dominance ratio $R_{\mathrm{mag}} = |c_{\mathrm{nearest}}|^2/\sum_k |c_k|^2$ and the effective singularity count $N_{\mathrm{eff,mag}} = (\sum_k |c_k|^2)^2/\sum_k |c_k|^4$ behave as expected ($R_{\mathrm{mag}} \le 1$, $N_{\mathrm{eff,mag}} \ge 1$). The QAOA curvature is controlled by $O(1)$ nearby singularities, with interference from the lattice geometry. See Figure~3b,c (Argand diagram of lattice sum and $R_{\mathrm{mag}}$, $N_{\mathrm{eff,mag}}$ vs $\tilde{\gamma}$).
+
+\section{Convergence rate and finite-size effects}
+
+The $1/n$ correction to the saddle-point formula scales with $|\Phi''(\theta^*)|$. The relationship between $|\Phi''(\theta^*)|$ and the saddle--singularity distance $d(\tilde{\gamma})$ is non-trivial: $\Phi'' = -1/2 + \text{(singularity contribution)}$, and numerical checks show that the log-log slope of $|\Phi''|$ vs $1/d^2$ can differ from $1$; the actual scaling is investigated in the Hessian scaling script (plots of $|\Phi''|$ vs $d$, $1/d$, $1/d^2$, and the decomposition of $\Phi''$). Figure~4: (a)~convergence error $\varepsilon(n)$ vs $1/n$ for several $\tilde{\gamma}$, (b)~measured slope vs $|\Phi''(\theta^*)|$.
+
+\end{document}
