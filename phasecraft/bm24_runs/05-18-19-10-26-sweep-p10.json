@@ -1,0 +1,241 @@
+{
+  "settings": {
+    "n_min": 10,
+    "n_max": 16,
+    "k": 8,
+    "r": 176.54,
+    "test_size": 100,
+    "base_seed": 27,
+    "algorithms": [
+      "lr_qaoa",
+      "walksat",
+      "walksatlm"
+    ],
+    "require_sat": true,
+    "max_flips": 100000,
+    "walksat_noise": 0.5,
+    "walksatlm_noise": 0.15,
+    "walksatlm_w1": 6,
+    "walksatlm_w2": 5,
+    "depth": 10,
+    "lr_delta_gamma": -1.6442800163355105,
+    "lr_delta_beta": 1.0765304394356465,
+    "lr_beta_schedule": "decreasing",
+    "lr_angle_convention": "bm24",
+    "lr_qaoa_betas_bm24": [
+      0.9688773954920818,
+      0.8612243515485173,
+      0.7535713076049525,
+      0.6459182636613879,
+      0.5382652197178233,
+      0.43061217577425864,
+      0.322959131830694,
+      0.21530608788712927,
+      0.10765304394356463,
+      0.0
+    ],
+    "lr_qaoa_gammas_bm24": [
+      -0.16442800163355106,
+      -0.3288560032671021,
+      -0.4932840049006531,
+      -0.6577120065342043,
+      -0.8221400081677552,
+      -0.9865680098013062,
+      -1.1509960114348572,
+      -1.3154240130684085,
+      -1.4798520147019594,
+      -1.6442800163355105
+    ]
+  },
+  "results": {
+    "lr_qaoa": {
+      "per_n": {
+        "10": {
+          "mean_success": 0.14490252650437388,
+          "median_success": 0.11491695624150955,
+          "median_runtime": 8.701947313910138,
+          "inverse_mean_success": 6.901190918640159,
+          "fraction_zero_success": 0.0
+        },
+        "11": {
+          "mean_success": 0.10899447665434284,
+          "median_success": 0.08471429971438775,
+          "median_runtime": 11.805711128736927,
+          "inverse_mean_success": 9.174776839117522,
+          "fraction_zero_success": 0.0
+        },
+        "12": {
+          "mean_success": 0.07844384450931394,
+          "median_success": 0.06790915744876025,
+          "median_runtime": 14.73579678589277,
+          "inverse_mean_success": 12.747972849307075,
+          "fraction_zero_success": 0.0
+        },
+        "13": {
+          "mean_success": 0.05661281082660188,
+          "median_success": 0.04178265678037052,
+          "median_runtime": 23.933911214238563,
+          "inverse_mean_success": 17.66384649338253,
+          "fraction_zero_success": 0.0
+        },
+        "14": {
+          "mean_success": 0.04239978642676978,
+          "median_success": 0.028817468443024883,
+          "median_runtime": 34.72059654532762,
+          "inverse_mean_success": 23.58502446060988,
+          "fraction_zero_success": 0.0
+        },
+        "15": {
+          "mean_success": 0.02788101963012814,
+          "median_success": 0.018735173621620402,
+          "median_runtime": 53.384989433621215,
+          "inverse_mean_success": 35.86669401858615,
+          "fraction_zero_success": 0.0
+        },
+        "16": {
+          "mean_success": 0.019364234685004998,
+          "median_success": 0.016181131270343263,
+          "median_runtime": 61.800469333386445,
+          "inverse_mean_success": 51.641596802912424,
+          "fraction_zero_success": 0.0
+        }
+      },
+      "fitted_exponents_natural_log": {
+        "mean_success_log_slope": -0.3349943667745283,
+        "median_runtime_log_slope": 0.34842993471224354
+      },
+      "fitted_exponents_log2": {
+        "mean_success_log_slope": -0.4832947116713506,
+        "median_runtime_log_slope": 0.502678138906619
+      }
+    },
+    "walksat": {
+      "per_n": {
+        "10": {
+          "median_flips": 52.5,
+          "solve_rate": 1.0,
+          "mean_flips": 77.06,
+          "timeout_count": 0
+        },
+        "11": {
+          "median_flips": 69.0,
+          "solve_rate": 1.0,
+          "mean_flips": 115.36,
+          "timeout_count": 0
+        },
+        "12": {
+          "median_flips": 87.0,
+          "solve_rate": 1.0,
+          "mean_flips": 180.59,
+          "timeout_count": 0
+        },
+        "13": {
+          "median_flips": 141.0,
+          "solve_rate": 1.0,
+          "mean_flips": 253.65,
+          "timeout_count": 0
+        },
+        "14": {
+          "median_flips": 150.0,
+          "solve_rate": 1.0,
+          "mean_flips": 300.51,
+          "timeout_count": 0
+        },
+        "15": {
+          "median_flips": 266.0,
+          "solve_rate": 1.0,
+          "mean_flips": 438.58,
+          "timeout_count": 0
+        },
+        "16": {
+          "median_flips": 284.0,
+          "solve_rate": 1.0,
+          "mean_flips": 639.72,
+          "timeout_count": 0
+        }
+      },
+      "fitted_exponents_natural_log": {
+        "median_runtime_or_flips_log_slope": 0.29671392819647985
+      },
+      "fitted_exponents_log2": {
+        "median_runtime_or_flips_log_slope": 0.42806771277174543
+      }
+    },
+    "walksatlm": {
+      "per_n": {
+        "10": {
+          "median_flips": 39.0,
+          "solve_rate": 1.0,
+          "mean_flips": 135.79,
+          "timeout_count": 0
+        },
+        "11": {
+          "median_flips": 99.0,
+          "solve_rate": 1.0,
+          "mean_flips": 238.45,
+          "timeout_count": 0
+        },
+        "12": {
+          "median_flips": 102.5,
+          "solve_rate": 1.0,
+          "mean_flips": 399.69,
+          "timeout_count": 0
+        },
+        "13": {
+          "median_flips": 158.5,
+          "solve_rate": 1.0,
+          "mean_flips": 498.83,
+          "timeout_count": 0
+        },
+        "14": {
+          "median_flips": 299.0,
+          "solve_rate": 1.0,
+          "mean_flips": 837.19,
+          "timeout_count": 0
+        },
+        "15": {
+          "median_flips": 353.5,
+          "solve_rate": 1.0,
+          "mean_flips": 766.01,
+          "timeout_count": 0
+        },
+        "16": {
+          "median_flips": 383.5,
+          "solve_rate": 1.0,
+          "mean_flips": 797.76,
+          "timeout_count": 0
+        }
+      },
+      "fitted_exponents_natural_log": {
+        "median_runtime_or_flips_log_slope": 0.3740514989017605
+      },
+      "fitted_exponents_log2": {
+        "median_runtime_or_flips_log_slope": 0.5396422425026534
+      }
+    }
+  },
+  "fitted_exponents_natural_log": {
+    "lr_qaoa": {
+      "mean_success_log_slope": -0.3349943667745283,
+      "median_runtime_log_slope": 0.34842993471224354
+    },
+    "walksat": {
+      "median_runtime_or_flips_log_slope": 0.29671392819647985
+    },
+    "walksatlm": {
+      "median_runtime_or_flips_log_slope": 0.3740514989017605
+    }
+  },
+  "fitted_exponents_log2": {
+    "lr_qaoa": {
+      "mean_success_log_slope": -0.4832947116713506,
+      "median_runtime_log_slope": 0.502678138906619
+    },
+    "walksat": {
+      "median_runtime_or_flips_log_slope": 0.42806771277174543
+    },
+    "walksatlm": {
+      "median_runtime_or_flips_log_slope": 0.5396422425026534
+    }
+  }
+}

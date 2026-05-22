@@ -1,0 +1,99 @@
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:26:50
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 1, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1
+delta_beta  (BM24, --lr-dbeta):  +0.1
+betas_bm24:  [0.0]
+gammas_bm24: [-1.0]
+best_avg_train_p_succ: 0.0003857421875
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 1 --lr-dgamma -1.0 --lr-dbeta 0.1 --lr-beta-schedule decreasing --lr-angle-convention bm24
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:27:27
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 2, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.774225579954837
+delta_beta  (BM24, --lr-dbeta):  +1.295867821702022
+betas_bm24:  [0.647933910851, 0.0]
+gammas_bm24: [-0.887112789977, -1.774225579955]
+best_avg_train_p_succ: 0.0051075004102
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 2 --lr-dgamma -1.7742255799548368 --lr-dbeta 1.2958678217020223 --lr-beta-schedule decreasing --lr-angle-convention bm24
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:27:57
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 3, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.733726960715177
+delta_beta  (BM24, --lr-dbeta):  +1.173654575871999
+betas_bm24:  [0.782436383915, 0.391218191957, 0.0]
+gammas_bm24: [-0.577908986905, -1.15581797381, -1.733726960715]
+best_avg_train_p_succ: 0.0114890394766
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 3 --lr-dgamma -1.7337269607151768 --lr-dbeta 1.1736545758719992 --lr-beta-schedule decreasing --lr-angle-convention bm24
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:34:05
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 3, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.733726960715177
+delta_beta  (BM24, --lr-dbeta):  +1.173654575871999
+betas_bm24:  [0.782436383915, 0.391218191957, 0.0]
+gammas_bm24: [-0.577908986905, -1.15581797381, -1.733726960715]
+best_avg_train_p_succ: 0.0114890394766
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 3 --lr-dgamma -1.7337269607151768 --lr-dbeta 1.1736545758719992 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.4359229425460427, "mean_p_succ_per_n": {"12": 0.01174419349146399, "13": 0.007852805894519465, "14": 0.005998924033982578}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.4845859875590885, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3358894110154389, "stderr_slope_ln_nat": 0.03845073682664918}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.335889411015
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.484585987559
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:36:18
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 1, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1
+delta_beta  (BM24, --lr-dbeta):  +0.1
+betas_bm24:  [0.0]
+gammas_bm24: [-1.0]
+best_avg_train_p_succ: 0.0003857421875
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 1 --lr-dgamma -1.0 --lr-dbeta 0.1 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.07031960926195246, "mean_p_succ_per_n": {"12": 0.0004069010416666667, "13": 0.00020751953124999997, "14": 0.00011189778645833333}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.9312482381250328, "slope_ln_mean_p_succ_vs_n_natural_log": -0.645492090657783, "stderr_slope_ln_nat": 0.016080626783155742}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.645492090658
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.931248238125
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:37:12
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 2, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.774225579954837
+delta_beta  (BM24, --lr-dbeta):  +1.295867821702022
+betas_bm24:  [0.647933910851, 0.0]
+gammas_bm24: [-0.887112789977, -1.774225579955]
+best_avg_train_p_succ: 0.0051075004102
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 2 --lr-dgamma -1.7742255799548368 --lr-dbeta 1.2958678217020223 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.6440881891582508, "mean_p_succ_per_n": {"12": 0.005234536204075001, "13": 0.0033811001470313595, "14": 0.002421400657417247}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.5561099503935001, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3854660441965856, "stderr_slope_ln_nat": 0.029797657749213943}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.385466044197
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.556109950394
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:38:13
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 4, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.704190289318567
+delta_beta  (BM24, --lr-dbeta):  +1.094597308929919
+betas_bm24:  [0.820947981697, 0.547298654465, 0.273649327232, 0.0]
+gammas_bm24: [-0.42604757233, -0.852095144659, -1.278142716989, -1.704190289319]
+best_avg_train_p_succ: 0.0175758941463
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 4 --lr-dgamma -1.7041902893185668 --lr-dbeta 1.094597308929919 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.0854763131642029, "mean_p_succ_per_n": {"12": 0.01864615220403576, "13": 0.012077839897807995, "14": 0.009682096531193833}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.4727432826735248, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3276806735138069, "stderr_slope_ln_nat": 0.06153790326251642}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.327680673514
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.472743282674
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:39:06
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 5, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.71421745129703
+delta_beta  (BM24, --lr-dbeta):  +1.064572394612992
+betas_bm24:  [0.85165791569, 0.638743436768, 0.425828957845, 0.212914478923, 0.0]
+gammas_bm24: [-0.342843490259, -0.685686980519, -1.028530470778, -1.371373961038, -1.714217451297]
+best_avg_train_p_succ: 0.0244330118815
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 5 --lr-dgamma -1.7142174512970296 --lr-dbeta 1.0645723946129917 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": 0.03110583062907235, "mean_p_succ_per_n": {"12": 0.026728860544772096, "13": 0.01758342866963409, "14": 0.01445021626438307}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.4436536260429331, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3075172600368554, "stderr_slope_ln_nat": 0.06424161158972803}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.307517260037
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.443653626043
+------------------------------------------------------------------------------
+timestamp: 2026-05-13T16:40:00
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 10, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 1, "skip_grid": false, "train_n": 12, "train_size": 50}
+delta_gamma (BM24, --lr-dgamma): -1.661209920558066
+delta_beta  (BM24, --lr-dbeta):  +1.051831746726678
+betas_bm24:  [0.946648572054, 0.841465397381, 0.736282222709, 0.631099048036, 0.525915873363, 0.420732698691, 0.315549524018, 0.210366349345, 0.105183174673, 0.0]
+gammas_bm24: [-0.166120992056, -0.332241984112, -0.498362976167, -0.664483968223, -0.830604960279, -0.996725952335, -1.162846944391, -1.328967936446, -1.495088928502, -1.661209920558]
+best_avg_train_p_succ: 0.0685765048429
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 14 --k 8 --r 176.54 --test-size 100 --seed 1 --algorithms lr_qaoa walksat walksatlm --depth 10 --lr-dgamma -1.661209920558066 --lr-dbeta 1.051831746726678 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.21875343112576662, "mean_p_succ_per_n": {"12": 0.07586614194977923, "13": 0.05615885255766862, "14": 0.05090718123708249}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.2877934943929306, "slope_ln_mean_p_succ_vs_n_natural_log": -0.19948324922195426, "stderr_slope_ln_nat": 0.05848726824218563}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.199483249222
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.287793494393

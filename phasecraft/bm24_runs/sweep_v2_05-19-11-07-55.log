@@ -1,0 +1,246 @@
+Depth sweep p in [2, 30], n in [9, 16], stop=scaling-exponent, equiv=1.0
+Logging to /Users/b/Quandela/phasecraft/bm24_runs/depth_sweep_until_win.jsonl
+
+========================================================================
+Depth p = 2
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:02,  4.95it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:00<00:01,  5.20it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:00<00:01,  5.36it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:00<00:01,  5.55it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:00<00:01,  5.73it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:01<00:00,  6.21it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:01<00:00,  6.17it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:01<00:00,  5.98it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:01<00:00,  5.48it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:01<00:00,  5.54it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:01<00:00,  5.60it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:01<00:00,  5.65it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.005505)
+  > LR QAOA train avg p_succ after COBYLA: 0.005635
+  trained: dg=-1.786556, db=1.292581, train_p_succ=5.635401e-03
+  benchmarking...
+  scaling log2 slopes: LR=0.7248  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 3
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:03,  2.85it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:00<00:03,  2.98it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:00<00:02,  3.16it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:01<00:02,  3.30it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:01<00:01,  3.38it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:01<00:01,  3.66it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:02<00:01,  3.64it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:02<00:00,  3.57it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:02<00:00,  3.42it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:02<00:00,  3.41it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:03<00:00,  3.34it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:03<00:00,  3.37it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.012240)
+  > LR QAOA train avg p_succ after COBYLA: 0.012696
+  trained: dg=-1.728844, db=1.188833, train_p_succ=1.269608e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.6537  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 4
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:09,  1.01it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:06,  1.45it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:01<00:04,  1.71it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:02<00:03,  1.91it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:02<00:02,  2.05it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:03<00:02,  2.24it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:03<00:01,  2.22it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:04<00:01,  2.16it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:04<00:00,  2.21it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:04<00:00,  2.23it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:05<00:00,  2.18it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:05<00:00,  2.02it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.018865)
+  > LR QAOA train avg p_succ after COBYLA: 0.019772
+  trained: dg=-1.690812, db=1.122370, train_p_succ=1.977239e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.6412  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 5
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:05,  2.00it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:04,  1.98it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:01<00:04,  1.97it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:02<00:03,  1.96it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:02<00:02,  2.03it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:02<00:02,  2.16it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:03<00:01,  2.17it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:03<00:01,  2.14it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:04<00:00,  2.14it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:04<00:00,  2.11it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:05<00:00,  2.09it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:05<00:00,  2.08it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.027028)
+  > LR QAOA train avg p_succ after COBYLA: 0.028161
+  trained: dg=-1.678217, db=1.115675, train_p_succ=2.816136e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.6369  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 6
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:08,  1.21it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:07,  1.27it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:02<00:06,  1.16it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:03<00:05,  1.18it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:04<00:05,  1.20it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:04<00:03,  1.33it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:06<00:03,  1.05it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:07<00:02,  1.05it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:07<00:01,  1.12it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:08<00:00,  1.22it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:09<00:00,  1.30it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:09<00:00,  1.20it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.035457)
+  > LR QAOA train avg p_succ after COBYLA: 0.037335
+  trained: dg=-1.667630, db=1.107305, train_p_succ=3.733456e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.6169  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 7
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:07,  1.33it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:06,  1.37it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:02<00:05,  1.35it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:02<00:05,  1.36it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:03<00:04,  1.41it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:04<00:03,  1.51it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:05<00:03,  1.23it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:06<00:02,  1.26it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:06<00:01,  1.27it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:07<00:00,  1.29it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:08<00:00,  1.30it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:08<00:00,  1.32it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.043790)
+  > LR QAOA train avg p_succ after COBYLA: 0.046617
+  trained: dg=-1.668063, db=1.088844, train_p_succ=4.661651e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5762  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 8
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:10,  1.05s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:08,  1.02it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:02<00:07,  1.10it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:03<00:06,  1.14it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:04<00:05,  1.18it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:05<00:03,  1.26it/s]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:05<00:03,  1.27it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:06<00:02,  1.25it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:07<00:01,  1.23it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:08<00:00,  1.22it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:09<00:00,  1.21it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:09<00:00,  1.19it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.052575)
+  > LR QAOA train avg p_succ after COBYLA: 0.056045
+  trained: dg=-1.667388, db=1.077585, train_p_succ=5.604531e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5673  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 9
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:00<00:09,  1.03it/s]Grid Scanning (dg):  18%|█▊        | 2/11 [00:01<00:08,  1.05it/s]Grid Scanning (dg):  27%|██▋       | 3/11 [00:02<00:07,  1.06it/s]Grid Scanning (dg):  36%|███▋      | 4/11 [00:03<00:06,  1.07it/s]Grid Scanning (dg):  45%|████▌     | 5/11 [00:04<00:05,  1.10it/s]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:05<00:05,  1.00s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:06<00:03,  1.03it/s]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:07<00:02,  1.05it/s]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:08<00:01,  1.04it/s]Grid Scanning (dg):  91%|█████████ | 10/11 [00:09<00:00,  1.05it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:10<00:00,  1.05it/s]Grid Scanning (dg): 100%|██████████| 11/11 [00:10<00:00,  1.05it/s]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.061663)
+  > LR QAOA train avg p_succ after COBYLA: 0.065855
+  trained: dg=-1.657566, db=1.074310, train_p_succ=6.585456e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5511  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 10
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:11,  1.13s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:02<00:09,  1.11s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:03<00:08,  1.09s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:04<00:07,  1.10s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:05<00:06,  1.09s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:06<00:05,  1.05s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:07<00:04,  1.04s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:08<00:03,  1.04s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:09<00:02,  1.05s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:10<00:01,  1.06s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:11<00:00,  1.06s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:11<00:00,  1.07s/it]
+  > Best grid start: dg=-1.6000, db=1.2700 (avg train p_succ=0.070819)
+  > LR QAOA train avg p_succ after COBYLA: 0.076098
+  trained: dg=-1.644280, db=1.076530, train_p_succ=7.609770e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5573  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 11
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:16,  1.61s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:03<00:16,  1.81s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:05<00:14,  1.80s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:07<00:12,  1.80s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:09<00:11,  1.97s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:10<00:08,  1.76s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:12<00:07,  1.79s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:14<00:05,  1.71s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:15<00:03,  1.71s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:17<00:01,  1.67s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.64s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.73s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.080599)
+  > LR QAOA train avg p_succ after COBYLA: 0.086602
+  trained: dg=-1.626287, db=1.074390, train_p_succ=8.660223e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5389  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 12
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:13,  1.39s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:02<00:11,  1.31s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:03<00:10,  1.29s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:05<00:08,  1.27s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:06<00:07,  1.24s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:07<00:05,  1.17s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:08<00:04,  1.17s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:09<00:03,  1.19s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:11<00:02,  1.24s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:12<00:01,  1.28s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:14<00:00,  1.58s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:14<00:00,  1.34s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.090610)
+  > LR QAOA train avg p_succ after COBYLA: 0.097207
+  trained: dg=-1.614270, db=1.070021, train_p_succ=9.720720e-02
+  benchmarking...
+  scaling log2 slopes: LR=0.5227  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 13
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:14,  1.42s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:02<00:12,  1.39s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:04<00:11,  1.39s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:05<00:09,  1.38s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:06<00:08,  1.36s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:07<00:06,  1.28s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:09<00:05,  1.29s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:10<00:03,  1.32s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:12<00:02,  1.39s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:13<00:01,  1.39s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:15<00:00,  1.39s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:15<00:00,  1.36s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.100660)
+  > LR QAOA train avg p_succ after COBYLA: 0.107739
+  trained: dg=-1.601849, db=1.060029, train_p_succ=1.077392e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4973  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 14
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:15,  1.58s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:03<00:14,  1.56s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:04<00:12,  1.54s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:06<00:10,  1.53s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:07<00:09,  1.52s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:09<00:07,  1.49s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:11<00:07,  1.76s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:14<00:06,  2.09s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:16<00:04,  2.00s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:17<00:01,  1.91s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.84s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.76s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.110714)
+  > LR QAOA train avg p_succ after COBYLA: 0.118006
+  trained: dg=-1.595049, db=1.048287, train_p_succ=1.180063e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4850  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 15
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:19,  1.95s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:03<00:16,  1.88s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:05<00:14,  1.78s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:07<00:12,  1.76s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:09<00:11,  1.85s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:10<00:08,  1.71s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:12<00:06,  1.69s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:14<00:05,  1.72s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:15<00:03,  1.73s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:17<00:01,  1.73s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.74s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.75s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.120731)
+  > LR QAOA train avg p_succ after COBYLA: 0.127805
+  trained: dg=-1.593812, db=1.034471, train_p_succ=1.278046e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4787  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 16
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:02<00:21,  2.12s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:04<00:22,  2.54s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:07<00:18,  2.32s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:08<00:15,  2.19s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:10<00:12,  2.05s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:12<00:09,  1.89s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:14<00:07,  1.89s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:16<00:06,  2.13s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:20<00:04,  2.45s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:23<00:02,  2.86s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:25<00:00,  2.64s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:25<00:00,  2.36s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.130599)
+  > LR QAOA train avg p_succ after COBYLA: 0.137161
+  trained: dg=-1.587606, db=1.017477, train_p_succ=1.371614e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4716  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: False
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 17
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:02<00:23,  2.33s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:04<00:20,  2.23s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:06<00:17,  2.17s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:08<00:14,  2.09s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:10<00:12,  2.04s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:12<00:09,  1.92s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:14<00:07,  1.93s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:16<00:05,  1.96s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:18<00:04,  2.06s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:20<00:02,  2.12s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:22<00:00,  2.10s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:22<00:00,  2.07s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.140216)
+  > LR QAOA train avg p_succ after COBYLA: 0.146164
+  trained: dg=-1.582620, db=1.002586, train_p_succ=1.461643e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4659  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   False
+  LR better scaling than WalkSATlm: True
+  stop satisfied (scaling-exponent): False
+
+========================================================================
+Depth p = 18
+========================================================================
+  training LR angles (notebook protocol, BM24 simulator)...
+Grid Scanning (dg):   0%|          | 0/11 [00:00<?, ?it/s]Grid Scanning (dg):   9%|▉         | 1/11 [00:01<00:18,  1.84s/it]Grid Scanning (dg):  18%|█▊        | 2/11 [00:03<00:16,  1.83s/it]Grid Scanning (dg):  27%|██▋       | 3/11 [00:05<00:14,  1.84s/it]Grid Scanning (dg):  36%|███▋      | 4/11 [00:07<00:12,  1.83s/it]Grid Scanning (dg):  45%|████▌     | 5/11 [00:09<00:10,  1.80s/it]Grid Scanning (dg):  55%|█████▍    | 6/11 [00:10<00:08,  1.70s/it]Grid Scanning (dg):  64%|██████▎   | 7/11 [00:12<00:06,  1.71s/it]Grid Scanning (dg):  73%|███████▎  | 8/11 [00:14<00:05,  1.76s/it]Grid Scanning (dg):  82%|████████▏ | 9/11 [00:16<00:03,  1.78s/it]Grid Scanning (dg):  91%|█████████ | 10/11 [00:17<00:01,  1.82s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.83s/it]Grid Scanning (dg): 100%|██████████| 11/11 [00:19<00:00,  1.80s/it]
+  > Best grid start: dg=-1.6000, db=0.8800 (avg train p_succ=0.149457)
+  > LR QAOA train avg p_succ after COBYLA: 0.154659
+  trained: dg=-1.584430, db=0.991427, train_p_succ=1.546589e-01
+  benchmarking...
+  scaling log2 slopes: LR=0.4601  WalkSAT=0.4657  WalkSATlm=0.4707
+  LR better scaling than WalkSAT:   True
+  LR better scaling than WalkSATlm: True
+  stop satisfied (scaling-exponent): True
+
+*** Stop: depth p=18 satisfies scaling-exponent ***
+  angles: --lr-dgamma -1.5844298705477478 --lr-dbeta 0.9914267572273776 --depth 18
+  results: /Users/b/Quandela/phasecraft/bm24_runs/05-19-11-07-56-sweep-p18.json
+  scaling trace: /Users/b/Quandela/phasecraft/bm24_runs/05-19-11-07-56-scaling-vs-depth.json
+  scaling plot: /Users/b/Quandela/phasecraft/bm24_runs/05-19-11-07-56-scaling-vs-depth-plot.png
