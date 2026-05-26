@@ -97,3 +97,23 @@ suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/p
 exponent_fit: {"eval_base_seed": 1000004, "eval_n_max": 14, "eval_n_min": 12, "eval_test_size": 30, "intercept_ln_mean_p_succ_natural_log": -0.21875343112576662, "mean_p_succ_per_n": {"12": 0.07586614194977923, "13": 0.05615885255766862, "14": 0.05090718123708249}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.2877934943929306, "slope_ln_mean_p_succ_vs_n_natural_log": -0.19948324922195426, "stderr_slope_ln_nat": 0.05848726824218563}
 mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.199483249222
 mean_success_exponent_slope_log2 ( / ln 2 ): -0.287793494393
+
+# 2026-05-25T13:54:09
+settings = {"train_n": 12, "train_size": 100, "k": 8, "r": 176.54, "depth": 5, "seed": 27, "m_sampling": "notebook", "lr_beta_schedule": "decreasing", "proxy_n_values": [12, 14, 16], "proxy_size_per_n": 50, "objective": "v2-slope-of-log-median-inv-p"}
+delta_gamma = -1.3954251836
+delta_beta  = +1.1085530940
+betas  = [0.8868424752397722, 0.6651318564298291, 0.4434212376198861, 0.221710618809943, 0.0]
+gammas = [-0.27908503672544027, -0.5581700734508805, -0.8372551101763208, -1.116340146901761, -1.3954251836272014]
+best_avg_train_p_succ = 3.243809e-02
+benchmark_cmd = 'python phasecraft/bm24_qaoa_sim.py --benchmark --n-min 12 --n-max 20 --k 8 --r 176.54 --algorithms lr_qaoa walksat walksatlm --depth 5 --lr-dgamma -1.3954251836 --lr-dbeta 1.1085530940 --lr-angle-convention bm24 --lr-beta-schedule decreasing --test-size 200 --seed 27 --plot-benchmark'
+exponent_fit = {"ok": true, "mean_p_succ_per_n": {"12": 0.025957822735306127, "13": 0.015340413999815991, "14": 0.013283452396077393, "15": 0.007148787245919994, "16": 0.005873246439058898, "17": 0.003601200014972475, "18": 0.0026556248875395467, "19": 0.0018131963974818276, "20": 0.0014017750406207974}, "slope_ln_mean_p_succ_vs_n_natural_log": -0.36644145276478374, "slope_ln_mean_p_succ_vs_n_log2": -0.5286632666799008, "intercept_natural_log": 0.6777091691753467, "rvalue": -0.9962675592188334, "stderr": 0.012000115466736195}
+
+# 2026-05-26T13:04:41
+settings = {"train_n": 12, "train_size": 100, "k": 8, "r": 176.54, "depth": 5, "seed": 27, "m_sampling": "notebook", "lr_beta_schedule": "decreasing", "proxy_n_values": [12, 14, 16, 18, 20], "proxy_size_per_n": 50, "objective": "v2-slope-of-log-median-inv-p"}
+delta_gamma = -1.3898975965
+delta_beta  = +1.1421833685
+betas  = [0.9137466948242928, 0.6853100211182196, 0.4568733474121464, 0.22843667370607315, 0.0]
+gammas = [-0.2779795193098155, -0.555959038619631, -0.8339385579294466, -1.111918077239262, -1.3898975965490776]
+best_avg_train_p_succ = 3.234929e-02
+benchmark_cmd = 'python phasecraft/bm24_qaoa_sim.py --benchmark --n-min 12 --n-max 20 --k 8 --r 176.54 --algorithms lr_qaoa walksat walksatlm --depth 5 --lr-dgamma -1.3898975965 --lr-dbeta 1.1421833685 --lr-angle-convention bm24 --lr-beta-schedule decreasing --test-size 200 --seed 27 --plot-benchmark'
+exponent_fit = {"ok": true, "mean_p_succ_per_n": {"12": 0.025802162219701996, "13": 0.015244945320534931, "14": 0.01322043804870544, "15": 0.007083389918978051, "16": 0.005828575250254787, "17": 0.0035758402701628446, "18": 0.002631686606210409, "19": 0.0017869334084116132, "20": 0.0013853686994311945}, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3673506578290715, "slope_ln_mean_p_succ_vs_n_log2": -0.5299749723173, "intercept_natural_log": 0.6837761185802238, "rvalue": -0.9962371137266948, "stderr": 0.01207913108143119}

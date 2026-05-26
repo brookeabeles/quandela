@@ -1,0 +1,42 @@
+# W-saddle workflow — from repo root:
+#   make -f phasecraft/Makefile.w_saddle help
+PYTHON ?= python3
+RUN := $(PYTHON) -m phasecraft.w_saddle
+RUNS := phasecraft/w_saddle/runs
+R := 1.0
+DPS := 80
+
+.PHONY: help certify continue sweep resolve pipeline test selftest
+
+help:
+	@echo "Targets: selftest certify continue sweep resolve pipeline test"
+	@echo "pipeline/pipeline-robust write to $(RUNS)/runN/ (next free N)"
+
+selftest:
+	$(PYTHON) -m phasecraft.w_saddle.core --selftest
+
+certify:
+	$(RUN) certify --r $(R) --gamma -0.05 --num-starts 50 --dps 60 --escalate \
+	  --out $(RUNS)/smoke_certify.json
+
+continue:
+	$(RUN) continue --r $(R) --gamma-start -0.01 --gamma-stop -1.0 --num-points 100 \
+	  --dps $(DPS) --out $(RUNS)/seed_r1_neg_gamma.json --plot $(RUNS)/seed_branch.png
+
+sweep: continue
+	$(RUN) sweep --in $(RUNS)/seed_r1_neg_gamma.json --out $(RUNS)/competitors.json --dps $(DPS) \
+	  --plot-analysis $(RUNS)/competitors_analysis.png
+
+resolve: sweep
+	$(RUN) resolve --sweep-in $(RUNS)/competitors.json --seed-branch-in $(RUNS)/seed_r1_neg_gamma.json \
+	  --out $(RUNS)/resolved.json --plot $(RUNS)/resolved.png
+
+pipeline:
+	$(RUN) pipeline --preset r1-neg-gamma --r $(R) --dps $(DPS) --plots
+
+pipeline-robust:
+	$(RUN) pipeline --preset r1-neg-gamma --robust-sweep --r $(R) --dps $(DPS) --plots \
+	  --plot-overwrite --proof-metadata --enclose-action
+
+test:
+	$(PYTHON) -m pytest tests/test_krawczyk_w_saddle.py tests/test_competitor_branch_tracking.py -q
