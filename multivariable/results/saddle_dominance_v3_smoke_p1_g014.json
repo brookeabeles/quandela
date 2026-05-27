@@ -1,0 +1,146 @@
+{
+  "mode": "single",
+  "runs": [
+    {
+      "p": 1,
+      "beta": -1.5707963267948966,
+      "gamma": 0.14,
+      "r": 176.54,
+      "n_starts": 300,
+      "n_converged": 283,
+      "n_diverged": 17,
+      "n_distinct_roots": 3,
+      "merge_tol": 0.0001,
+      "roots": [
+        {
+          "root_id": 0,
+          "n_starts_converged_here": 171,
+          "residual_polished": 2.0654731322912543e-11,
+          "re_phi": 13901086500.710663,
+          "exponent_c": -20055028557.54379,
+          "y_real": [
+            -5.987997239369969e-154,
+            330950566.0591848,
+            -5.987997239369969e-154,
+            -2.8316715556284344e-154
+          ],
+          "y_imag": [
+            2.5274114610298364e-153,
+            191074398.40272948,
+            -2.5274114610298364e-153,
+            -4.3085469419434404e-172
+          ],
+          "scaling_details": {
+            "F_value_real": 13901086500.711517,
+            "F_value_imag": 4.65931484216916e-06,
+            "power_sum_real": -0.0001220703125,
+            "power_sum_imag": 0.0002288811093481307,
+            "scaling_Re": 13901086500.710663,
+            "scaling_Im": 0.0016068270802790843,
+            "exponent_c": -20055028557.54379
+          }
+        },
+        {
+          "root_id": 1,
+          "n_starts_converged_here": 57,
+          "residual_polished": 0.0,
+          "re_phi": 15059510338.438255,
+          "exponent_c": -21726280883.480946,
+          "y_real": [
+            -808111355.9061038,
+            1.6447160771313817e-73,
+            -2.936083942454465e-72,
+            7.326596560505469e-78
+          ],
+          "y_imag": [
+            3410873153.509243,
+            -2.848878341548134e-73,
+            6.956923457867106e-73,
+            3.289559054637654e-73
+          ],
+          "scaling_details": {
+            "F_value_real": 6950543213.023826,
+            "F_value_imag": -1.2657764765075732,
+            "power_sum_real": 1158423875.059204,
+            "power_sum_imag": -33084308952.63555,
+            "scaling_Re": 15059510338.438255,
+            "scaling_Im": -231590162669.71463,
+            "exponent_c": -21726280883.480946
+          }
+        },
+        {
+          "root_id": 2,
+          "n_starts_converged_here": 55,
+          "residual_polished": 0.0,
+          "re_phi": 15059510338.438255,
+          "exponent_c": -21726280883.480946,
+          "y_real": [
+            -2.936083942454465e-72,
+            -1.644842977506275e-73,
+            -808111355.9061038,
+            7.326596560506469e-78
+          ],
+          "y_imag": [
+            -6.956923457867106e-73,
+            2.8488050755825287e-73,
+            -3410873153.509243,
+            -3.289559054637654e-73
+          ],
+          "scaling_details": {
+            "F_value_real": 6950543213.023826,
+            "F_value_imag": 1.2657764765075732,
+            "power_sum_real": 1158423875.059204,
+            "power_sum_imag": 33084308952.63601,
+            "scaling_Re": 15059510338.438255,
+            "scaling_Im": 231590162669.71783,
+            "exponent_c": -21726280883.480946
+          }
+        }
+      ],
+      "elapsed_seconds": 0.8009910583496094,
+      "pair_diagnostics": {
+        "pairs": [
+          {
+            "root_pair": [
+              0,
+              1
+            ],
+            "abs_separation": 3505295940.8407288,
+            "rel_separation": 1.0,
+            "diagnosis": "DIFFERENT",
+            "symmetry_check": {
+              "rel_diff_after_permutation": 9.172594471428303,
+              "is_symmetry_related": false
+            }
+          },
+          {
+            "root_pair": [
+              0,
+              2
+            ],
+            "abs_separation": 3505295940.8407288,
+            "rel_separation": 1.0,
+            "diagnosis": "DIFFERENT",
+            "symmetry_check": {
+              "rel_diff_after_permutation": 9.172594471428303,
+              "is_symmetry_related": false
+            }
+          },
+          {
+            "root_pair": [
+              1,
+              2
+            ],
+            "abs_separation": 3505295940.8407288,
+            "rel_separation": 1.0,
+            "diagnosis": "DIFFERENT",
+            "symmetry_check": {
+              "rel_diff_after_permutation": 1.9461256402169347,
+              "is_symmetry_related": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

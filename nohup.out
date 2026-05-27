@@ -1,0 +1,42 @@
+============================================================================
+ Benchmark mode: LR-QAOA vs WalkSAT vs WalkSATlm
+============================================================================
+k=8 r=176.54 n=[8,14] test_size=100 sat_filter=True
+algorithms=['lr_qaoa', 'walksat', 'walksatlm']
+
+[lr_qaoa]
+ n   mean_success   median_success   median_runtime
+  8  7.617187e-03  7.812500e-03  1.280000e+02
+  9  3.457031e-03  1.953125e-03  5.120000e+02
+ 10  1.992188e-03  1.953125e-03  5.120000e+02
+ 11  9.277344e-04  4.882812e-04  2.048000e+03
+ 12  4.248047e-04  2.441406e-04  4.096000e+03
+ 13  2.062988e-04  1.220703e-04  8.192000e+03
+ 14  1.239014e-04  1.220703e-04  8.192000e+03
+ natural-log exponents: {'mean_success_log_slope': -0.6978238758634125, 'median_runtime_log_slope': 0.7179024370085146}
+ log2 exponents:        {'mean_success_log_slope': -1.0067470451220608, 'median_runtime_log_slope': 1.0357142857142856}
+
+[walksat]
+ n   median_flips   solve_rate   mean_flips   timeout_count
+  8  26.000  1.000  39.600  0
+  9  24.000  1.000  52.280  0
+ 10  41.000  1.000  71.820  0
+ 11  56.500  1.000  107.630  0
+ 12  77.000  1.000  141.590  0
+ 13  120.000  1.000  245.790  0
+ 14  149.500  1.000  318.290  0
+ natural-log exponents: {'median_runtime_or_flips_log_slope': 0.32488245515876263}
+ log2 exponents:        {'median_runtime_or_flips_log_slope': 0.46870630692937787}
+
+[walksatlm]
+ n   median_flips   solve_rate   mean_flips   timeout_count
+  8  21.500  1.000  134.700  0
+  9  47.500  1.000  127.090  0
+ 10  68.000  1.000  221.220  0
+ 11  64.500  1.000  264.850  0
+ 12  99.000  1.000  327.050  0
+ 13  276.500  1.000  596.460  0
+ 14  233.500  1.000  911.080  0
+ natural-log exponents: {'median_runtime_or_flips_log_slope': 0.3947843496688599}
+ log2 exponents:        {'median_runtime_or_flips_log_slope': 0.5695534234878387}
+============================================================================

@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "k": 8,
+    "r": 176.54,
+    "p": 3,
+    "restarts": 24,
+    "maxiter": 700,
+    "seed": 7,
+    "include_singletons": false,
+    "fp_max_iter": 400,
+    "fp_tol": 1e-08,
+    "fp_damping": 0.55,
+    "elapsed_sec": 102.02056813240051
+  },
+  "best_exponent": 4.216838329136729e+29,
+  "best_betas": [
+    0.16767473926723664,
+    3.0722272157111803,
+    -1.7988459003279145
+  ],
+  "best_gammas": [
+    -2.350950756420826,
+    0.707107188044112,
+    2.8176884323807254
+  ],
+  "optimizer": {
+    "success": true,
+    "message": "pattern-search finished",
+    "nit": 16,
+    "nfev": 193
+  }
+}

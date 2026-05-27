@@ -36,9 +36,13 @@ from phasecraft.certificate_language import (
 )
 from phasecraft.w_saddle.core import (
     WSaddleSystem,
+    Delta,
+    certify_log_delta_ratio_step,
     discover_w_roots,
+    initial_log_delta_lift,
     krawczyk_certify_with_escalation,
     krawczyk_certify_w_root,
+    phi_eff_with_lifted_log,
     solve_w_from_init,
 )
 
@@ -95,7 +99,11 @@ def make_gamma_mesh(gamma_start: float, gamma_stop: float, num_points: int) -> n
 
 
 def unwrap_im_branch(im_raw: list[float]) -> tuple[list[float], bool]:
-    """Unwrap Im(Phi) along the branch; return (unwrapped, continuous_ok)."""
+    """Post-hoc unwrap of principal Im(Phi); diagnostic only.
+
+    Prefer ``Phi_eff_im_lifted`` from the certified ratio-lift along the mesh
+    (``continue_negative_gamma_branch``) for Stokes / branch-wise analysis.
+    """
     if not im_raw:
         return [], True
     out = [float(im_raw[0])]
@@ -305,7 +313,7 @@ def certify_point(
     max_inflate_iters: int,
     escalate: bool,
     enclose_action: bool = False,
-    log_branch_method: str = "continuation_mesh_principal",
+    log_branch_method: str = "continuation_ratio_lift",
 ) -> tuple[bool, dict[str, Any]]:
     if escalate:
         return krawczyk_certify_with_escalation(
@@ -351,7 +359,9 @@ def continue_negative_gamma_branch(
     points: list[dict[str, Any]] = []
     stop: Optional[StopReason] = None
     w_prev: Optional[np.ndarray] = w_init
-    im_raw: list[float] = []
+    log_delta_lifted: Optional[complex] = None
+    sys_prev: Optional[WSaddleSystem] = None
+    info_prev: Optional[dict[str, Any]] = None
 
     for j, gamma in enumerate(gammas):
         sys = WSaddleSystem(r=float(r), gamma=float(gamma))
@@ -375,11 +385,31 @@ def continue_negative_gamma_branch(
             max_inflate_iters=max_inflate_iters,
             escalate=escalate,
             enclose_action=enclose_action,
-            log_branch_method="continuation_mesh_principal",
+            log_branch_method="continuation_ratio_lift",
         )
 
         phi = sys.Phi_eff(w_star)
-        im_raw.append(float(phi.imag))
+
+        if j == 0:
+            log_delta_lifted = initial_log_delta_lift(w_star, beta=sys.beta, p=sys.p)
+            log_step_ok = True
+            log_step_info: dict[str, Any] = {
+                "log_ratio_real": 0.0,
+                "log_ratio_imag": 0.0,
+                "log_branch_step_certified": True,
+                "log_branch_method": "continuation_ratio_lift",
+            }
+        else:
+            assert sys_prev is not None and info_prev is not None and w_prev is not None
+            log_step_ok, log_step_info = certify_log_delta_ratio_step(
+                sys_prev, w_prev, info_prev, sys, w_star, info
+            )
+            log_delta_lifted = log_delta_lifted + complex(
+                log_step_info["log_ratio_real"], log_step_info["log_ratio_imag"]
+            )
+
+        assert log_delta_lifted is not None
+        phi_lifted = phi_eff_with_lifted_log(sys, w_star, log_delta_lifted)
 
         contraction = float(info.get("contraction_bound", np.inf))
         delta_lower = float(info.get("delta_lower", 0.0))
@@ -392,6 +422,15 @@ def continue_negative_gamma_branch(
             "w_star_imag": w_star.imag.tolist(),
             "Phi_eff_real": float(phi.real),
             "Phi_eff_imag": float(phi.imag),
+            "Phi_eff_re_lifted": float(phi_lifted.real),
+            "Phi_eff_im_lifted": float(phi_lifted.imag),
+            "Phi_eff_im_unwrapped": float(phi_lifted.imag),
+            "log_Delta_lifted_real": float(log_delta_lifted.real),
+            "log_Delta_lifted_imag": float(log_delta_lifted.imag),
+            "log_ratio_real": float(log_step_info.get("log_ratio_real", 0.0)),
+            "log_ratio_imag": float(log_step_info.get("log_ratio_imag", 0.0)),
+            "log_branch_step_certified": bool(log_step_info.get("log_branch_step_certified", False)),
+            "log_branch_method": log_step_info.get("log_branch_method", "continuation_ratio_lift"),
             "Phi_eff_re_leading": phi_leading,
             "residual": float(res_norm),
             "residual_F_norm": float(res_norm),
@@ -437,6 +476,15 @@ def continue_negative_gamma_branch(
 
         points.append(row)
 
+        if not log_step_ok:
+            stop = StopReason(
+                "log_branch_cut_crossing",
+                "Delta ratio on certified boxes may cross negative real axis",
+                j,
+                float(gamma),
+            )
+            break
+
         if not certified:
             stop = StopReason(
                 "krawczyk_failed",
@@ -462,27 +510,20 @@ def continue_negative_gamma_branch(
             )
             break
 
-        if j > 0:
-            im_jump = abs(im_raw[j] - im_raw[j - 1])
-            if im_jump > branch_jump_tol:
-                stop = StopReason(
-                    "action_branch_discontinuity",
-                    f"|Im Phi jump|={im_jump:.6g} > {branch_jump_tol}",
-                    j,
-                    float(gamma),
-                )
-                break
-
+        sys_prev = sys
+        info_prev = info
         w_prev = w_star
 
-    im_unwrapped, unwrap_ok = unwrap_im_branch(im_raw)
-    for row, im_u in zip(points, im_unwrapped):
-        row["Phi_eff_im_unwrapped"] = float(im_u)
+    im_raw = [float(p["Phi_eff_imag"]) for p in points]
+    im_principal_unwrap, unwrap_ok = unwrap_im_branch(im_raw)
+    for row, im_pu in zip(points, im_principal_unwrap):
+        row["Phi_eff_im_principal_unwrap"] = float(im_pu)
 
-    if not unwrap_ok and stop is None and points:
+    lift_ok = all(bool(p.get("log_branch_step_certified", False)) for p in points)
+    if not lift_ok and stop is None and points:
         stop = StopReason(
-            "action_branch_discontinuity",
-            "Im(Phi) branch could not be unwrapped continuously along mesh",
+            "log_branch_cut_crossing",
+            "log Delta ratio-lift step failed certification on mesh",
             len(points) - 1,
             float(points[-1]["gamma"]),
         )
@@ -501,7 +542,10 @@ def continue_negative_gamma_branch(
             "gamma": stop.gamma,
         },
         "points": points,
+        "log_branch_lift_certified": bool(lift_ok and stop is None),
+        "log_branch_method": "continuation_ratio_lift",
         "unwrap_continuous": bool(unwrap_ok),
+        "Phi_eff_im_method": "continuation_ratio_lift",
         "table": build_compact_table(points),
     }
     return payload
@@ -516,7 +560,10 @@ def build_compact_table(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "gamma": p["gamma"],
                 "Re_Phi": p["Phi_eff_real"],
                 "Im_Phi": p["Phi_eff_imag"],
+                "Im_Phi_lifted": p.get("Phi_eff_im_lifted", p.get("Phi_eff_im_unwrapped", p["Phi_eff_imag"])),
                 "Im_Phi_unwrapped": p.get("Phi_eff_im_unwrapped", p["Phi_eff_imag"]),
+                "Im_Phi_principal_unwrap": p.get("Phi_eff_im_principal_unwrap", p["Phi_eff_imag"]),
+                "log_Delta_lifted_imag": p.get("log_Delta_lifted_imag"),
                 "Re_Phi_leading": p.get("Phi_eff_re_leading"),
                 "delta_lower": p["delta_lower"],
                 "contraction_bound": p["contraction_bound"],
@@ -1061,6 +1108,7 @@ def seed_snapshot_at_gamma(
     newton_tol: float,
     delta_lower_threshold: float,
     contraction_max: float,
+    enclose_action: bool = False,
 ) -> tuple[Optional[dict[str, Any]], Optional[StopReason]]:
     w_guess = interpolate_w_seed_from_payload(seed_payload, gamma)
     row, stop = certify_tracked_root_at_gamma(
@@ -1074,6 +1122,7 @@ def seed_snapshot_at_gamma(
         newton_tol=newton_tol,
         delta_lower_threshold=delta_lower_threshold,
         contraction_max=contraction_max,
+        enclose_action=enclose_action,
     )
     if row is None:
         return None, stop
@@ -1295,12 +1344,17 @@ def plot_tracked_competitor_branches(
         ax.axvline(float(br["anchor_gamma"]), color="C2", lw=0.8, ls=":", label="anchor")
         ax.set_xlabel(r"$\gamma$")
         ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{seed}} - \mathrm{Re}\,\Phi_{\mathrm{comp}}$")
-        ax.set_title(br.get("branch_label", "tracked competitor"))
+        ax.set_title(
+            f"Anchor γ={float(br['anchor_gamma']):.4g}  "
+            f"({len(pts)} certified gap points)",
+            fontsize=9,
+        )
         ax.legend(loc="best", fontsize=8)
         ax.grid(True, alpha=0.25)
     fig.suptitle(
-        "Tracked competitor branch: certified gap vs seed (one sheet per panel)",
-        fontsize=11,
+        "Track step: Re Φ_seed − Re Φ_comp along one certified competitor sheet per anchor\n"
+        "(green = seed wins Re Φ; red = competitor wins; dotted vertical = anchor γ)",
+        fontsize=10,
     )
     fig.tight_layout()
     plot_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1327,6 +1381,10 @@ EQ_GAP_POS = (
     r", $\Delta_j=\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_s)-\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_j)$"
 )
 EQ_PHI_SEED = r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}(w^\star(\gamma))$ (seed branch)"
+EQ_PHI_ALL_SHEETS = (
+    r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$ on each tracked sheet "
+    r"(blue dashed = seed)"
+)
 EQ_PHI_BEST = (
     r"$\max_{j\in\mathcal{C}_\gamma\setminus\{s\}}\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_j)$"
     r" (per-$\gamma$ diagnostic, not one sheet)"
@@ -1334,6 +1392,12 @@ EQ_PHI_BEST = (
 EQ_DELTA_BRANCH = (
     r"$\Delta\mathrm{Re}(\gamma)=\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_s)"
     r"-\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_{\mathrm{branch}})$"
+)
+EQ_IM_COMP_SHEETS = (
+    r"$\mathrm{Im}\,\Phi_{\mathrm{eff}}$ on competitor sheets (unwrapped per sheet)"
+)
+TITLE_CROSSING_BRACKETS = (
+    r"Certified $\Delta\mathrm{Re}=0$ brackets (Krawczyk bisection on resolve mesh)"
 )
 
 
@@ -1505,197 +1569,98 @@ def _per_point_competitor_series(
     return gamma, re_seed, min_gap, fps
 
 
-def plot_competitor_analysis(
-    payload: dict[str, Any],
-    plot_path: Path,
+def _refined_window_gamma_mask(
+    gamma: np.ndarray, payload: dict[str, Any], *, fallback_hi: float = -0.7
+) -> tuple[np.ndarray, str]:
+    """Boolean mask for sweep-only wall zoom; prefer refined_window from sweep JSON."""
+    ref = payload.get("refined_window") or {}
+    lo, hi = ref.get("gamma_lo"), ref.get("gamma_hi")
+    if lo is not None and hi is not None:
+        g_lo, g_hi = float(lo), float(hi)
+        if g_lo > g_hi:
+            g_lo, g_hi = g_hi, g_lo
+        mask = (gamma >= g_lo) & (gamma <= g_hi)
+        title = rf"Dense-window zoom: $\gamma\in[{g_lo:.3g},\,{g_hi:.3g}]$ (per-$\gamma$ $\Delta_{{\min}}$)"
+        return mask, title
+    mask = gamma <= fallback_hi
+    return mask, rf"Wall zoom: $\gamma\le {fallback_hi:.2g}$ (per-$\gamma$ $\Delta_{{\min}}$)"
+
+
+def _plot_crossing_brackets_on_ax(
+    ax: Any,
+    resolved: dict[str, Any],
+    br_colors: dict[int, Any],
+) -> int:
+    """Shaded γ intervals where certified ΔRe brackets straddle zero."""
+    n = 0
+    for iv in resolved.get("crossing_certificates") or []:
+        if iv.get("suppressed_duplicate_same_sheet"):
+            continue
+        g0, g1 = iv["gamma_interval"]
+        bid = int(iv["crossing_branch_id"])
+        color = br_colors.get(bid, LOSS_COLOR)
+        ax.axvspan(
+            g1,
+            g0,
+            alpha=0.25,
+            color=color,
+            label=rf"branch {bid} crossing",
+        )
+        n += 1
+    ax.axhline(0.0, color="gray", ls="--", lw=0.6, alpha=0.5)
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel("(interval marker)")
+    ax.set_title(TITLE_CROSSING_BRACKETS, fontsize=9)
+    if n:
+        ax.legend(fontsize=6)
+    ax.grid(True, alpha=0.25)
+    return n
+
+
+def _plot_sweep_gap_scatter_on_ax(
+    ax: Any,
+    gamma: np.ndarray,
+    min_gap: np.ndarray,
     *,
-    resolved_payload: Optional[dict[str, Any]] = None,
-    branches_only: bool = False,
-    allow_overwrite: bool = False,
-) -> Path:
-    """Competitor diagnostics. Use *resolved_payload* (or *branches_only*) for tracked sheets."""
-    if branches_only and resolved_payload is None:
-        raise ValueError("branches_only requires resolved_payload from the resolve step")
-    plot_path = resolve_plot_output_path(plot_path, allow_overwrite=allow_overwrite)
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    pts = sorted(payload.get("points") or [], key=lambda p: float(p["gamma"]), reverse=True)
-    if not pts:
-        raise ValueError("no points to plot")
-    gamma, re_seed, min_gap, _fps = _per_point_competitor_series(pts)
-    use_branches = branches_only or resolved_payload is not None
-    branches = (resolved_payload or {}).get("branches") or []
-    br_colors = _branch_color_map(branches) if use_branches else {}
-
-    min_pos = np.array(
-        [
-            p.get("min_positive_gap_re")
-            if p.get("min_positive_gap_re") is not None
-            else np.nan
-            for p in pts
-        ]
-    )
-    best_comp = np.array(
-        [
-            p.get("best_competitor_re_phi")
-            if p.get("best_competitor_re_phi") is not None
-            else np.nan
-            for p in pts
-        ]
-    )
-    n_comp = np.array([int(p.get("num_certified_competitors", 0) or 0) for p in pts])
-    n_cert = np.array([int(p.get("num_certified_roots", 0) or 0) for p in pts])
-
-    fig, axes = plt.subplots(2, 3, figsize=(15, 9), constrained_layout=True)
-
-    ax = axes[0, 0]
-    if use_branches:
-        _plot_branch_curves_on_ax(
-            ax,
-            branches,
-            br_colors,
-            y_key="DeltaRe_vs_seed",
-            skip_seed=True,
-            legend=True,
-        )
-        ax.axhline(0.0, color="gray", ls="--", lw=0.8)
-        ax.set_ylabel(r"$\Delta\mathrm{Re}(\gamma)$")
-        ax.set_title(f"Tracked competitor sheets\n{EQ_DELTA_BRANCH}", fontsize=9)
+    wall_only: bool = False,
+    payload: Optional[dict[str, Any]] = None,
+) -> None:
+    g, gaps = gamma, min_gap
+    if wall_only and payload is not None:
+        mask, wall_title = _refined_window_gamma_mask(gamma, payload)
+        g, gaps = gamma[mask], min_gap[mask]
+        panel_title = wall_title
     else:
-        for g, gap in zip(gamma, min_gap):
-            if not np.isfinite(gap):
-                ax.scatter(g, gap, c=NONE_COLOR, s=20, zorder=3)
-                continue
-            ax.scatter(g, gap, c=WIN_COLOR if gap > 0 else LOSS_COLOR, s=22, zorder=4)
-        ax.axhline(0.0, color=LOSS_COLOR, ls="--", lw=1, label=r"$\Delta_{\min}=0$")
-        ax.set_ylabel(r"$\Delta_{\min}(\gamma)$")
-        ax.set_title(r"Per-$\gamma$ gap (no branch colors)" + f"\n{EQ_GAP_MIN}", fontsize=9)
-        ax.legend(fontsize=7)
+        panel_title = r"Sweep: min certified gap (full mesh)"
+    for gv, gap in zip(g, gaps):
+        if not np.isfinite(gap):
+            ax.scatter(gv, gap, c=NONE_COLOR, s=20, zorder=3)
+            continue
+        ax.scatter(gv, gap, c=WIN_COLOR if gap > 0 else LOSS_COLOR, s=22, zorder=4)
+    ax.axhline(0.0, color=LOSS_COLOR, ls="--", lw=1, label=r"$\Delta_{\min}=0$")
     ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel(r"$\Delta_{\min}(\gamma)$")
+    ax.set_title(panel_title + f"\n{EQ_GAP_MIN}", fontsize=9)
+    ax.legend(fontsize=7)
     ax.grid(True, alpha=0.3)
 
-    ax = axes[0, 1]
-    if use_branches:
-        _plot_branch_curves_on_ax(
-            ax,
-            branches,
-            br_colors,
-            y_key="Phi_eff_real",
-            skip_seed=False,
-            legend=True,
-        )
-        ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
-        ax.set_title(f"{EQ_PHI_SEED} (dashed = seed sheet)", fontsize=9)
-    else:
-        ax.plot(gamma, re_seed, "o-", color=SEED_PLOT_COLOR, lw=1.2, ms=3, label="seed branch")
-        valid_bc = np.isfinite(best_comp)
-        if np.any(valid_bc):
-            ax.scatter(
-                gamma[valid_bc],
-                best_comp[valid_bc],
-                c=NONE_COLOR,
-                s=24,
-                marker="s",
-                edgecolors="k",
-                linewidths=0.35,
-                label=r"max-Re competitor (per-$\gamma$)",
-                zorder=3,
-            )
-        ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
-        ax.set_title(
-            f"Seed vs per-{r'$\gamma$'} max (grey squares; not branches)\n{EQ_PHI_BEST}",
-            fontsize=8,
-        )
-        ax.legend(fontsize=7)
-    ax.set_xlabel(r"$\gamma$")
-    ax.grid(True, alpha=0.3)
 
-    ax = axes[0, 2]
-    valid = np.isfinite(min_pos)
-    if np.any(valid):
-        ax.scatter(
-            gamma[valid],
-            np.maximum(min_pos[valid], 1e-16),
-            c=WIN_COLOR if not use_branches else NONE_COLOR,
-            s=20,
-            zorder=3,
-            alpha=0.35 if use_branches else 1.0,
-        )
-    if use_branches:
-        for br in branches:
-            if br.get("is_seed_sheet"):
-                continue
-            bid = int(br["branch_id"])
-            pos_g, pos_y = [], []
-            for p in sorted(br["points"], key=lambda x: float(x["gamma"]), reverse=True):
-                if p.get("status") == STATUS_SEED_DUPLICATE:
-                    continue
-                d = float(p["DeltaRe_vs_seed"])
-                if d > 0:
-                    pos_g.append(float(p["gamma"]))
-                    pos_y.append(max(d, 1e-16))
-            if len(pos_g) >= 2:
-                ax.plot(pos_g, pos_y, "-", color=br_colors[bid], lw=1.2, ms=2, marker="o")
-    ax.set_yscale("log")
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel(r"$\Delta_{+}(\gamma)$")
-    ax.set_title(f"Positive gaps\n{EQ_GAP_POS}", fontsize=9)
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[1, 0]
+def _plot_sweep_counts_on_ax(
+    ax: Any,
+    gamma: np.ndarray,
+    n_comp: np.ndarray,
+    n_cert: np.ndarray,
+) -> None:
     ax.scatter(gamma, n_comp, c=NONE_COLOR, s=18, label="certified competitors")
     ax.plot(gamma, n_cert, "s--", ms=3, lw=0.8, alpha=0.6, color="#9467bd", label="all certified roots")
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel("count")
-    ax.set_title(r"$|\mathcal{C}_\gamma|$ at each mesh $\gamma$")
+    ax.set_title(r"Sweep: $|\mathcal{C}_\gamma|$ at each mesh $\gamma$")
     ax.legend(fontsize=7)
     ax.grid(True, alpha=0.3)
 
-    ax = axes[1, 1]
-    if use_branches:
-        g_all = []
-        for br in branches:
-            if br.get("is_seed_sheet"):
-                continue
-            g_all.extend(float(p["gamma"]) for p in br["points"])
-        if g_all:
-            g_lo, g_hi = min(g_all), max(g_all)
-            wall_branches = [
-                {
-                    **br,
-                    "points": [
-                        p
-                        for p in br["points"]
-                        if float(p["gamma"]) <= g_hi and float(p["gamma"]) >= max(g_lo, g_hi - 0.35)
-                    ],
-                }
-                for br in branches
-            ]
-            _plot_branch_curves_on_ax(
-                ax,
-                wall_branches,
-                br_colors,
-                y_key="DeltaRe_vs_seed",
-                skip_seed=True,
-                legend=False,
-            )
-            ax.axhline(0.0, color="gray", ls="--", lw=0.8)
-        ax.set_title(r"Wall zoom: tracked $\Delta\mathrm{Re}$ sheets")
-    else:
-        mask = gamma <= -0.7
-        for g, gap in zip(gamma[mask], min_gap[mask]):
-            if np.isfinite(gap):
-                ax.scatter(g, gap, c=WIN_COLOR if gap > 0 else LOSS_COLOR, s=28, zorder=3)
-        ax.axhline(0.0, color=LOSS_COLOR, ls="--", lw=1)
-        ax.set_title(r"Wall zoom: per-$\gamma$ $\Delta_{\min}$")
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel(r"$\Delta\mathrm{Re}$" if use_branches else r"$\Delta_{\min}$")
-    ax.grid(True, alpha=0.3)
 
-    ax = axes[1, 2]
+def _plot_sweep_summary_bar_on_ax(ax: Any, pts: list[dict[str, Any]]) -> None:
     dom = sum(1 for p in pts if p.get("seed_dominates_all"))
     threat = sum(
         1
@@ -1709,28 +1674,160 @@ def plot_competitor_analysis(
         color=[WIN_COLOR, LOSS_COLOR, NONE_COLOR],
     )
     ax.set_ylabel("mesh points")
-    ax.set_title(r"Summary (per-$\gamma$ counts)")
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=12, ha="right")
+    ax.set_title(r"Sweep: mesh points by outcome", fontsize=9)
+    for label in ax.get_xticklabels():
+        label.set_rotation(12)
+        label.set_ha("right")
 
-    r = payload.get("r", 1.0)
-    ref = payload.get("refined_window")
-    title = f"Competitor analysis  r={r}  N={len(pts)}"
-    if ref:
-        title += f"  refined [{ref.get('gamma_lo')}, {ref.get('gamma_hi')}]"
+
+def plot_competitor_analysis(
+    payload: dict[str, Any],
+    plot_path: Path,
+    *,
+    resolved_payload: Optional[dict[str, Any]] = None,
+    branches_only: bool = False,
+    allow_overwrite: bool = False,
+) -> Path:
+    """Unified sweep (+ optional resolve) dashboard. One PNG replaces old sweep + resolved pair."""
+    if branches_only and resolved_payload is None:
+        raise ValueError("branches_only requires resolved_payload from the resolve step")
+    plot_path = resolve_plot_output_path(plot_path, allow_overwrite=allow_overwrite)
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    pts = sorted(payload.get("points") or [], key=lambda p: float(p["gamma"]), reverse=True)
+    if not pts:
+        raise ValueError("no points to plot")
+    gamma, re_seed, min_gap, _fps = _per_point_competitor_series(pts)
+    resolved = resolved_payload
+    use_branches = branches_only or resolved is not None
+    branches = (resolved or {}).get("branches") or []
+    br_colors = _branch_color_map(branches) if use_branches else {}
+    n_comp_sheets = sum(1 for b in branches if not b.get("is_seed_sheet"))
+    n_cross = len((resolved or {}).get("crossing_certificates") or [])
+
+    n_comp = np.array([int(p.get("num_certified_competitors", 0) or 0) for p in pts])
+    n_cert = np.array([int(p.get("num_certified_roots", 0) or 0) for p in pts])
+
     if use_branches:
-        n_sheets = sum(1 for b in branches if not b.get("is_seed_sheet"))
+        fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), constrained_layout=True)
+        ax = axes[0, 0]
+        _plot_branch_curves_on_ax(
+            ax, branches, br_colors, y_key="DeltaRe_vs_seed", skip_seed=True, legend=True
+        )
+        ax.axhline(0.0, color="gray", ls="--", lw=0.8)
+        ax.set_xlabel(r"$\gamma$")
+        ax.set_ylabel(r"$\Delta\mathrm{Re}(\gamma)$")
+        ax.set_title(f"Resolve: ΔRe per sheet\n{EQ_DELTA_BRANCH}", fontsize=9)
+        ax.grid(True, alpha=0.25)
+
+        ax = axes[0, 1]
+        _plot_branch_curves_on_ax(
+            ax, branches, br_colors, y_key="Phi_eff_real", skip_seed=False, legend=True
+        )
+        ax.set_xlabel(r"$\gamma$")
+        ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
+        ax.set_title(EQ_PHI_ALL_SHEETS, fontsize=9)
+        ax.grid(True, alpha=0.25)
+
+        ax = axes[0, 2]
+        _plot_crossing_brackets_on_ax(ax, resolved, br_colors)
+
+        ax = axes[1, 0]
+        _plot_sweep_gap_scatter_on_ax(ax, gamma, min_gap, wall_only=False)
+
+        ax = axes[1, 1]
+        _plot_sweep_counts_on_ax(ax, gamma, n_comp, n_cert)
+
+        ax = axes[1, 2]
+        _plot_sweep_summary_bar_on_ax(ax, pts)
+
+        r = payload.get("r", 1.0)
+        ref = payload.get("refined_window")
+        title = f"Combined dashboard  r={r}  sweep N={len(pts)}"
+        if ref:
+            title += f"  dense [{ref.get('gamma_lo')}, {ref.get('gamma_hi')}]"
         subtitle = (
-            f"Branch colors = {n_sheets} tracked competitor sheet(s) after resolve "
-            f"(one color per branch_id). Bottom row: mesh discovery stats."
+            f"Top row: resolve ({n_comp_sheets} competitor sheets, {n_cross} crossing(s)). "
+            f"Bottom row: sweep mesh discovery."
         )
     else:
+        fig, axes = plt.subplots(2, 2, figsize=(11, 7.5), constrained_layout=True)
+        ax = axes[0, 0]
+        _plot_sweep_gap_scatter_on_ax(ax, gamma, min_gap, wall_only=False)
+
+        ax = axes[0, 1]
+        _plot_sweep_gap_scatter_on_ax(ax, gamma, min_gap, wall_only=True, payload=payload)
+
+        ax = axes[1, 0]
+        _plot_sweep_counts_on_ax(ax, gamma, n_comp, n_cert)
+
+        ax = axes[1, 1]
+        _plot_sweep_summary_bar_on_ax(ax, pts)
+
+        r = payload.get("r", 1.0)
+        ref = payload.get("refined_window")
+        title = f"Sweep dashboard  r={r}  N={len(pts)} mesh points"
+        if ref:
+            title += f"  dense [{ref.get('gamma_lo')}, {ref.get('gamma_hi')}]"
         subtitle = (
-            r"Per-$\gamma$ discovery only (green/red). Run resolve + pass resolved JSON "
-            "for branch colors, or open resolved_*.png."
+            r"Run resolve with --plot pointing here to upgrade this file "
+            r"to the combined 2×3 dashboard (no separate resolved_*.png needed)."
         )
+
     fig.suptitle(title + "\n" + subtitle, fontsize=10)
     plot_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(plot_path, dpi=160)
+    plt.close(fig)
+    return plot_path
+
+
+def _plot_resolve_only_dashboard(
+    resolved: dict[str, Any],
+    plot_path: Path,
+    *,
+    allow_overwrite: bool = False,
+) -> Path:
+    """Compact resolve-only figure when no sweep JSON is available."""
+    plot_path = resolve_plot_output_path(plot_path, allow_overwrite=allow_overwrite)
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    branches = resolved.get("branches") or []
+    br_colors = _branch_color_map(branches)
+    n_comp = sum(1 for b in branches if not b["is_seed_sheet"])
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.2), constrained_layout=True)
+
+    ax = axes[0]
+    _plot_branch_curves_on_ax(ax, branches, br_colors, y_key="DeltaRe_vs_seed", skip_seed=True)
+    ax.axhline(0.0, color="gray", ls="--", lw=0.8)
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel(r"$\Delta\mathrm{Re}(\gamma)$")
+    ax.set_title(f"ΔRe per sheet\n{EQ_DELTA_BRANCH}", fontsize=9)
+    ax.grid(True, alpha=0.25)
+
+    ax = axes[1]
+    _plot_branch_curves_on_ax(
+        ax, branches, br_colors, y_key="Phi_eff_real", skip_seed=False, label_max=20
+    )
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
+    ax.set_title(EQ_PHI_ALL_SHEETS, fontsize=9)
+    ax.grid(True, alpha=0.25)
+
+    ax = axes[2]
+    n_cross = _plot_crossing_brackets_on_ax(ax, resolved, br_colors)
+    fig.suptitle(
+        f"Resolve-only dashboard  r={resolved.get('r')}  "
+        f"{n_comp} competitor sheet(s)  {n_cross} crossing(s)",
+        fontsize=10,
+    )
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(plot_path, dpi=150)
     plt.close(fig)
     return plot_path
 
@@ -1750,7 +1847,10 @@ def plot_branch(
     gamma = np.array([p["gamma"] for p in pts])
     re_phi = np.array([p["Phi_eff_real"] for p in pts])
     im_phi = np.array([p["Phi_eff_imag"] for p in pts])
-    im_u = np.array([p.get("Phi_eff_im_unwrapped", p["Phi_eff_imag"]) for p in pts])
+    im_lifted = np.array(
+        [p.get("Phi_eff_im_lifted", p.get("Phi_eff_im_unwrapped", p["Phi_eff_imag"])) for p in pts]
+    )
+    im_pu = np.array([p.get("Phi_eff_im_principal_unwrap", p["Phi_eff_imag"]) for p in pts])
     delta = np.array([p["delta_lower"] for p in pts])
     kappa = np.array([p["krawczyk_contraction_bound"] for p in pts])
     has_gaps = any(p.get("min_certified_gap_re") is not None for p in pts)
@@ -1766,16 +1866,19 @@ def plot_branch(
         ax.plot(gamma, re_lead, "--", lw=1, alpha=0.7, label="leading Eq. (5.9)")
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
-    ax.set_title("Action (real)")
+    ax.set_title(r"Re $\Phi_{\mathrm{eff}}$ on certified seed branch (+ leading Eq. 5.9)")
     ax.legend(fontsize=7)
     ax.grid(True, alpha=0.3)
 
     ax = axes[0, 1]
-    ax.plot(gamma, im_phi, ".", ms=3, alpha=0.5, label="raw Im")
-    ax.plot(gamma, im_u, "o-", ms=3, lw=1, label="unwrapped")
+    ax.plot(gamma, im_phi, ".", ms=3, alpha=0.5, label="principal Im")
+    ax.plot(gamma, im_pu, "--", ms=3, lw=1, alpha=0.6, label="principal unwrap (diag.)")
+    ax.plot(gamma, im_lifted, "o-", ms=3, lw=1, label="ratio-lift Im")
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel(r"$\mathrm{Im}\,\Phi_{\mathrm{eff}}$")
-    ax.set_title("Action (imag)")
+    ax.set_title(
+        r"Im $\Phi_{\mathrm{eff}}$: certified $\log\Delta_\star$ ratio-lift vs principal branch"
+    )
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -1783,7 +1886,7 @@ def plot_branch(
     ax.semilogy(gamma, np.maximum(delta, 1e-300), "o-", ms=3, lw=1)
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel(r"$\delta_{\mathrm{lower}} = \inf|\Delta_\star|$")
-    ax.set_title("Divisor separation")
+    ax.set_title(r"Krawczyk: $\inf|\Delta_\star|$ lower bound on seed box")
     ax.grid(True, alpha=0.3)
 
     ax = axes[1, 1]
@@ -1791,7 +1894,7 @@ def plot_branch(
     ax.axhline(1.0, color="r", ls="--", lw=0.8, label="|I-YJ| = 1")
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel(r"$|I - YJ|$")
-    ax.set_title("Krawczyk contraction")
+    ax.set_title(r"Krawczyk contraction bound $|I-YJ|$ on seed box")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -1820,7 +1923,8 @@ def plot_branch(
         ax2.grid(True, alpha=0.3)
 
     stop = payload.get("stop")
-    title = f"w-saddle branch  r={payload['r']}"
+    g0, g1 = float(payload["gamma_mesh"][0]), float(payload["gamma_mesh"][-1])
+    title = f"Continue step: seed branch  r={payload['r']}  γ∈[{g0:.3g}, {g1:.3g}]  N={len(pts)}"
     if stop:
         title += f"  STOP @ γ={stop['gamma']:.4g} ({stop['code']})"
     fig.suptitle(title, fontsize=11)
@@ -1986,6 +2090,9 @@ class BranchPoint:
     ImPhi_interval: Optional[list[float]] = None
     action_width_real: Optional[float] = None
     log_branch_method: Optional[str] = None
+    log_Delta_lifted_real: Optional[float] = None
+    log_Delta_lifted_imag: Optional[float] = None
+    log_branch_step_certified: bool = True
     DeltaRe_interval_vs_seed: Optional[list[float]] = None
 
 
@@ -2067,7 +2174,12 @@ def extract_gamma_nodes(
         if not roots:
             continue
         seed_re = float(row.get("Phi_eff_real", 0.0))
-        seed_im = float(row.get("Phi_eff_imag", 0.0))
+        seed_im = float(
+            row.get(
+                "Phi_eff_im_lifted",
+                row.get("Phi_eff_im_unwrapped", row.get("Phi_eff_imag", 0.0)),
+            )
+        )
         seed_re_iv = [seed_re, seed_re]
         if row.get("action_interval_real"):
             seed_re_iv = list(row["action_interval_real"])
@@ -2099,6 +2211,50 @@ def extract_gamma_nodes(
             }
         )
     return out
+
+
+def _krawczyk_info_from_branch_point(pt: BranchPoint) -> dict[str, Any]:
+    info: dict[str, Any] = {"box_radius": float(pt.box_radius)}
+    if pt.log_branch_method:
+        info["log_branch_method"] = pt.log_branch_method
+    return info
+
+
+def _lifted_im_phi_for_branch_point(
+    br: CompetitorBranch,
+    node: dict[str, Any],
+    r: float,
+) -> tuple[float, complex, bool, str]:
+    """Ratio-lift Im Phi on a tracked competitor sheet."""
+    w_n = w_from_node(node)
+    sys_curr = WSaddleSystem(r=float(r), gamma=float(node["gamma"]))
+    info_curr = dict(node.get("krawczyk_info") or {})
+    info_curr.setdefault("box_radius", float(node["box_radius"]))
+    info_curr.setdefault("dps_used", int(info_curr.get("dps_used", 60)))
+
+    if not br.points:
+        log_lift = initial_log_delta_lift(w_n, beta=sys_curr.beta, p=sys_curr.p)
+        phi_lifted = phi_eff_with_lifted_log(sys_curr, w_n, log_lift)
+        return float(phi_lifted.imag), log_lift, True, "continuation_ratio_lift"
+
+    prev = br.points[-1]
+    w_prev = np.array(prev.w_real) + 1j * np.array(prev.w_imag)
+    sys_prev = WSaddleSystem(r=float(r), gamma=float(prev.gamma))
+    info_prev = _krawczyk_info_from_branch_point(prev)
+    info_prev.setdefault("dps_used", int(info_curr.get("dps_used", 60)))
+
+    if prev.log_Delta_lifted_real is not None and prev.log_Delta_lifted_imag is not None:
+        log_prev = complex(prev.log_Delta_lifted_real, prev.log_Delta_lifted_imag)
+    else:
+        log_prev = initial_log_delta_lift(w_prev, beta=sys_prev.beta, p=sys_prev.p)
+
+    step_ok, step_info = certify_log_delta_ratio_step(
+        sys_prev, w_prev, info_prev, sys_curr, w_n, info_curr
+    )
+    log_lift = log_prev + complex(step_info["log_ratio_real"], step_info["log_ratio_imag"])
+    phi_lifted = phi_eff_with_lifted_log(sys_curr, w_n, log_lift)
+    method = str(step_info.get("log_branch_method", "continuation_ratio_lift"))
+    return float(phi_lifted.imag), log_lift, bool(step_ok), method
 
 
 def _unwrap_im_on_branch(im_values: list[float]) -> list[float]:
@@ -2169,9 +2325,8 @@ def track_branches_from_nodes(
     def append_point(br: CompetitorBranch, sl: dict[str, Any], node: dict[str, Any]) -> BranchPoint:
         delta_re = float(sl["seed_Phi_real"]) - float(node["Phi_eff_real"])
         delta_im = float(unwrap_phase_diff(sl["seed_Phi_imag"], node["Phi_eff_imag"]))
-        prev_unwrapped = br.points[-1].Phi_eff_imag_unwrapped if br.points else float(node["Phi_eff_imag"])
-        im_unwrapped = float(unwrap_phase_diff(prev_unwrapped, float(node["Phi_eff_imag"]))) if br.points else float(
-            node["Phi_eff_imag"]
+        im_lifted, log_lift, step_ok, lift_method = _lifted_im_phi_for_branch_point(
+            br, node, float(sl["r"])
         )
 
         if node.get("is_seed_duplicate"):
@@ -2199,7 +2354,7 @@ def track_branches_from_nodes(
             w_imag=list(node["w_imag"]),
             Phi_eff_real=float(node["Phi_eff_real"]),
             Phi_eff_imag=float(node["Phi_eff_imag"]),
-            Phi_eff_imag_unwrapped=im_unwrapped,
+            Phi_eff_imag_unwrapped=im_lifted,
             box_radius=float(node["box_radius"]),
             delta_lower=float(node["delta_lower"]),
             status=status,
@@ -2214,7 +2369,10 @@ def track_branches_from_nodes(
             action_width_real=(
                 float(comp_re_iv[1] - comp_re_iv[0]) if comp_re_iv else None
             ),
-            log_branch_method=(node.get("krawczyk_info") or {}).get("log_branch_method"),
+            log_branch_method=lift_method,
+            log_Delta_lifted_real=float(log_lift.real),
+            log_Delta_lifted_imag=float(log_lift.imag),
+            log_branch_step_certified=bool(step_ok),
             DeltaRe_interval_vs_seed=delta_re_iv,
         )
 
@@ -2821,77 +2979,16 @@ def plot_branch_resolved_analysis(
     sweep_payload: Optional[dict[str, Any]] = None,
     allow_overwrite: bool = False,
 ) -> Path:
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    plot_path = resolve_plot_output_path(plot_path, allow_overwrite=allow_overwrite)
-    branches = resolved.get("branches") or []
-    n_comp = sum(1 for b in branches if not b["is_seed_sheet"])
-    br_colors = _branch_color_map(branches)
-
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8.5), constrained_layout=True)
-
-    ax = axes[0, 0]
-    _plot_branch_curves_on_ax(
-        ax, branches, br_colors, y_key="DeltaRe_vs_seed", skip_seed=True
-    )
-    ax.axhline(0, color="gray", ls="--", lw=0.8)
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel(r"$\Delta\mathrm{Re}(\gamma)$")
-    ax.set_title(f"Tracked sheets (same color in all panels)\n{EQ_DELTA_BRANCH}", fontsize=9)
-    ax.grid(True, alpha=0.25)
-
-    ax = axes[0, 1]
-    _plot_branch_curves_on_ax(
-        ax,
-        branches,
-        br_colors,
-        y_key="Phi_eff_imag_unwrapped",
-        skip_seed=True,
-    )
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel(r"$\mathrm{Im}\,\Phi_{\mathrm{eff}}$")
-    ax.set_title(r"$\mathrm{Im}\,\Phi_{\mathrm{eff}}$ (unwrapped per sheet)", fontsize=9)
-    ax.grid(True, alpha=0.25)
-
-    ax = axes[1, 0]
-    _plot_branch_curves_on_ax(
-        ax, branches, br_colors, y_key="Phi_eff_real", skip_seed=False, label_max=24
-    )
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel(r"$\mathrm{Re}\,\Phi_{\mathrm{eff}}$")
-    ax.set_title(f"{EQ_PHI_SEED} (dashed = seed sheet)", fontsize=9)
-    ax.grid(True, alpha=0.25)
-
-    ax = axes[1, 1]
-    for iv in resolved.get("crossing_certificates") or []:
-        if iv.get("suppressed_duplicate_same_sheet"):
-            continue
-        g0, g1 = iv["gamma_interval"]
-        bid = int(iv["crossing_branch_id"])
-        color = br_colors.get(bid, LOSS_COLOR)
-        ax.axvspan(
-            g1,
-            g0,
-            alpha=0.2,
-            color=color,
-            label=rf"branch {bid} " + r"$\Delta\mathrm{Re}$ crossing",
+    """Write the unified dashboard (same file as sweep analysis when sweep JSON is passed)."""
+    del show_diagnostic_best_competitor  # retained for CLI compatibility
+    if sweep_payload is not None:
+        return plot_competitor_analysis(
+            sweep_payload,
+            plot_path,
+            resolved_payload=resolved,
+            allow_overwrite=allow_overwrite,
         )
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_title(r"Krawczyk brackets where $\Delta\mathrm{Re}$ changes sign")
-    ax.legend(fontsize=6)
-    ax.grid(True, alpha=0.25)
-
-    fig.suptitle(
-        f"Branch-resolved competitors  r={resolved.get('r')}  "
-        f"branches={len(branches)}  competitor_sheets={n_comp}"
-        "\nEach branch_id keeps one color across panels (seed = blue dashed).",
-        fontsize=10,
+    return _plot_resolve_only_dashboard(
+        resolved, plot_path, allow_overwrite=allow_overwrite
     )
-    plot_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(plot_path, dpi=150)
-    plt.close(fig)
-    return plot_path
 

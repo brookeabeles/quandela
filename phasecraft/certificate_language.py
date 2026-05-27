@@ -63,7 +63,8 @@ ACTION_NUMERICAL_NOTE = (
 ACTION_INTERVAL_NOTE = (
     "An interval enclosure of Phi(w_*(gamma)) is obtained by evaluating Phi_eff "
     "over the certified box X_gamma with the log(Delta_star) branch fixed by "
-    "continuation along the mesh."
+    "certified ratio-lifts ell_{j+1} = ell_j + Log_principal(Delta(X_{j+1})/Delta(X_j)) "
+    "along the mesh, with each ratio step certified to avoid the negative real axis."
 )
 
 INTERVAL_LANGUAGE_FORBIDDEN = (

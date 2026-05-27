@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Data / outputs
+outputs/
+results/
+figures/
+plots/
+logs/
+*.log
+*.npy
+*.npz
+*.pkl
+*.h5
+
+# OS / editor
+.DS_Store
+.vscode/
+.cursor/
+.idea/
+
+# LaTeX junk
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc

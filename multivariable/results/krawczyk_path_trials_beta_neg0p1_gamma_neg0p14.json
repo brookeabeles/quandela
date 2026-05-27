@@ -1,0 +1,81 @@
+{
+  "target": {
+    "beta": -0.1,
+    "gamma": -0.14,
+    "r": 176.54
+  },
+  "results": [
+    {
+      "path_name": "gamma_then_beta",
+      "n_points": 121,
+      "y": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.3464375650804208, gamma=-0.14 with res=0.01728537723541361."
+      },
+      "E": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.3464375650804208, gamma=-0.14 with res=0.01728537723541361."
+      }
+    },
+    {
+      "path_name": "beta_then_gamma",
+      "n_points": 121,
+      "y": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-0.1, gamma=-0.018982186440677968 with res=0.00029280239807032485."
+      },
+      "E": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-0.1, gamma=-0.018982186440677968 with res=0.00029280239807032485."
+      }
+    },
+    {
+      "path_name": "straight_line",
+      "n_points": 140,
+      "y": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.5073087155663398, gamma=-0.006042208633093526 with res=0.0003404476016223989."
+      },
+      "E": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.5073087155663398, gamma=-0.006042208633093526 with res=0.0003404476016223989."
+      }
+    },
+    {
+      "path_name": "staged_shallow",
+      "n_points": 201,
+      "y": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.3660019015449743, gamma=-0.03 with res=0.00011843878836741019."
+      },
+      "E": {
+        "success": false,
+        "radius": null,
+        "residual_inf": null,
+        "rho_JT": null,
+        "note": "exception: Path continuation failed at beta=-1.3660019015449743, gamma=-0.03 with res=0.00011843878836741019."
+      }
+    }
+  ]
+}

@@ -26,9 +26,15 @@ from symmetry_reduction.core import (
     build_structure_matrix,
     compute_b_s,
     compute_c_alpha,
+    alpha_linear_coefficients,
     hessian_log_at_y,
+    hessian_F_at_y,
+    softmax_weights,
+    covariance_from_complex_weights,
 )
-from symmetry_reduction.saddle import saddle_with_adaptive_damping
+from symmetry_reduction.saddle import (
+    saddle_with_adaptive_damping,
+)
 from symmetry_reduction.spectral import determinant_ratio_probe, spectral_summary
 from symmetry_reduction.mechanisms import energy_by_block, block_norms, _popcount_array
 from symmetry_reduction.run_sweep import DEFAULT_BETA
@@ -36,19 +42,145 @@ from symmetry_reduction.run_sweep import DEFAULT_BETA
 OUT_DIR = Path(__file__).resolve().parent
 FIG_DIR = OUT_DIR / "figures"
 FIG_DIR.mkdir(exist_ok=True)
-RESULTS_CACHE = FIG_DIR / "direction2_sweep_results.pkl"
+RESULTS_CACHE = FIG_DIR / "direction2_complexCov_sweep_results.pkl"
+
+# Warmstart cache for the q>1 Newton solver (per p, betas, q, r).
+_NEWTON_WARMSTART: dict[tuple, tuple[float, np.ndarray]] = {}
+
+def compute_cov_block_structure(
+    p: int,
+    gamma: float,
+    betas: np.ndarray | None = None,
+    gammas: np.ndarray | None = None,
+    q: int = 1,
+    r: float = 1.0,
+) -> dict:
+    """
+    Compute the block structure of Cov_w(A) at the q=1 saddle.
+
+    This isolates the universal part of the Hessian independent of the coeff-weighting
+    (and empirically close to γ-independent for fixed (p,β,r)).
+
+    Returns dict with:
+      - "f_mm_cov": fractional block energy of Cov_w(A)
+      - "f_mm_H":   fractional block energy of full H_log = diag(√c)·Cov·diag(√c)
+      - "converged": bool
+      - "saddle_residual": float
+    """
+    if betas is None:
+        betas = np.full(p, DEFAULT_BETA, dtype=float)
+    if gammas is None:
+        gammas = np.full(p, float(gamma), dtype=float)
+
+    A = build_structure_matrix(p, q=q)
+    b_s = compute_b_s(p, betas)
+
+    c_alpha = compute_c_alpha(p, gammas, r=r)
+    y_star, converged, residual = saddle_with_adaptive_damping(A, b_s, c_alpha)
+
+    H_log = hessian_log_at_y(y_star, A, b_s, c_alpha)
+    _, f_mm_H = energy_by_block(H_log, p)
+
+    sqrt_c = np.sqrt(c_alpha + 0j)
+    w = softmax_weights(y_star, A, b_s, sqrt_c)
+    Cov = covariance_from_complex_weights(A, w)
+    _, f_mm_cov = energy_by_block(Cov, p)
+
+    return {
+        "f_mm_cov": f_mm_cov,
+        "f_mm_H": f_mm_H,
+        "converged": bool(converged),
+        "saddle_residual": float(residual),
+        "p": p,
+        "gamma": float(gamma),
+        "q": int(q),
+        "r": float(r),
+    }
 
 
-def _get_saddle_hessian(p: int, gamma: float, A=None, b_s=None):
+def _get_saddle_hessian(
+    p: int,
+    gamma: float,
+    A=None,
+    b_s=None,
+    betas: np.ndarray | None = None,
+    gammas: np.ndarray | None = None,
+    q: int = 1,
+    r: float = 1.0,
+):
+    """
+    Compute H_log at the BM24 saddle for a given (p, γ) and clause-arity parameter q (k = 2^q).
+
+    - A is built from build_structure_matrix(p, q) if not supplied.
+    - b_s uses layer-dependent betas if provided, otherwise a uniform DEFAULT_BETA.
+    - c_alpha uses layer-dependent gammas if provided, otherwise a uniform scalar γ.
+
+    The structure matrix uses the q-independent Eq. (A35); the q-dependence of 2^q-SAT
+    enters through the generalized multinomial exponent in the analytic theory, not A.
+
+    NOTE (q > 1): The returned Hessian is ∇²F (the log-partition Hessian),
+    not the full action Hessian ∇²Φ* from BM24 Eq. (15). For q > 1, ∇²Φ*
+    contains additional terms involving (∂_α F)^{2q-2} · ∇²F and higher-order
+    cross terms. These corrections share the same underlying covariance/block
+    structure (determined by A_{αs} and the softmax covariance), so the
+    qualitative (|α|,|α'|) energy distribution is typically preserved, but
+    magnitudes may differ.
+    """
     if A is None:
-        A = build_structure_matrix(p)
+        A = build_structure_matrix(p, q=q)
+    if betas is None:
+        betas = np.full(p, DEFAULT_BETA, dtype=float)
     if b_s is None:
-        b_s = compute_b_s(p, np.full(p, DEFAULT_BETA))
-    gammas = np.full(p, float(gamma))
-    c_alpha = compute_c_alpha(p, gammas)
-    y_star, converged, _ = saddle_with_adaptive_damping(A, b_s, c_alpha)
-    H = hessian_log_at_y(y_star, A, b_s, c_alpha)
-    return H, converged
+        b_s = compute_b_s(p, betas)
+    if gammas is None:
+        gammas = np.full(p, float(gamma), dtype=float)
+
+    # q-dependent setup (BM24 Proposition 1 / Eq. (16),(20)):
+    # coeff_α := r * (-c_phase_α)^{1/(2q)}
+    if q == 1:
+        # Backward-compatible path (Gaussian / quadratic case used elsewhere in repo)
+        c_alpha = compute_c_alpha(p, gammas, r=r)
+        y_star, converged, residual = saddle_with_adaptive_damping(A, b_s, c_alpha)
+        H = hessian_log_at_y(y_star, A, b_s, c_alpha)
+        return H, converged, residual
+
+    # q > 1: Newton solver in u-space with γ-homotopy.
+    # The fixed-point iteration (Eq. 20) cannot converge for large r because
+    # its Lipschitz constant scales as r^{2q-1} (≈10^11 for 8-SAT at r=176.54).
+    from symmetry_reduction.newton_saddle_q import solve_8sat_saddle
+    from symmetry_reduction.newton_saddle_q import active_indices_for_p
+
+    cache_key = (int(p), int(q), float(r), tuple(np.asarray(betas, dtype=float).round(12)))
+    u_init_active = None
+    gamma_start_override = None
+    if cache_key in _NEWTON_WARMSTART:
+        gamma_prev, u_prev = _NEWTON_WARMSTART[cache_key]
+        if float(gamma_prev) < float(gamma):
+            u_init_active = u_prev
+            gamma_start_override = float(gamma_prev)
+
+    y_star, coeff_alpha, converged, residual = solve_8sat_saddle(
+        p=p,
+        gamma_target=float(gamma),
+        betas=np.asarray(betas, dtype=float),
+        q=q,
+        r=float(r),
+        gamma_homotopy_factor=2.0,
+        gamma_max_steps=120,
+        target_residual=3e-3,
+        newton_max_iter=200,
+        u_init_active=u_init_active,
+        gamma_start_override=gamma_start_override,
+        max_newton_calls=200,
+        verbose=False,
+    )
+
+    if converged:
+        active_idx = active_indices_for_p(p)
+        _NEWTON_WARMSTART[cache_key] = (float(gamma), coeff_alpha[active_idx] * y_star[active_idx])
+
+    H = hessian_F_at_y(y_star, A, b_s, coeff_alpha)
+    return H, converged, residual
 
 
 def compute_block_structure(H: np.ndarray, p: int) -> dict:
@@ -82,9 +214,15 @@ def run_block_and_truncation(
     A=None,
     b_s=None,
     at_saddle: bool = True,
+    betas: np.ndarray | None = None,
+    gammas: np.ndarray | None = None,
+    q: int = 1,
+    r: float = 1.0,
 ) -> dict:
-    """Block structure and normal/complement truncation for one (p, γ)."""
-    H, converged = _get_saddle_hessian(p, gamma, A, b_s)
+    """Block structure and normal/complement truncation for one (p, γ, q, r, β⃗, γ⃗)."""
+    H, converged, residual = _get_saddle_hessian(
+        p, gamma, A, b_s, betas=betas, gammas=gammas, q=q, r=r
+    )
     n = 2 * p + 1
     if max_m is None:
         max_m = n
@@ -94,7 +232,10 @@ def run_block_and_truncation(
     results = {
         "p": p,
         "gamma": gamma,
+        "q": q,
+        "r": float(r),
         "converged": converged,
+        "saddle_residual": float(residual),
         **block_data,
         "normal": {},
         "complement": {},
@@ -147,7 +288,7 @@ def plot_block_heatmaps(
     axes[1].set_ylabel(r"$|\alpha|$")
     plt.colorbar(im1, ax=axes[1])
     plt.tight_layout()
-    path = out_dir / f"direction2_block_heatmap_p{p}_g{gamma:.3f}.png"
+    path = out_dir / f"direction2_block_heatmap_complexCov_p{p}_g{gamma:.3f}.png"
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
     paths.append(path)
@@ -182,7 +323,7 @@ def plot_truncation_comparison(
     ax1.grid(True, alpha=0.3)
     plt.tight_layout()
     if out_path is None:
-        out_path = FIG_DIR / f"direction2_truncation_comparison_p{p}_g{gamma:.3f}.png"
+        out_path = FIG_DIR / f"direction2_truncation_comparison_complexCov_p{p}_g{gamma:.3f}.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close()
     return out_path
@@ -271,7 +412,7 @@ def plot_block_heatmap_summary(
     fig.suptitle(r"Block fractional energy $f_{m,m'}$ — rows: p=2,3,4,5; $\gamma$ = $\pi/4$, $\pi/2$, $\pi$, $2\pi$", y=1.01)
     plt.tight_layout(rect=[0, 0, 0.92, 0.98])
     if out_path is None:
-        out_path = FIG_DIR / "direction2_block_heatmap_summary.png"
+        out_path = FIG_DIR / "direction2_block_heatmap_summary_complexCov.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close()
     return out_path
@@ -313,7 +454,7 @@ def plot_truncation_summary(
     ax1.grid(True, alpha=0.3)
     plt.tight_layout()
     if out_path is None:
-        out_path = FIG_DIR / "direction2_truncation_summary.png"
+        out_path = FIG_DIR / "direction2_truncation_summary_complexCov.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close()
     return out_path

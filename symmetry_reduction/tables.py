@@ -9,7 +9,10 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
 def load_p_data(p: int, saddle: bool = False) -> dict | None:
-    path = DATA_DIR / f"spectral_data_p{p}_{'saddle' if saddle else 'y0'}.npz"
+    suffix = "saddle" if saddle else "y0"
+    path_trackA = DATA_DIR / f"spectral_data_p{p}_complexCov_{suffix}.npz"
+    path_legacy = DATA_DIR / f"spectral_data_p{p}_{suffix}.npz"
+    path = path_trackA if path_trackA.exists() else path_legacy
     if not path.exists():
         return None
     return dict(np.load(path, allow_pickle=True))

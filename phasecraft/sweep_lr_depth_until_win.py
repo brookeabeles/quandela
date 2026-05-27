@@ -21,6 +21,15 @@ Example (notebook-like test window)::
       --n-min 18 --n-max 21 --k 8 --r 176.54 \\
       --test-size 100 --seed 27 \\
       --stop-criterion scaling-exponent
+
+Eval-only (angles already trained; no retraining)::
+
+    # Angles from notebook JSON trace and/or lr_train_optimal_angles.txt
+    python phasecraft/sweep_lr_depth_until_win.py \\
+      --skip-train \\
+      --angles-json phasecraft/bm24_runs/05-26_1944-efficient-scaling.json \\
+      --depth-min 2 --depth-max 10 \\
+      --n-min 12 --n-max 20 --test-size 200 --seed 27
 """
 
 from __future__ import annotations
@@ -44,27 +53,91 @@ from bm24_qaoa_sim import (  # noqa: E402
     summarize_benchmark_scaling,
 )
 from bm24_run_io import format_benchmark_title, make_run_stem  # noqa: E402
+import numpy as np  # noqa: E402
+
 from train_lr_notebook_protocol import (  # noqa: E402
+    _benchmark_cli_snippet,
+    append_optimal_angles_log,
     generate_training_h_diagonals,
+    generate_training_h_diagonals_multi_n,
+    proxy_n_values_for_training,
     train_lr_grid_search_bm24,
 )
 
 
+def _parse_angle_block(block: str) -> Tuple[int, float, float] | None:
+    """Extract (depth, delta_gamma, delta_beta) from one log record block."""
+    m_depth = re.search(r'"depth"\s*:\s*(\d+)', block)
+    m_dg = re.search(
+        r"delta_gamma(?:\s*\([^)]*\))?\s*[=:]\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
+        block,
+    )
+    m_db = re.search(
+        r"delta_beta(?:\s*\([^)]*\))?\s*[=:]\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
+        block,
+    )
+    if m_depth and m_dg and m_db:
+        return int(m_depth.group(1)), float(m_dg.group(1)), float(m_db.group(1))
+    return None
+
+
 def _parse_angle_log(path: Path) -> Dict[int, Tuple[float, float]]:
-    """Return latest (delta_gamma, delta_beta) per depth from training log."""
+    """
+    Return latest (delta_gamma, delta_beta) per depth from training log.
+
+    Supports legacy ``---`` blocks (``delta_gamma: ...``) and v2 appends
+    (``# timestamp`` blocks with ``delta_gamma = ...``).
+    """
     if not path.is_file():
         return {}
     text = path.read_text(encoding="utf-8")
-    blocks = text.split("-" * 78)
+    blocks = re.split(r"(?:\n-{10,}\n|\n(?=# \d{4}-\d{2}-\d{2}))", text)
     out: Dict[int, Tuple[float, float]] = {}
     for block in blocks:
-        m_depth = re.search(r'"depth":\s*(\d+)', block)
-        m_dg = re.search(r"delta_gamma.*:\s*([+-]?\d+\.?\d*(?:e[+-]?\d+)?)", block)
-        m_db = re.search(r"delta_beta.*:\s*([+-]?\d+\.?\d*(?:e[+-]?\d+)?)", block)
-        if m_depth and m_dg and m_db:
-            p = int(m_depth.group(1))
-            out[p] = (float(m_dg.group(1)), float(m_db.group(1)))
+        parsed = _parse_angle_block(block)
+        if parsed is not None:
+            p, dg, db = parsed
+            out[p] = (dg, db)
     return out
+
+
+def _parse_angles_json(path: Path) -> Dict[int, Tuple[float, float]]:
+    """Load (delta_gamma, delta_beta) per depth from an efficient-scaling JSON trace."""
+    if not path.is_file():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        payload = json.load(f)
+    trace = payload.get("trace", payload)
+    if not isinstance(trace, list):
+        return {}
+    out: Dict[int, Tuple[float, float]] = {}
+    for row in trace:
+        if not isinstance(row, dict):
+            continue
+        if "depth" not in row or "delta_gamma" not in row or "delta_beta" not in row:
+            continue
+        out[int(row["depth"])] = (float(row["delta_gamma"]), float(row["delta_beta"]))
+    return out
+
+
+def load_cached_angles(
+    angle_log: Path,
+    angles_json: Path | None = None,
+    *,
+    json_overrides_log: bool = False,
+) -> Dict[int, Tuple[float, float]]:
+    """
+    Merge angle log + optional efficient-scaling JSON trace.
+
+    Default: **angle log wins** on duplicate depths; JSON only supplies depths
+    missing from the log (e.g. a notebook run you have not re-logged yet).
+    Set ``json_overrides_log=True`` for the opposite priority.
+    """
+    from_log = _parse_angle_log(angle_log)
+    from_json = _parse_angles_json(angles_json) if angles_json is not None else {}
+    if json_overrides_log:
+        return {**from_log, **from_json}
+    return {**from_json, **from_log}
 
 
 def _print_scaling(sc: dict) -> None:
@@ -187,9 +260,44 @@ def main() -> None:
     p.add_argument("--train-size", type=int, default=50)
     p.add_argument("--skip-grid", action="store_true")
     p.add_argument("--skip-train", action="store_true",
-                   help="Only use angles from --angle-log (skip depths missing there).")
+                   help="Benchmark only: load (dg, db) from --angle-log / --angles-json.")
     p.add_argument("--angle-log", type=str,
                    default=str(_SCRIPT_DIR / "bm24_runs" / "lr_train_optimal_angles.txt"))
+    p.add_argument(
+        "--angles-json",
+        type=str,
+        default=None,
+        help="Optional efficient-scaling JSON; fills depths missing from --angle-log "
+        "(log wins on duplicate depths unless --angles-json-overrides-log).",
+    )
+    p.add_argument(
+        "--angles-json-overrides-log",
+        action="store_true",
+        help="On duplicate depth, prefer --angles-json over --angle-log (old behavior).",
+    )
+    p.add_argument(
+        "--legacy-objective",
+        action="store_true",
+        help="Train with legacy mean-p @ train_n only (not v2 slope objective).",
+    )
+    p.add_argument("--proxy-size-per-n", type=int, default=30,
+                   help="v2: instances per proxy n (notebook often 30–50).")
+    p.add_argument("--proxy-n-span", type=int, default=4,
+                   help="v2: span in n from train_n (step 2 -> [12,14,16] when train_n=12).")
+    p.add_argument("--proxy-n-step", type=int, default=2)
+    p.add_argument("--cobyla-restarts", type=int, default=8)
+    p.add_argument("--cobyla-perturb-scale", type=float, default=0.2)
+    p.add_argument("--grid-top-k", type=int, default=5)
+    p.add_argument(
+        "--skip-grid-if-warm-start",
+        action="store_true",
+        help="v2: skip 11x11 grid when warm-starting from previous depth (risky at high p).",
+    )
+    p.add_argument(
+        "--no-angle-log",
+        action="store_true",
+        help="Do not append trained angles to --angle-log after each depth.",
+    )
     p.add_argument("--lr-beta-schedule", default="decreasing", choices=["decreasing", "increasing"])
     p.add_argument("--plot-equiv-flips-per-shot", type=float, default=1.0)
     p.add_argument(
@@ -271,7 +379,27 @@ def main() -> None:
 
     out_dir = Path(args.output_dir).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    cached = _parse_angle_log(Path(args.angle_log))
+    angle_log_path = Path(args.angle_log)
+    angles_json_path = Path(args.angles_json).expanduser() if args.angles_json else None
+    cached = load_cached_angles(
+        angle_log_path,
+        angles_json_path,
+        json_overrides_log=bool(args.angles_json_overrides_log),
+    )
+    if args.skip_train:
+        src = [str(angle_log_path)]
+        if angles_json_path is not None:
+            src.append(str(angles_json_path))
+        merge_note = (
+            "JSON overrides log on conflicts"
+            if args.angles_json_overrides_log
+            else "log overrides JSON on conflicts"
+        )
+        print(f"Eval-only mode: cached angles from {', '.join(src)} ({merge_note})")
+        if cached:
+            print(f"  depths available: {sorted(cached.keys())}")
+        else:
+            print("  warning: no angles loaded")
     sweep_log = out_dir / "depth_sweep_until_win.jsonl"
     run_stem = make_run_stem("sweep-scaling")
     sweep_t0 = time.time()
@@ -289,6 +417,43 @@ def main() -> None:
     exponent_trace: List[dict] = []
     stop_depth: int | None = None
 
+    # --- Training data built once per sweep (v2 or legacy) ---
+    training_h: List | None = None
+    proxy_h: Dict[int, List] | None = None
+    proxy_ns: List[int] = []
+    prev_deltas: Tuple[float, float] | None = None
+    if not args.skip_train:
+        print(
+            f"Building training set at n={args.train_n}: "
+            f"size={args.train_size}, seed={args.seed}"
+        )
+        training_h = generate_training_h_diagonals(
+            train_n=args.train_n, k=args.k, r=args.r,
+            train_size=args.train_size, base_seed=args.seed,
+            m_sampling="notebook",
+        )
+        if args.legacy_objective:
+            print("  objective: legacy (maximize mean p_succ @ train_n)")
+        else:
+            proxy_ns = proxy_n_values_for_training(
+                args.train_n,
+                proxy_n_span=int(args.proxy_n_span),
+                n_max_cap=int(args.n_max),
+                step=int(args.proxy_n_step),
+            )
+            print(
+                f"  objective: v2 slope of ln(median 1/p); proxy n in {proxy_ns}, "
+                f"{args.proxy_size_per_n} instances/n"
+            )
+            proxy_h = generate_training_h_diagonals_multi_n(
+                proxy_ns,
+                k=args.k,
+                r=args.r,
+                train_size_per_n=int(args.proxy_size_per_n),
+                base_seed=int(args.seed) + 77,
+                m_sampling="notebook",
+            )
+
     def _write_final_outputs(stopped_early: bool) -> tuple[Path, Path | None]:
         payload = {
             "run_stem": run_stem,
@@ -303,6 +468,13 @@ def main() -> None:
                 "seed": args.seed,
                 "train_n": args.train_n,
                 "train_size": args.train_size,
+                "legacy_objective": bool(args.legacy_objective),
+                "proxy_size_per_n": int(args.proxy_size_per_n),
+                "proxy_n_span": int(args.proxy_n_span),
+                "proxy_n_step": int(args.proxy_n_step),
+                "cobyla_maxiter": int(args.cobyla_maxiter),
+                "cobyla_restarts": int(args.cobyla_restarts),
+                "skip_grid_if_warm_start": bool(args.skip_grid_if_warm_start),
                 "stop_criterion": args.stop_criterion,
                 "win_mode": args.win_mode,
                 "plot_equiv_flips_per_shot": args.plot_equiv_flips_per_shot,
@@ -342,25 +514,90 @@ def main() -> None:
 
         if args.skip_train:
             if depth not in cached:
-                print(f"  skip: no angles in {args.angle_log} for depth={depth}")
+                print(
+                    f"  skip: no cached angles for depth={depth} "
+                    f"(check --angle-log and --angles-json)"
+                )
                 continue
             dg, db = cached[depth]
             print(f"  using cached angles: dg={dg:.6f}, db={db:.6f}")
         else:
-            print("  training LR angles (notebook protocol, BM24 simulator)...")
-            training_h = generate_training_h_diagonals(
-                train_n=args.train_n, k=args.k, r=args.r,
-                train_size=args.train_size, base_seed=args.seed,
-                m_sampling="notebook",
+            assert training_h is not None
+            if args.legacy_objective:
+                from train_lr_notebook_protocol_legacy import (  # noqa: E402
+                    train_lr_grid_search_bm24 as train_lr_legacy,
+                )
+                print("  training LR angles (legacy mean-p @ train_n)...")
+                params, diag = train_lr_legacy(
+                    training_h, train_n=args.train_n, depth=depth,
+                    skip_grid=args.skip_grid,
+                    beta_schedule=args.lr_beta_schedule,
+                    cobyla_maxiter=args.cobyla_maxiter,
+                )
+            else:
+                print("  training LR angles (v2 slope objective, BM24 simulator)...")
+                params, diag = train_lr_grid_search_bm24(
+                    training_h,
+                    train_n=args.train_n,
+                    depth=depth,
+                    skip_grid=args.skip_grid,
+                    initial_deltas=prev_deltas,
+                    skip_grid_if_warm_start=bool(args.skip_grid_if_warm_start),
+                    beta_schedule=args.lr_beta_schedule,
+                    cobyla_maxiter=args.cobyla_maxiter,
+                    cobyla_restarts=int(args.cobyla_restarts),
+                    cobyla_perturb_scale=float(args.cobyla_perturb_scale),
+                    grid_top_k=int(args.grid_top_k),
+                    proxy_h_by_n=proxy_h,
+                    proxy_n_values=proxy_ns if proxy_h else None,
+                    rng=np.random.default_rng(int(args.seed) + 1000 + depth),
+                )
+            dg, db = float(diag["best_deltas"][0]), float(diag["best_deltas"][1])
+            prev_deltas = (dg, db)
+            print(
+                f"  trained: dg={dg:.6f}, db={db:.6f}  "
+                f"train_score={diag.get('best_train_slope_log2', diag.get('best_avg_train_p_succ'))}"
             )
-            _, diag = train_lr_grid_search_bm24(
-                training_h, train_n=args.train_n, depth=depth,
-                skip_grid=args.skip_grid,
-                beta_schedule=args.lr_beta_schedule,
-                cobyla_maxiter=args.cobyla_maxiter,
-            )
-            dg, db = diag["best_deltas"]
-            print(f"  trained: dg={dg:.6f}, db={db:.6f}, train_p_succ={diag['best_avg_train_p_succ']:.6e}")
+            if not args.no_angle_log:
+                from datetime import datetime
+                from bm24_qaoa_sim import make_lr_angles  # noqa: E402
+                betas, gammas = make_lr_angles(
+                    dg, db, depth,
+                    beta_schedule=str(args.lr_beta_schedule),
+                    angle_convention="bm24",
+                )
+                settings = {
+                    "train_n": args.train_n,
+                    "train_size": args.train_size,
+                    "k": args.k,
+                    "r": args.r,
+                    "depth": depth,
+                    "seed": args.seed,
+                    "legacy_objective": bool(args.legacy_objective),
+                    "proxy_n_values": proxy_ns if not args.legacy_objective else None,
+                    "proxy_size_per_n": int(args.proxy_size_per_n),
+                    "objective": (
+                        "legacy-mean-p-train-n"
+                        if args.legacy_objective
+                        else "v2-slope-of-log-median-inv-p"
+                    ),
+                }
+                append_optimal_angles_log(
+                    angle_log_path,
+                    timestamp=datetime.now().isoformat(timespec="seconds"),
+                    settings=settings,
+                    dg=dg,
+                    db=db,
+                    betas=betas,
+                    gammas=gammas,
+                    best_avg_train_p_succ=float(diag.get("best_avg_train_p_succ", 0.0)),
+                    benchmark_cmd=_benchmark_cli_snippet(
+                        args.train_n, args.n_max, args.k, args.r,
+                        dg, db, depth, args.test_size, args.seed,
+                        args.lr_beta_schedule,
+                    ),
+                )
+                print(f"  appended angles to {angle_log_path}")
 
         if depth == 1 and args.lr_beta_schedule == "decreasing" and abs(db) > 0:
             print("  warning: db has no effect at p=1 with decreasing schedule (beta[0]=0).")
@@ -409,6 +646,13 @@ def main() -> None:
 
         exponent_trace.append({
             "depth": depth,
+            "delta_gamma": dg,
+            "delta_beta": db,
+            "training_objective": (
+                "legacy-mean-p-train-n"
+                if args.legacy_objective
+                else "v2-slope-of-log-median-inv-p"
+            ),
             "lr_log2_slope": scaling["lr_qaoa"]["median_runtime_slope_log2"],
             "walksat_log2_slope": scaling["walksat"]["median_flips_slope_log2"],
             "walksatlm_log2_slope": scaling["walksatlm"]["median_flips_slope_log2"],

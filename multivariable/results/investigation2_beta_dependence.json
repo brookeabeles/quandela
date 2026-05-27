@@ -1,0 +1,41 @@
+[
+  {
+    "p": 3,
+    "r": 176.54,
+    "beta_label": "uniform_pi4",
+    "betas": [
+      0.7853981633974483,
+      0.7853981633974483,
+      0.7853981633974483
+    ],
+    "max_diff": 16.85644481930626,
+    "bifurcation_gamma": 0.15512562814070355,
+    "status": "BIFURCATION at gamma=0.1551 (diff=16.856)"
+  },
+  {
+    "p": 3,
+    "r": 176.54,
+    "beta_label": "TQA",
+    "betas": [
+      -1.57,
+      -1.04,
+      -0.52
+    ],
+    "max_diff": 60.34741268119646,
+    "bifurcation_gamma": 0.18663316582914574,
+    "status": "BIFURCATION at gamma=0.1866 (diff=60.347)"
+  },
+  {
+    "p": 3,
+    "r": 176.54,
+    "beta_label": "uniform_neg_pi2",
+    "betas": [
+      -1.5707963267948966,
+      -1.5707963267948966,
+      -1.5707963267948966
+    ],
+    "max_diff": 4.879985304739876e-13,
+    "bifurcation_gamma": 0.04150753768844222,
+    "status": "CLEAN"
+  }
+]

@@ -7,7 +7,7 @@ near-Stokes conditions, and produces a heuristic contribution ranking.
 
 RIGOUR CAVEAT
 -------------
-* Phi computation: exact (same formulas as generalized_binomial_sum.py).
+* Phi computation: exact (same formulas as generalized_binomial_sum.PATCHED.py).
 * Conjugate-pair detection: exact up to numerical tolerance.
 * Stokes-condition detection: exact for the pair-wise Im(Phi) difference;
   the branch offset check is heuristic (mod 2*pi).
@@ -43,8 +43,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from phasecraft.generalized_binomial_sum import (
+from phasecraft.krawczyk_p1_roots import (
     B,
+    SaddleSystem,
     parent_function_alpha_sum_sos,
     parent_function_s_sum_sos,
 )
@@ -64,7 +65,7 @@ def compute_phi(
     """Compute the action Phi at a saddle point z.
 
     Uses the identical formulas as
-    ``generalized_binomial_sum_scaling_exponent_ksat`` so there is no
+    ``generalized_binomial_sum_scaling_exponent_ksat`` (PATCHED) so there is no
     possibility of formula drift.
 
     Parameters
@@ -83,26 +84,11 @@ def compute_phi(
     Phi as a complex number.
         Phi = F - (1 - 2^{-q}) * sum_s z_s * dF_s
     """
-    p = len(betas)
-    all_s = np.arange(2 ** (2 * p + 1))
-    b = 0.5 * B(np.array(betas, dtype=float), all_s)
-    prod_elts = np.concatenate(
-        (
-            np.exp(0.5j * np.array(gammas)) - 1.0,
-            [(-1.0)],
-            np.exp(-0.5j * np.array(gammas)[::-1]) - 1.0,
-        )
-    )
-    c = r * np.prod(
-        [prod_elts[j] * ((all_s >> j) & 1) + 1.0 * ((~all_s >> j) & 1) for j in range(2 * p + 1)],
-        axis=0,
-    )
-    c_root = (-c) ** (1.0 / (2 ** q))
-
-    s_vec = np.exp(parent_function_alpha_sum_sos(0.5 * c_root * z))
-    log_arg = np.sum(b * s_vec)
+    sys = SaddleSystem.build(q=q, r=r, betas=np.array(betas, dtype=float), gammas=np.array(gammas, dtype=float))
+    s_vec = np.exp(parent_function_alpha_sum_sos(0.5 * sys.c_root * z))
+    log_arg = np.sum(sys.b * s_vec)
     F = np.log(log_arg)
-    dF = c_root * parent_function_s_sum_sos(0.5 * b * s_vec) / log_arg
+    dF = sys.c_root * parent_function_s_sum_sos(0.5 * sys.b * s_vec) / log_arg
     phi = F - (1.0 - 2.0 ** (-q)) * np.sum(z * dF)
     return complex(phi)
 

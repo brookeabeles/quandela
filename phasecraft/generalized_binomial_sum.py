@@ -83,7 +83,8 @@ def generalized_binomial_sum_scaling_exponent_ksat(q, r, betas, gammas, num_iter
     p = len(gammas)
     all_s = np.arange(2 ** (2 * p + 1))
     b = 0.5 * B(betas, all_s)
-    prod_elts = np.concatenate((np.exp(0.5j * gammas) - 1, [(-1)], np.exp(-0.5j * gammas[::-1]) - 1))
+    # BM24 Eq. (A34): exp(-i gamma_j/2) for j < p, exp(+i gamma_{2p-j}/2) for j > p.
+    prod_elts = np.concatenate((np.exp(-0.5j * gammas) - 1, [(-1)], np.exp(0.5j * gammas[::-1]) - 1))
     c = r * np.product([prod_elts[j] * ((all_s >> j) & 1) + 1 * ((~all_s >> j) & 1) for j in range(2 * p + 1)], axis=0)
     c_root = (-c) ** (1 / 2 ** q)
     def F_dF(z):
@@ -142,6 +143,6 @@ def generalized_binomial_sum_random_pow2_sat_data(r, betas, gammas):
     all_s = np.arange(2 ** (2 * p + 1))
     A = 0.5 * (((all_J[:, None] & all_s[None, :]) == all_J[:, None]) | ((all_J[:, None] & ~all_s[None, :]) == all_J[:, None]))
     b = 0.5 * B(betas, all_s)
-    prod_elts = np.concatenate((np.exp(0.5j * gammas) - 1, [(-1)], np.exp(-0.5j * gammas[::-1]) - 1))
+    prod_elts = np.concatenate((np.exp(-0.5j * gammas) - 1, [(-1)], np.exp(0.5j * gammas[::-1]) - 1))
     c = r * np.product([prod_elts[j] * ((all_s >> j) & 1) + 1 * ((~all_s >> j) & 1) for j in range(2 * p + 1)], axis=0)
     return A, b, c

@@ -14,7 +14,9 @@ def load_k99_vs_p(p_values, saddle=False):
     suffix = "_saddle" if saddle else "_y0"
     all_data = {}
     for p in p_values:
-        path = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+        path_trackA = DATA_DIR / f"spectral_data_p{p}_complexCov{suffix}.npz"
+        path_legacy = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+        path = path_trackA if path_trackA.exists() else path_legacy
         if path.exists():
             d = np.load(path)
             all_data[p] = {"gamma_values": d["gamma_values"], "k99": d["k99"]}
@@ -30,7 +32,9 @@ def load_stable_rank_vs_p(p_values, saddle: bool = False):
     suffix = "_saddle" if saddle else "_y0"
     all_data = {}
     for p in p_values:
-        path = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+        path_trackA = DATA_DIR / f"spectral_data_p{p}_complexCov{suffix}.npz"
+        path_legacy = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+        path = path_trackA if path_trackA.exists() else path_legacy
         if path.exists():
             d = np.load(path)
             all_data[p] = {"gamma_values": d["gamma_values"], "stable_rank": d["stable_rank"]}

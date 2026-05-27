@@ -1,0 +1,98 @@
+{
+  "case": "continuation_vs_fixedpoint_threshold_scan",
+  "p": 3,
+  "r": 176.54,
+  "betas": [
+    0.7853981633974483,
+    0.7853981633974483,
+    0.7853981633974483
+  ],
+  "gamma_min": 0.01,
+  "gamma_max": 6.283185307179586,
+  "n_steps": 1000,
+  "diff_thresh": 0.01,
+  "scan": {
+    "index": 5,
+    "gamma_first_exceed": 0.04139732385975769,
+    "diff_first_exceed": 1.907772862068687,
+    "gamma_lo": 0.03511785908780615,
+    "gamma_hi": 0.04139732385975769
+  },
+  "trace": [
+    {
+      "i": 0,
+      "gamma": 0.01,
+      "diff": 0.0,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 6.200585139144249e-13,
+      "res_fp": 6.200585139144249e-13
+    },
+    {
+      "i": 1,
+      "gamma": 0.016279464771951538,
+      "diff": 2.0663641117712933e-13,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 7.206901670646787e-13,
+      "res_fp": 9.630439664567671e-13
+    },
+    {
+      "i": 2,
+      "gamma": 0.022558929543903074,
+      "diff": 2.2288448230486295e-13,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 9.895823353606515e-13,
+      "res_fp": 8.843861998999088e-13
+    },
+    {
+      "i": 3,
+      "gamma": 0.028838394315854617,
+      "diff": 4.078257812607478e-13,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 9.036971277198381e-13,
+      "res_fp": 8.70331467739775e-13
+    },
+    {
+      "i": 4,
+      "gamma": 0.03511785908780615,
+      "diff": 1.4177805178415375e-12,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 9.064572858191686e-13,
+      "res_fp": 9.141741154620678e-13
+    },
+    {
+      "i": 5,
+      "gamma": 0.04139732385975769,
+      "diff": 1.907772862068687,
+      "conv_cont": true,
+      "conv_fp": true,
+      "res_cont": 9.766255597866443e-13,
+      "res_fp": 8.8258518492242e-13
+    }
+  ],
+  "bisection": {
+    "gamma_cross_est": 0.03932192702503372,
+    "diff_cross": 1.844150421121974,
+    "min_abs_eig_psi_double_cont": 0.3631213959388747,
+    "min_abs_eig_psi_double_fp": 0.46754218975819056
+  },
+  "endpoints_at_gamma_max": {
+    "gamma": 6.283185307179586,
+    "diff_end": 5.268674385661143e-12,
+    "re_psi_cont": 2.5934809855222977e-13,
+    "re_psi_fp": 1.0302869668513955e-13,
+    "conv_cont_end": true,
+    "conv_fp_end": true,
+    "res_cont_end": 8.988365607365267e-13,
+    "res_fp_end": 6.146194664324867e-13
+  },
+  "notes": [
+    "Continuation uses warmstarted fixed-point iteration (q=1).",
+    "Fixed point uses y=0 restart at each gamma.",
+    "Eigenvalues are of Psi'' = -I/2 + H_log."
+  ]
+}

@@ -9,7 +9,7 @@ from .core import (
     build_structure_matrix,
     compute_b_s,
     compute_c_alpha,
-    covariance_from_weights,
+    covariance_from_complex_weights,
     hessian_log_at_y,
     softmax_weights,
     weights_at_zero,
@@ -102,7 +102,7 @@ def run_single_p_gamma(
 
     w0 = weights_at_zero(b_s)
     y0 = np.zeros(d, dtype=complex)
-    Cov0 = covariance_from_weights(A, w0)
+    Cov0 = covariance_from_complex_weights(A, w0)
     sigmas_cov0 = np.linalg.svd(Cov0, compute_uv=False)
     cum_cov0 = np.cumsum(sigmas_cov0**2) / (np.sum(sigmas_cov0**2) + 1e-30)
     k99_cov0 = int(np.searchsorted(cum_cov0, 0.99) + 1) if len(cum_cov0) else 0
@@ -143,7 +143,7 @@ def run_single_p_gamma(
     if run_saddle:
         y_star, converged, residual = saddle_with_adaptive_damping(A, b_s, c_alpha)
         w_star = softmax_weights(y_star, A, b_s, np.sqrt(c_alpha + 0j))
-        Cov_star = covariance_from_weights(A, w_star)
+        Cov_star = covariance_from_complex_weights(A, w_star)
         sigmas_cov_s = np.linalg.svd(Cov_star, compute_uv=False)
         cum_cov_s = np.cumsum(sigmas_cov_s**2) / (np.sum(sigmas_cov_s**2) + 1e-30)
         k99_cov_s = int(np.searchsorted(cum_cov_s, 0.99) + 1) if len(cum_cov_s) else 0
@@ -324,8 +324,12 @@ def run_probe1_saddle_determinant_ratio(
 
 
 def save_npz(results_y0: dict, results_saddle: dict | None, p: int, suffix: str = ""):
-    """Save to spectral_data_p{p}_y0.npz and spectral_data_p{p}_saddle.npz."""
-    base = DATA_DIR / f"spectral_data_p{p}{suffix}"
+    """Save complex-softmax (proof-object) results to NPZ files.
+
+    Files are named with `_complexCov` to distinguish from any realified-weight
+    (interpretive proxy) analyses.
+    """
+    base = DATA_DIR / f"spectral_data_p{p}{suffix}_complexCov"
     np.savez_compressed(
         base.with_name(base.name + "_y0.npz"),
         gamma_values=results_y0["gamma_values"],

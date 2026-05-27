@@ -1,0 +1,73 @@
+{
+  "p": 3,
+  "r": 176.54,
+  "gamma": 0.041,
+  "norm_diff": 3.752517922786858,
+  "max_abs_diff": 1.8958406818881213,
+  "by_subset_size": [
+    {
+      "subset_size": 0,
+      "count": 1,
+      "max_abs_diff": 9.046364108695441e-17,
+      "mean_abs_diff": 9.046364108695441e-17,
+      "max_abs_y_cont": 13.286835590162163,
+      "max_abs_y_fp": 13.286835590162163
+    },
+    {
+      "subset_size": 1,
+      "count": 7,
+      "max_abs_diff": 2.220446049250313e-16,
+      "mean_abs_diff": 1.0808535083743548e-16,
+      "max_abs_y_cont": 13.286835590162163,
+      "max_abs_y_fp": 13.286835590162163
+    },
+    {
+      "subset_size": 2,
+      "count": 21,
+      "max_abs_diff": 1.8958406818881213,
+      "mean_abs_diff": 0.5228644634436425,
+      "max_abs_y_cont": 1.534820063775527,
+      "max_abs_y_fp": 2.232181147104233
+    },
+    {
+      "subset_size": 3,
+      "count": 35,
+      "max_abs_diff": 0.3003011263741971,
+      "mean_abs_diff": 0.0922999531399759,
+      "max_abs_y_cont": 0.18561779430491612,
+      "max_abs_y_fp": 0.38162640327905895
+    },
+    {
+      "subset_size": 4,
+      "count": 35,
+      "max_abs_diff": 0.044895290124514896,
+      "mean_abs_diff": 0.016025723825316435,
+      "max_abs_y_cont": 0.011247741909495792,
+      "max_abs_y_fp": 0.05113593134357334
+    },
+    {
+      "subset_size": 5,
+      "count": 21,
+      "max_abs_diff": 0.006197799309123303,
+      "mean_abs_diff": 0.002243633371518273,
+      "max_abs_y_cont": 0.0007141984236890442,
+      "max_abs_y_fp": 0.006911997732812347
+    },
+    {
+      "subset_size": 6,
+      "count": 7,
+      "max_abs_diff": 0.000397746508663284,
+      "mean_abs_diff": 0.00025592411918994257,
+      "max_abs_y_cont": 6.529117271630898e-05,
+      "max_abs_y_fp": 0.00042375131878769724
+    },
+    {
+      "subset_size": 7,
+      "count": 1,
+      "max_abs_diff": 2.457523165785263e-05,
+      "mean_abs_diff": 2.457523165785263e-05,
+      "max_abs_y_cont": 1.7362249275786632e-06,
+      "max_abs_y_fp": 2.6311456585431294e-05
+    }
+  ]
+}

@@ -27,7 +27,10 @@ def _set_gamma_axis_pi_fractions(ax):
 def load_data(p: int, saddle: bool = False):
     """Load npz for given p (y0 or saddle)."""
     suffix = "_saddle" if saddle else "_y0"
-    path = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+    # Prefer Track A complex-covariance filename; fall back to legacy name.
+    path_trackA = DATA_DIR / f"spectral_data_p{p}_complexCov{suffix}.npz"
+    path_legacy = DATA_DIR / f"spectral_data_p{p}{suffix}.npz"
+    path = path_trackA if path_trackA.exists() else path_legacy
     if not path.exists():
         return None
     return dict(np.load(path, allow_pickle=True))
@@ -944,7 +947,7 @@ def generate_all_plots_from_saved(p_max: int = 5):
                 d["ipr"],
                 d["entropy"],
                 d["k99"],
-                out_path=FIG_DIR / f"softmax_diagnostics_p{p}.png",
+                out_path=FIG_DIR / f"softmax_diagnostics_realified_p{p}.png",
             )
 
     # Scaling exponent vs gamma (use p up to p_max when data available, with leave-one-out bands)

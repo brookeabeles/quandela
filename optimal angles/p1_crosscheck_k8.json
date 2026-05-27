@@ -1,0 +1,14 @@
+{
+  "beta": -0.6694786033600636,
+  "gamma": 0.8912536628178199,
+  "exact_exponent_finite_n": -0.46105013729764655,
+  "saddle_exponent_n_inf": 4.603793360468661,
+  "abs_difference": 5.064843497766307,
+  "relative_difference": 10.985450579090763,
+  "saddle_prefactor_real": -0.8243029629190107,
+  "saddle_F_term_real": 5.428342390943733,
+  "saddle_correction_real": -0.0002460675560614911,
+  "saddle_max_grad_abs": 0.9546087143916893,
+  "saddle_max_root_arg_abs": 0.39269908169872414,
+  "saddle_num_root_not_finite": 0.0
+}

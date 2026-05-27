@@ -28,8 +28,10 @@ diagnostically.
      Krawczyk data, and a strictly positive lower bound is required
      for certification.
   4. Optional interval enclosure Phi_eff(X; gamma) on the certified box
-     (log branch fixed by continuation).  The Newton center is numerical;
-     the root is certified to lie in X, not at the center alone.
+     (log branch fixed by certified ratio-lift along the mesh).  The Newton
+     center is numerical; the root is certified to lie in X, not at the center
+     alone.  Im Phi for Stokes analysis uses ell_j from ratio-lifts, not raw
+     principal Im Phi_eff.
 
 Items 5-8 of Sec. 18 (Stokes / anti-Stokes wall tracking, filtered
 action gaps, actual PL jumps, stop conditions) require thimble-flow
@@ -324,16 +326,23 @@ class WSaddleSystem:
         f = self.F_complex(w)
         return np.concatenate([f.real, f.imag])
 
-    def Phi_eff(self, w: np.ndarray) -> complex:
+    def Phi_eff(self, w: np.ndarray, *, log_delta: Optional[complex] = None) -> complex:
         """Effective parent action Phi_eff(w);  memo Eq. (4.1).
 
-        Uses the principal branch of log.  For continuous lifts
-        across a gamma mesh the user must unwrap the imaginary part
-        manually (memo Sec. 18, item 4).
+        Uses the principal branch of ``log Delta(w)`` when ``log_delta`` is
+        omitted.  For Stokes / branch-wise analysis along a gamma mesh,
+        pass a lifted ``log_delta`` from ``lift_log_delta_along_mesh`` instead
+        of relying on raw principal ``Im Phi_eff``.
         """
         c = self.c
         quad = np.sum(w * w / (4.0 * c))
-        return quad + np.log(Delta(w, beta=self.beta, p=self.p))
+        if log_delta is None:
+            log_delta = np.log(Delta(w, beta=self.beta, p=self.p))
+        return quad + log_delta
+
+    def quad_term(self, w: np.ndarray) -> complex:
+        """Quadratic part sum_alpha w_alpha^2 / (4 c_alpha)."""
+        return np.sum(w * w / (4.0 * self.c))
 
 
 # =====================================================================
@@ -601,6 +610,95 @@ def _abs_lower_iv(z_iv: iv.mpc) -> float:
     re_lo2 = lower_sq(z_iv.real)
     im_lo2 = lower_sq(z_iv.imag)
     return float(mp.sqrt(re_lo2 + im_lo2))
+
+
+def ratio_iv_avoids_negative_real_axis(ratio_iv: iv.mpc) -> bool:
+    """True if the iv enclosure of a ratio cannot intersect (-infty, 0] on R.
+
+    Sufficient for principal ``log(ratio)`` to be analytic on the certified
+    step: the ratio does not cross the standard log branch cut.
+    """
+    re_a = float(ratio_iv.real.a)
+    im_a = float(ratio_iv.imag.a)
+    im_b = float(ratio_iv.imag.b)
+    if im_a <= 0.0 <= im_b and re_a <= 0.0:
+        return False
+    return True
+
+
+def delta_iv_on_certified_box(
+    sys: WSaddleSystem,
+    w_center: np.ndarray,
+    box_radius: float,
+    *,
+    dps: int,
+) -> iv.mpc:
+    """Interval enclosure of Delta(w; beta) on the Krawczyk hyperrectangle."""
+    mp.mp.dps = int(dps)
+    iv.dps = int(dps)
+    w_box = [_box_iv(w_center[i], box_radius) for i in range(4)]
+    _, _, delta_iv = F_jacobian_delta_iv(
+        w_box, sys.r, sys.gamma, beta=sys.beta, p=sys.p
+    )
+    return delta_iv
+
+
+def principal_log_delta_ratio(delta_curr: complex, delta_prev: complex) -> complex:
+    """Principal Log(Delta_curr / Delta_prev) for one mesh increment."""
+    return np.log(delta_curr / delta_prev)
+
+
+def certify_log_delta_ratio_step(
+    sys_prev: WSaddleSystem,
+    w_prev: np.ndarray,
+    info_prev: dict[str, Any],
+    sys_curr: WSaddleSystem,
+    w_curr: np.ndarray,
+    info_curr: dict[str, Any],
+) -> tuple[bool, dict[str, Any]]:
+    """Certify one continuation step of the lifted log Delta branch.
+
+    Requires certified boxes at consecutive mesh points.  Certifies that the
+    interval enclosure of Delta(X_{j+1}) / Delta(X_j) avoids the negative real
+    axis, so principal log of the ratio is a valid analytic increment:
+
+        ell_{j+1} = ell_j + Log_principal(Delta(w_{j+1}) / Delta(w_j)).
+    """
+    dps = int(info_curr.get("dps_used", info_prev.get("dps_used", 60)))
+    rho_prev = float(info_prev["box_radius"])
+    rho_curr = float(info_curr["box_radius"])
+
+    delta_prev_iv = delta_iv_on_certified_box(sys_prev, w_prev, rho_prev, dps=dps)
+    delta_curr_iv = delta_iv_on_certified_box(sys_curr, w_curr, rho_curr, dps=dps)
+    ratio_iv = delta_curr_iv / delta_prev_iv
+    ok = ratio_iv_avoids_negative_real_axis(ratio_iv)
+
+    d_prev = Delta(w_prev, beta=sys_prev.beta, p=sys_prev.p)
+    d_curr = Delta(w_curr, beta=sys_curr.beta, p=sys_curr.p)
+    log_ratio = principal_log_delta_ratio(d_curr, d_prev)
+
+    return ok, {
+        "log_ratio_real": float(log_ratio.real),
+        "log_ratio_imag": float(log_ratio.imag),
+        "ratio_re_interval": [float(ratio_iv.real.a), float(ratio_iv.real.b)],
+        "ratio_im_interval": [float(ratio_iv.imag.a), float(ratio_iv.imag.b)],
+        "log_branch_step_certified": bool(ok),
+        "log_branch_method": "continuation_ratio_lift",
+    }
+
+
+def initial_log_delta_lift(w: np.ndarray, *, beta: float = SLICE_BETA, p: int = SLICE_P) -> complex:
+    """Seed ell_0 = Log_principal(Delta(w)) on the first mesh point."""
+    return np.log(Delta(w, beta=beta, p=p))
+
+
+def phi_eff_with_lifted_log(
+    sys: WSaddleSystem,
+    w: np.ndarray,
+    log_delta_lifted: complex,
+) -> complex:
+    """Phi_eff using a branch-lifted log Delta instead of principal log."""
+    return sys.quad_term(w) + log_delta_lifted
 
 
 def _action_enclosure_from_box(
@@ -985,6 +1083,34 @@ def selftest() -> None:
         for k, v in info.items():
             if k not in ("w_center_real", "w_center_imag"):
                 print(f"     {k}: {v}")
+
+        gammas = np.linspace(-0.01, -0.2, 8)
+        w_cont = w_star.copy()
+        info_cont = dict(info)
+        sys_cont = sys
+        log_lift = initial_log_delta_lift(w_cont)
+        steps_ok = 0
+        for g_next in gammas[1:]:
+            sys_next = WSaddleSystem(r=r, gamma=float(g_next), beta=SLICE_BETA)
+            w_next, ok_n, _ = solve_w_from_init(sys_next, w_cont)
+            assert ok_n
+            ok_c, info_c = krawczyk_certify_w_root(sys_next, w_next, dps=60)
+            assert ok_c
+            step_ok, step_info = certify_log_delta_ratio_step(
+                sys_cont, w_cont, info_cont, sys_next, w_next, info_c
+            )
+            assert step_ok, step_info
+            log_lift += complex(step_info["log_ratio_real"], step_info["log_ratio_imag"])
+            w_cont, info_cont, sys_cont = w_next, info_c, sys_next
+            steps_ok += 1
+        phi_principal = sys_cont.Phi_eff(w_cont)
+        phi_lifted = phi_eff_with_lifted_log(sys_cont, w_cont, log_lift)
+        assert abs(phi_lifted - phi_principal) < 1e-8 or abs(
+            (phi_lifted - phi_principal) - 2j * np.pi
+        ) < 1e-6, (
+            f"lifted vs principal mismatch: {phi_lifted} vs {phi_principal}"
+        )
+        print(f"  log Delta ratio-lift on {steps_ok} steps (gamma mesh)   [OK]")
 
     sys_b = WSaddleSystem(r=r, gamma=gamma, beta=-1.0)
     roots_b = discover_w_roots(sys_b, num_starts=30, seed=0)

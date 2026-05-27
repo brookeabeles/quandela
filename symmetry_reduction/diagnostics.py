@@ -3,21 +3,12 @@ Softmax weight diagnostics at the true saddle (fourth mechanism: weight concentr
 """
 
 import numpy as np
-
-
-def _real_normalized_weights(w: np.ndarray) -> np.ndarray:
-    """Real part, clip to nonnegative, renormalize to sum 1 (for complex weights from softmax)."""
-    w = np.real(np.asarray(w).ravel())
-    w = np.maximum(w, 0.0)
-    total = np.sum(w)
-    if total < 1e-300:
-        return np.ones_like(w) / len(w)
-    return w / total
+from .core import realify_weights
 
 
 def weight_concentration_ratio(w: np.ndarray) -> float:
     """κ = max_s w_s / min_s w_s. Uses real part of weights, renormalized."""
-    w = _real_normalized_weights(w)
+    w = realify_weights(w, eps=0.0)
     w_pos = w[w > 1e-300]
     if len(w_pos) == 0:
         return np.nan
@@ -26,20 +17,20 @@ def weight_concentration_ratio(w: np.ndarray) -> float:
 
 def inverse_participation_ratio(w: np.ndarray) -> float:
     """IPR = 1 / ∑_s w_s² (effective number of contributing configurations). Uses real, renormalized weights."""
-    w = _real_normalized_weights(w)
+    w = realify_weights(w, eps=0.0)
     return float(1.0 / (np.sum(w ** 2) + 1e-300))
 
 
 def shannon_entropy(w: np.ndarray) -> float:
     """H = -∑_s w_s log(w_s). Uses real part of weights, renormalized."""
-    w = _real_normalized_weights(w)
+    w = realify_weights(w, eps=0.0)
     w = w[w > 1e-300]
     return float(-np.sum(w * np.log(w)))
 
 
 def fraction_top_k(w: np.ndarray, k_values: tuple[int, ...] = (1, 2, 5, 10)) -> dict[int, float]:
     """Fraction of weight in top k configurations. Uses real, renormalized weights."""
-    w = _real_normalized_weights(w)
+    w = realify_weights(w, eps=0.0)
     order = np.argsort(w)[::-1]
     cum = np.cumsum(w[order])
     return {k: float(cum[min(k, len(cum)) - 1]) for k in k_values}
@@ -47,7 +38,7 @@ def fraction_top_k(w: np.ndarray, k_values: tuple[int, ...] = (1, 2, 5, 10)) -> 
 
 def softmax_diagnostics(w: np.ndarray) -> dict:
     """Return dict: kappa, ipr, entropy, max_weight, min_weight, fraction_top_1, 2, 5, 10. Uses real, renormalized weights."""
-    w = _real_normalized_weights(w)
+    w = realify_weights(w, eps=0.0)
     w_pos = w[w > 1e-300]
     out = {
         "kappa": weight_concentration_ratio(w),

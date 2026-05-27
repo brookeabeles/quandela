@@ -130,18 +130,17 @@ Old flat outputs under `phasecraft/w_branch_*` are from earlier runs; new runs s
 
 ## Plot quantities (equations on PNG titles)
 
-**Competitor sweep** (`competitors_*_analysis.png`) — for **branch curves**, run full `pipeline --plots` (resolve redraws this file with one color per `branch_id`). Sweep-only PNG is green/red per mesh \(\gamma\), not branch tracking.
+**Combined dashboard** (`competitors_*_analysis.png`) — one file after resolve (no separate `resolved_*.png`):
 
-| Panel | Quantity |
-|-------|----------|
-| Gap | \(\Delta_{\min}(\gamma)=\min_{j\in\mathcal{C}_\gamma\setminus\{s\}}(\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_s)-\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_j))\) |
-| Diagnostic | \(\max_j \mathrm{Re}\,\Phi_{\mathrm{eff}}(w_j)\) at each \(\gamma\) (root can switch → segment breaks) |
-| Positive gap | \(\Delta_{+}=\min_{j:\,\Delta_j>0}\Delta_j\) |
+| Row | Panels |
+|-----|--------|
+| **Top (resolve)** | ΔRe per tracked sheet · Re Φ on all sheets · certified crossing brackets |
+| **Bottom (sweep)** | min gap full mesh · root counts · mesh outcome bar chart |
 
-**Sweep-only plot** (after `sweep`, before `resolve`): green/red per mesh \(\gamma\) only — **not** branch colors.
+**Sweep-only** (after `sweep` before `resolve`): same filename is a **2×2** (full gap, dense-window gap, counts, bar).
 
-**Sweep + resolve** (full `pipeline --plots`): `competitors_*_analysis.png` is redrawn with **one color per tracked `branch_id`** (same as `resolved_*.png`). Use that for separate branches.
+**Seed** (`seed_*.png`) — Krawczyk continuation diagnostics only.
 
-**Resolved** (`resolved_*.png`) — dedicated 2×2 branch view; one **color per `branch_id`** in every panel; seed sheet = blue dashed.
+**Track** (`tracked_*.png`) — certified gap along anchor-continued competitor sheets (unique to `track` step).
 
 \(\Delta\mathrm{Re}(\gamma)=\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_s)-\mathrm{Re}\,\Phi_{\mathrm{eff}}(w_{\mathrm{branch}})\) along tracked sheets.

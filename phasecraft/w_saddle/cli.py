@@ -202,6 +202,19 @@ def _theorem_levels_from_args(args: argparse.Namespace) -> list[str]:
     return [x.strip().upper() for x in args.theorem_levels.split(",") if x.strip()]
 
 
+def parse_track_anchors(values: Sequence[str]) -> list[float]:
+    """Parse anchor gammas from CLI tokens (comma and/or space separated)."""
+    anchors: list[float] = []
+    for token in values:
+        for part in str(token).split(","):
+            part = part.strip()
+            if part:
+                anchors.append(float(part))
+    if not anchors:
+        raise ValueError("track-anchors must list at least one gamma value")
+    return anchors
+
+
 def cmd_certify(args: argparse.Namespace) -> None:
     beta = float(getattr(args, "beta", SLICE_BETA))
     sys = WSaddleSystem(r=args.r, gamma=args.gamma, beta=beta)
@@ -462,11 +475,10 @@ def cmd_resolve(args: argparse.Namespace) -> None:
     )
     plot_path = args.plot or args.plot_analysis
     if plot_path:
-        plot_branch_resolved_analysis(
-            payload,
+        plot_competitor_analysis(
+            sweep_payload,
             Path(plot_path),
-            show_diagnostic_best_competitor=True,
-            sweep_payload=sweep_payload,
+            resolved_payload=payload,
             allow_overwrite=args.plot_overwrite,
         )
     _emit_step(
@@ -485,7 +497,7 @@ def cmd_track(args: argparse.Namespace) -> None:
         sweep_payload = json.load(f)
     with open(args.seed_branch_in, encoding="utf-8") as f:
         seed_payload = json.load(f)
-    anchors = [float(x.strip()) for x in args.track_anchors.split(",") if x.strip()]
+    anchors = parse_track_anchors(args.track_anchors)
     payload = track_competitor_branches(
         sweep_payload,
         seed_payload,
@@ -643,22 +655,10 @@ def cmd_pipeline(args: argparse.Namespace) -> None:
             allow_theorem_level_c=args.allow_theorem_level_c,
             plot_overwrite=args.plot_overwrite,
             verbose=args.verbose,
-            plot=str(Path(preset["resolved_plot"])) if args.plots else "",
+            plot=str(Path(preset["sweep_plot"])) if args.plots else "",
             plot_analysis="",
         )
         cmd_resolve(res)
-
-    if args.plots and not args.skip_resolve and not args.skip_sweep and sweep_json.exists():
-        with open(sweep_json, encoding="utf-8") as f:
-            sweep_data = json.load(f)
-        with open(resolved_json, encoding="utf-8") as f:
-            resolved_data = json.load(f)
-        plot_competitor_analysis(
-            sweep_data,
-            Path(preset["sweep_plot"]),
-            resolved_payload=resolved_data,
-            allow_overwrite=args.plot_overwrite,
-        )
 
     fields: dict[str, Any] = {
         "preset": preset_name,
@@ -787,7 +787,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_track.add_argument("--sweep-in", type=str, required=True)
     p_track.add_argument("--seed-branch-in", type=str, required=True)
     p_track.add_argument("--out", type=str, required=True)
-    p_track.add_argument("--track-anchors", type=str, default="-0.62,-0.91")
+    p_track.add_argument(
+        "--track-anchors",
+        nargs="+",
+        default=["-0.62", "-0.91"],
+        metavar="GAMMA",
+        help=(
+            "Anchor gamma values (space-separated negatives work, e.g. "
+            "--track-anchors -0.62 -0.66 -0.91). Comma form also works: "
+            "--track-anchors=-0.62,-0.66,-0.91"
+        ),
+    )
     p_track.add_argument("--track-gamma-step", type=float, default=0.01)
     p_track.add_argument("--track-gamma-hi", type=float, default=-0.50)
     p_track.add_argument("--track-gamma-lo", type=float, default=-0.98)

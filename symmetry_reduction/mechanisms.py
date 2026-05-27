@@ -5,6 +5,7 @@ Frobenius energy decomposition by subset size (|α|, |α'|) and mechanism isolat
 import numpy as np
 from collections import defaultdict
 from .core import popcount
+from .core import realify_weights
 
 
 def _popcount_array(d: int, n_bits: int) -> np.ndarray:
@@ -87,14 +88,8 @@ def mechanism_per_alpha(
     """
     d, n_s = A.shape
     c_mag = np.abs(c_alpha)
-    # Physical agreement probability is real: use real part of weights, renormalized
-    w_real = np.real(np.asarray(w).ravel())
-    w_real = np.maximum(w_real, 0.0)
-    total = np.sum(w_real)
-    if total < 1e-300:
-        w_real = np.ones(n_s) / n_s
-    else:
-        w_real = w_real / total
+    # Track B (interpretive proxy): physical agreement probability from realified weights
+    w_real = realify_weights(w, eps=0.0)
     # E_w[A_α] is then real and in [0, 1/2]
     E_A = w_real @ A.T
     # w(E_α) = 2 * E_w[A_α] in [0, 1]
