@@ -7,8 +7,11 @@ corrected saddle map (**k = 2^q**, not 2q) via `symmetry_reduction/newton_saddle
 
 ```bash
 cd /path/to/Quandela
-python3.12 symmetry_reduction/fixed/regenerate_p1_q3.py
+python3.12 symmetry_reduction/fixed/regenerate_p1_q3.py          # p=1 (default)
+python3.12 symmetry_reduction/fixed/regenerate_p1_q3.py --p 3   # p>1 (slower homotopy)
 ```
+
+For `p≥2`, the script uses smaller γ steps, more homotopy/Newton budget, sorted γ sweeps with warmstart, and an automatic ultra-conservative retry on failure.
 
 ## Parameters
 
@@ -30,4 +33,13 @@ python3.12 symmetry_reduction/fixed/regenerate_p1_q3.py
 | `figures/truncation_p1_q3_g0p5.png` | Block truncation at γ=0.5 |
 | `data/regeneration_p1_q3_summary.json` | Convergence table |
 
-Hessian shown is **∇²F** (log-partition), not full action ∇²Φ*.
+Data: `data/insight_summary.json`
+
+## Follow-up insights
+
+```bash
+python3.12 symmetry_reduction/fixed/explore_directions.py
+```
+
+See `INSIGHTS.md` for research directions and `figures/insight_*.png` (6 plots).
+

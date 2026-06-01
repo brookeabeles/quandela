@@ -9,6 +9,7 @@ Outputs go to symmetry_reduction/fixed/figures/ (≈8 plots, not a full sweep gr
 from __future__ import annotations
 
 import json
+import argparse
 import sys
 from pathlib import Path
 
@@ -153,7 +154,77 @@ def plot_truncation_comparison(results: dict, out_path: Path) -> None:
     plt.close(fig)
 
 
-def solve_saddle(gamma: float) -> tuple[np.ndarray, np.ndarray, bool, float]:
+def _p_tag() -> str:
+    return f"p{P}"
+
+
+def _sorted_sweep_gammas() -> list[float]:
+    """Monotone γ order so warmstart cache is always valid."""
+    return sorted({float(g) for g in SWEEP_GAMMAS})
+
+
+def _homotopy_kwargs(gamma_target: float, *, retry: bool = False) -> dict:
+    """γ-homotopy budget; finer steps only where the saddle is stiff (high γ, large p)."""
+    if retry:
+        return {
+            "gamma_homotopy_factor": 1.02,
+            "gamma_max_steps": 1200,
+            "target_residual": 5e-3,
+            "newton_max_iter": 800,
+            "max_newton_calls": 50000,
+        }
+    if P >= 3:
+        if gamma_target >= 0.75:
+            return {
+                "gamma_homotopy_factor": 1.04,
+                "gamma_max_steps": 1000,
+                "target_residual": 5e-3,
+                "newton_max_iter": 700,
+                "max_newton_calls": 50000,
+            }
+        if gamma_target >= np.pi / 8:
+            return {
+                "gamma_homotopy_factor": 1.10,
+                "gamma_max_steps": 600,
+                "target_residual": 5e-3,
+                "newton_max_iter": 600,
+                "max_newton_calls": 35000,
+            }
+        return {
+            "gamma_homotopy_factor": 1.12,
+            "gamma_max_steps": 400,
+            "target_residual": 5e-3,
+            "newton_max_iter": 500,
+            "max_newton_calls": 20000,
+        }
+    if P >= 2:
+        if gamma_target >= np.pi / 4:
+            return {
+                "gamma_homotopy_factor": 1.06,
+                "gamma_max_steps": 600,
+                "target_residual": 5e-3,
+                "newton_max_iter": 500,
+                "max_newton_calls": 20000,
+            }
+        return {
+            "gamma_homotopy_factor": 1.10,
+            "gamma_max_steps": 400,
+            "target_residual": 5e-3,
+            "newton_max_iter": 500,
+            "max_newton_calls": 12000,
+        }
+    return {
+        "gamma_homotopy_factor": 1.15,
+        "gamma_max_steps": 200,
+        "target_residual": 5e-3,
+        "newton_max_iter": 400,
+        "max_newton_calls": 800,
+    }
+
+
+def solve_saddle(
+    gamma: float, *, retry: bool = False
+) -> tuple[np.ndarray, np.ndarray, bool, float]:
     """Return (y_star, coeff_alpha, converged, residual) for fixed (p,q,r,beta)."""
     betas = np.full(P, BETA, dtype=float)
     cache_key = (P, Q, R, round(BETA, 12))
@@ -165,25 +236,31 @@ def solve_saddle(gamma: float) -> tuple[np.ndarray, np.ndarray, bool, float]:
             u_init = u_prev
             gamma_start = g_prev
 
+    kw = _homotopy_kwargs(float(gamma), retry=retry)
     y_star, coeff, converged, residual = solve_8sat_saddle(
         p=P,
         gamma_target=float(gamma),
         betas=betas,
         q=Q,
         r=R,
-        gamma_homotopy_factor=1.15,
-        gamma_max_steps=200,
-        target_residual=5e-3,
-        newton_max_iter=400,
         u_init_active=u_init,
         gamma_start_override=gamma_start,
-        max_newton_calls=800,
         verbose=False,
+        **kw,
     )
     if converged:
         active = np.where(np.array([bin(a).count("1") for a in range(y_star.size)]) >= 2)[0]
         _WARMSTART[cache_key] = (float(gamma), coeff[active] * y_star[active])
     return y_star, coeff, bool(converged), float(residual)
+
+
+def solve_saddle_with_retry(gamma: float) -> tuple[np.ndarray, np.ndarray, bool, float]:
+    """Solve saddle; on failure retry with ultra-conservative homotopy."""
+    y, c, ok, res = solve_saddle(gamma)
+    if ok:
+        return y, c, ok, res
+    y, c, ok, res = solve_saddle(gamma, retry=True)
+    return y, c, ok, res
 
 
 def compute_case(gamma: float) -> dict | None:
@@ -199,7 +276,7 @@ def compute_case(gamma: float) -> dict | None:
     H0 = hessian_F_at_y(y0, A, b_s, coeff)
     spec0 = spectral_summary(H0)
 
-    y_star, coeff_s, converged, saddle_res = solve_saddle(gamma)
+    y_star, coeff_s, converged, saddle_res = solve_saddle_with_retry(gamma)
     if not converged:
         return {
             "gamma": float(gamma),
@@ -324,7 +401,7 @@ def plot_hessian_spectrum(cases: list[dict], out_path: Path) -> None:
         coeff = alpha_linear_coefficients(P, gammas, q=Q, r=R)
         y0 = np.zeros(A.shape[0], dtype=complex)
         H0 = hessian_F_at_y(y0, A, b_s, coeff)
-        y_star, coeff_s, _, _ = solve_saddle(g)
+        y_star, coeff_s, _, _ = solve_saddle_with_retry(g)
         Hs = hessian_F_at_y(y_star, A, b_s, coeff_s)
         for H, style, lab in ((H0, "o--", r"$y=0$"), (Hs, "s-", "saddle")):
             sig = np.linalg.svd(H, compute_uv=False)
@@ -355,7 +432,7 @@ def plot_softmax(cases: list[dict], out_path: Path) -> None:
         gammas = np.full(P, g)
         A = build_structure_matrix(P, q=Q)
         b_s = compute_b_s(P, betas)
-        y_star, coeff, conv, _ = solve_saddle(g)
+        y_star, coeff, conv, _ = solve_saddle_with_retry(g)
         if not conv:
             continue
         w = np.abs(softmax_weights_with_coeff(y_star, A, b_s, coeff))
@@ -392,15 +469,25 @@ def plot_convergence(sweep: list[dict], out_path: Path) -> None:
 
 
 def main() -> int:
+    global P
+    parser = argparse.ArgumentParser(description="Regenerate fixed q=3 diagnostics for chosen p.")
+    parser.add_argument("--p", type=int, default=1, help="Problem size p (default: 1).")
+    args = parser.parse_args()
+    if args.p < 1:
+        raise SystemExit("--p must be >= 1")
+    P = int(args.p)
+
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("=== p=1, q=3 fixed regeneration (corrected k=2^q saddle) ===")
+    print(f"=== p={P}, q=3 fixed regeneration (corrected k=2^q saddle) ===")
     print(f"Panel gammas: {[float(g) for g in PANEL_GAMMAS]}")
-    print(f"Sweep gammas:  {[float(g) for g in SWEEP_GAMMAS]}")
+    sweep_order = _sorted_sweep_gammas()
+    print(f"Sweep gammas (sorted): {sweep_order}")
+    print(f"Homotopy tiers (p≥3): γ<π/8 factor 1.12; π/8≤γ<0.75 factor 1.10; γ≥0.75 factor 1.04; retry 1.02")
 
     sweep: list[dict] = []
-    for g in SWEEP_GAMMAS:
+    for g in sweep_order:
         print(f"  γ={g:.4f} ({_gamma_tex(g)}) ...", end=" ", flush=True)
         case = compute_case(g)
         if case is None:
@@ -428,7 +515,8 @@ def main() -> int:
         "beta": BETA,
         "equation": "BM24 Eq.(20) with k=2^q; Hessian is nabla^2 F",
         "panel_gammas": [float(g) for g in PANEL_GAMMAS],
-        "sweep_gammas": [float(g) for g in SWEEP_GAMMAS],
+        "sweep_gammas": sweep_order,
+        "homotopy_tiers": "gamma-dependent; see _homotopy_kwargs in regenerate_p1_q3.py",
         "runs": [
             {
                 "gamma": c["gamma"],
@@ -441,24 +529,24 @@ def main() -> int:
             for c in sweep
         ],
     }
-    summary_path = DATA_DIR / "regeneration_p1_q3_summary.json"
+    summary_path = DATA_DIR / f"regeneration_{_p_tag()}_q3_summary.json"
     with summary_path.open("w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"Wrote {summary_path}")
 
     # --- Plots (8 total) ---
-    plot_block_panels(panel_cases, FIG_DIR / "block_heatmap_p1_q3.png")
-    plot_k99_sweep(sweep, FIG_DIR / "k99_vs_gamma_p1_q3.png")
-    plot_sv_decay(panel_cases, FIG_DIR / "sv_decay_p1_q3.png")
-    plot_hessian_spectrum(panel_cases, FIG_DIR / "hessian_spectrum_p1_q3.png")
-    plot_softmax(panel_cases, FIG_DIR / "softmax_weights_p1_q3.png")
-    plot_convergence(sweep, FIG_DIR / "saddle_convergence_p1_q3.png")
+    plot_block_panels(panel_cases, FIG_DIR / f"block_heatmap_{_p_tag()}_q3.png")
+    plot_k99_sweep(sweep, FIG_DIR / f"k99_vs_gamma_{_p_tag()}_q3.png")
+    plot_sv_decay(panel_cases, FIG_DIR / f"sv_decay_{_p_tag()}_q3.png")
+    plot_hessian_spectrum(panel_cases, FIG_DIR / f"hessian_spectrum_{_p_tag()}_q3.png")
+    plot_softmax(panel_cases, FIG_DIR / f"softmax_weights_{_p_tag()}_q3.png")
+    plot_convergence(sweep, FIG_DIR / f"saddle_convergence_{_p_tag()}_q3.png")
 
     # Truncation at π/4 and γ=0.5 (π/2 does not converge at this r)
     for g, tag in ((np.pi / 4, "pi4"), (0.50, "g0p5")):
         case = next((c for c in panel_cases if np.isclose(c["gamma"], g) and c.get("converged")), None)
         if case and "block" in case:
-            plot_truncation_comparison(case["block"], FIG_DIR / f"truncation_p1_q3_{tag}.png")
+            plot_truncation_comparison(case["block"], FIG_DIR / f"truncation_{_p_tag()}_q3_{tag}.png")
 
     print(f"Figures in {FIG_DIR}/")
     for p in sorted(FIG_DIR.glob("*.png")):

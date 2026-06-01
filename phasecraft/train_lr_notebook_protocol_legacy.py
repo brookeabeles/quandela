@@ -4,7 +4,7 @@ train_lr_notebook_protocol.py
 
 Re-implements the **LR-QAOA training protocol** from
 ``Final  LR QAOA vs QAOA vs walksat (1).ipynb`` (grid over ``(dg, db)`` +
-COBYLA refinement on the same average success objective), but evaluates
+COBYLA refinement on **median** ``p_succ`` at ``train_n``), but evaluates
 circuits with ``phasecraft/bm24_qaoa_sim.py`` — i.e. ``run_qaoa`` and
 ``make_lr_angles`` in **BM24 convention** (half-angle cost and mixer).
 
@@ -48,7 +48,7 @@ from scipy.optimize import minimize
 from scipy.stats import linregress
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
-_DEFAULT_ANGLE_LOG = _SCRIPT_DIR / "bm24_runs" / "lr_train_optimal_angles.txt"
+_DEFAULT_ANGLE_LOG = _SCRIPT_DIR / "bm24_runs" / "lr_train_optimal_angles_legacy.txt"
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
@@ -113,6 +113,7 @@ def train_lr_grid_search_bm24(
     depth: int,
     *,
     skip_grid: bool = False,
+    initial_deltas: Tuple[float, float] | None = None,
     beta_schedule: str = "decreasing",
     cobyla_maxiter: int = 200,
     cobyla_tol: float = 1e-3,
@@ -129,37 +130,45 @@ def train_lr_grid_search_bm24(
     dg_vals = np.linspace(-2.0, 2.0, 11)
     db_vals = np.linspace(0.1, 4.0, 11)
     best_p = -1.0
-    best_deltas = [-0.8, 0.49]
+    best_deltas = list(initial_deltas) if initial_deltas is not None else [-0.8, 0.49]
 
-    def get_avg_p_succ(dg: float, db: float) -> float:
+    def per_instance_p_succ(dg: float, db: float) -> np.ndarray:
         betas, gammas = make_lr_angles(
             float(dg), float(db), int(depth),
             beta_schedule=str(beta_schedule),
             angle_convention="bm24",
         )
-        total = 0.0
-        for h_diag in training_h:
+        ps = np.empty(len(training_h), dtype=np.float64)
+        for i, h_diag in enumerate(training_h):
             psi = run_qaoa(h_diag, betas, gammas, int(train_n))
-            total += float(per_instance_success_probability(psi, h_diag))
-        return total / max(len(training_h), 1)
+            ps[i] = float(per_instance_success_probability(psi, h_diag))
+        return ps
+
+    def get_median_p_succ(dg: float, db: float) -> float:
+        ps = per_instance_p_succ(dg, db)
+        return float(np.median(ps)) if len(ps) else 0.0
+
+    def get_mean_p_succ(dg: float, db: float) -> float:
+        ps = per_instance_p_succ(dg, db)
+        return float(np.mean(ps)) if len(ps) else 0.0
 
     if not skip_grid:
         for dg in tqdm(dg_vals, desc="Grid Scanning (dg)"):
             for db in db_vals:
-                p_val = get_avg_p_succ(float(dg), float(db))
+                p_val = get_median_p_succ(float(dg), float(db))
                 if p_val > best_p:
                     best_p = p_val
                     best_deltas = [float(dg), float(db)]
     else:
-        best_p = get_avg_p_succ(best_deltas[0], best_deltas[1])
+        best_p = get_median_p_succ(best_deltas[0], best_deltas[1])
 
     print(
         f"  > Best grid start: dg={best_deltas[0]:.4f}, db={best_deltas[1]:.4f} "
-        f"(avg train p_succ={best_p:.6f})"
+        f"(median train p_succ={best_p:.6f})"
     )
 
     def objective(d: np.ndarray) -> float:
-        return -1.0 * get_avg_p_succ(float(d[0]), float(d[1]))
+        return -1.0 * get_median_p_succ(float(d[0]), float(d[1]))
 
     res = minimize(
         objective,
@@ -169,7 +178,10 @@ def train_lr_grid_search_bm24(
         options={"maxiter": int(cobyla_maxiter)},
     )
     dg_opt, db_opt = float(res.x[0]), float(res.x[1])
-    print(f"  > LR QAOA train avg p_succ after COBYLA: {-res.fun:.6f}")
+    best_median = float(-res.fun)
+    best_mean = get_mean_p_succ(dg_opt, db_opt)
+    print(f"  > LR QAOA train median p_succ after COBYLA: {best_median:.6f}")
+    print(f"  > LR QAOA train mean p_succ (diagnostic):   {best_mean:.6f}")
 
     betas, gammas = make_lr_angles(
         dg_opt, db_opt, int(depth),
@@ -179,7 +191,9 @@ def train_lr_grid_search_bm24(
     params_concat = np.concatenate([gammas, betas])
     diag = {
         "best_deltas": [dg_opt, db_opt],
-        "best_avg_train_p_succ": float(-res.fun),
+        "best_median_train_p_succ": best_median,
+        "best_avg_train_p_succ": best_mean,
+        "training_objective": "legacy-median-p-train-n",
         "cobyla_success": bool(res.success),
         "cobyla_message": str(res.message),
         "nfev": int(getattr(res, "nfev", -1)),
@@ -266,6 +280,7 @@ def append_optimal_angles_log(
     db: float,
     betas: np.ndarray,
     gammas: np.ndarray,
+    best_median_train_p_succ: float,
     best_avg_train_p_succ: float,
     benchmark_cmd: str,
     exponent_fit: dict | None = None,
@@ -282,6 +297,7 @@ def append_optimal_angles_log(
         f"delta_beta  (BM24, --lr-dbeta):  {db:+.16g}",
         f"betas_bm24:  {np.round(betas, 12).tolist()}",
         f"gammas_bm24: {np.round(gammas, 12).tolist()}",
+        f"best_median_train_p_succ: {best_median_train_p_succ:.12g}",
         f"best_avg_train_p_succ: {best_avg_train_p_succ:.12g}",
         f"suggested_benchmark_command: {benchmark_cmd}",
     ]
@@ -338,7 +354,9 @@ def main() -> None:
     p.add_argument("--r", type=float, default=176.54)
     p.add_argument("--depth", type=int, required=True, help="QAOA depth p (same as notebook P_DEPTH).")
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--skip-grid", action="store_true", help="Skip 11x11 grid; start COBYLA from [-0.8, 0.49].")
+    p.add_argument("--skip-grid", action="store_true", help="Skip 11x11 grid; start COBYLA from --initial-dgamma/--initial-dbeta or [-0.8, 0.49].")
+    p.add_argument("--initial-dgamma", type=float, default=None)
+    p.add_argument("--initial-dbeta", type=float, default=None)
     p.add_argument(
         "--m-sampling",
         type=str,
@@ -400,12 +418,19 @@ def main() -> None:
     )
     print(f"  collected {len(training_h)} SAT-filtered instances.")
 
+    initial_deltas = None
+    if args.initial_dgamma is not None and args.initial_dbeta is not None:
+        initial_deltas = (float(args.initial_dgamma), float(args.initial_dbeta))
+    elif args.initial_dgamma is not None or args.initial_dbeta is not None:
+        raise SystemExit("Provide both --initial-dgamma and --initial-dbeta, or neither.")
+
     print("\n--- Training LR QAOA (notebook protocol, BM24 simulator) ---")
     params, diag = train_lr_grid_search_bm24(
         training_h,
         train_n=args.train_n,
         depth=args.depth,
         skip_grid=args.skip_grid,
+        initial_deltas=initial_deltas,
         beta_schedule=args.lr_beta_schedule,
         cobyla_maxiter=args.cobyla_maxiter,
         cobyla_tol=args.cobyla_tol,
@@ -485,6 +510,9 @@ def main() -> None:
             "cobyla_maxiter": args.cobyla_maxiter,
             "cobyla_tol": args.cobyla_tol,
             "angle_convention": "bm24",
+            "objective": "legacy-median-p-train-n",
+            "initial_dgamma": args.initial_dgamma,
+            "initial_dbeta": args.initial_dbeta,
         },
         "best_deltas": {"delta_gamma": dg, "delta_beta": db},
         "betas_bm24": [float(x) for x in betas],
@@ -513,6 +541,9 @@ def main() -> None:
             "lr_beta_schedule": args.lr_beta_schedule,
             "cobyla_maxiter": args.cobyla_maxiter,
             "cobyla_tol": args.cobyla_tol,
+            "objective": "legacy-median-p-train-n",
+            "initial_dgamma": args.initial_dgamma,
+            "initial_dbeta": args.initial_dbeta,
         }
         append_optimal_angles_log(
             log_path,
@@ -522,6 +553,7 @@ def main() -> None:
             db=db,
             betas=betas,
             gammas=gammas,
+            best_median_train_p_succ=float(diag["best_median_train_p_succ"]),
             best_avg_train_p_succ=float(diag["best_avg_train_p_succ"]),
             benchmark_cmd=cmd,
             exponent_fit=exponent_fit,

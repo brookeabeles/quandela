@@ -1483,7 +1483,7 @@ def plot_benchmark_comparison(
     equiv_flips_per_shot: float = 1.0,
 ) -> dict:
     """
-    Save a multi-panel PNG comparing LR-QAOA vs WalkSAT / WalkSATlm.
+    Save a two-panel PNG comparing LR-QAOA vs WalkSAT / WalkSATlm.
 
     "LR beats classical at n" uses a tunable cost model (not a theorem):
         qaoa_cost(n) = median_runtime(n) * equiv_flips_per_shot
@@ -1533,7 +1533,7 @@ def plot_benchmark_comparison(
 
     s = res.get("settings", {})
     depth = s.get("depth", "?")
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     fig.suptitle(
         format_benchmark_title(
             {
@@ -1552,7 +1552,7 @@ def plot_benchmark_comparison(
         fontsize=10,
     )
 
-    ax = axes[0, 0]
+    ax = axes[0]
     ax.semilogy(ns, mean_succ, "o-", label="mean p_succ")
     ax.semilogy(ns, med_succ, "s--", label="median p_succ")
     ax.set_xlabel("n")
@@ -1563,7 +1563,7 @@ def plot_benchmark_comparison(
 
     scaling = summarize_benchmark_scaling(res)
 
-    ax = axes[0, 1]
+    ax = axes[1]
     ax.semilogy(ns, med_rt, "o-", color="C0", label="LR median 1/p")
     ax.semilogy(ns, ws_flips, "s-", color="C1", label="WalkSAT median flips")
     if lm_flips is not None:
@@ -1580,62 +1580,6 @@ def plot_benchmark_comparison(
             else ""
         )
     )
-    ax.legend(loc="best", fontsize=7)
-    ax.grid(True, which="both", alpha=0.3)
-
-    ax = axes[1, 0]
-    all_classical = list(ws_flips)
-    ax.loglog(ws_flips, qaoa_cost, "o", color="C1", label="WalkSAT")
-    if lm_flips is not None:
-        all_classical.extend(lm_flips)
-        ax.loglog(lm_flips, qaoa_cost, "s", color="C2", label="WalkSATlm")
-    lim_lo = min(min(all_classical), min(qaoa_cost)) * 0.5
-    lim_hi = max(max(all_classical), max(qaoa_cost)) * 2.0
-    ax.plot([lim_lo, lim_hi], [lim_lo, lim_hi], "k--", alpha=0.4, label="y = x (parity)")
-    for i, n in enumerate(ns):
-        ax.annotate(str(n), (ws_flips[i], qaoa_cost[i]), fontsize=7, color="C1", alpha=0.9)
-        if lm_flips is not None:
-            ax.annotate(
-                str(n), (lm_flips[i], qaoa_cost[i]), fontsize=7, color="C2", alpha=0.9,
-                xytext=(4, -4), textcoords="offset points",
-            )
-    ax.set_xlabel("median flips (classical)")
-    ax.set_ylabel(f"LR median 1/p × {equiv:g}")
-    ax.set_title("Cost proxy: below diagonal → LR cheaper (same equiv)")
-    ax.legend(loc="best", fontsize=8)
-    ax.grid(True, which="both", alpha=0.3)
-
-    ax = axes[1, 1]
-    x = np.arange(len(ns))
-    qcost = np.maximum(np.array(qaoa_cost), 1e-300)
-    ratio_ws = np.array(ws_flips) / qcost
-    if lm_flips is not None:
-        ratio_lm = np.array(lm_flips) / qcost
-        width = 0.35
-        ax.bar(
-            x - width / 2, ratio_ws, width,
-            color=["#2ca02c" if w else "#d62728" for w in lr_beats_ws],
-            alpha=0.85, edgecolor="k", linewidth=0.4, label="vs WalkSAT",
-        )
-        ax.bar(
-            x + width / 2, ratio_lm, width,
-            color=["#2ca02c" if w else "#d62728" for w in lr_beats_lm],
-            alpha=0.85, edgecolor="k", linewidth=0.4, label="vs WalkSATlm",
-        )
-        ax.set_title("Green bar: LR cheaper; red: classical cheaper")
-    else:
-        ax.bar(
-            x, ratio_ws, 0.5,
-            color=["#2ca02c" if w else "#d62728" for w in lr_beats_ws],
-            alpha=0.85, edgecolor="k", linewidth=0.5, label="vs WalkSAT",
-        )
-        ax.set_title("Green: LR cheaper vs WalkSAT; red: WalkSAT cheaper")
-    ax.axhline(1.0, color="k", linestyle="--", linewidth=1, label="ratio = 1")
-    ax.set_xticks(x)
-    ax.set_xticklabels([str(n) for n in ns])
-    ax.set_xlabel("n")
-    ax.set_ylabel("median flips / (LR median 1/p × equiv)")
-    ax.set_yscale("log")
     ax.legend(loc="best", fontsize=7)
     ax.grid(True, which="both", alpha=0.3)
 

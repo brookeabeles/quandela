@@ -57,8 +57,22 @@ def generalized_flip_symmetric_multinomial_sum_p1(q, A, b, c, n):
     )
 
 #" generalized..._generic and _ksat solve saddle fixed-pt eqts and return Phi=F-(1-2^-q)*sum(z*dF)"
-def generalized_binomial_sum_scaling_exponent_generic(F_dF, q, c, num_iter=100, dz_threshold=1e-2, init_z=None, damping=0.0, debug_logging=False):
+def generalized_binomial_sum_scaling_exponent_generic(
+    F_dF,
+    q,
+    c,
+    num_iter=100,
+    dz_threshold=1e-2,
+    init_z=None,
+    damping=0.0,
+    debug_logging=False,
+    abs_tol=None,
+    rel_tol=None,
+):
     z = np.copy(init_z) if init_z is not None else np.zeros(c.size)
+    abs_tol = float(dz_threshold if abs_tol is None else abs_tol)
+    rel_tol = float(dz_threshold if rel_tol is None else rel_tol)
+    converged = False
     F, dF = F_dF(z)
     for it in range(num_iter):
         if debug_logging:
@@ -66,19 +80,42 @@ def generalized_binomial_sum_scaling_exponent_generic(F_dF, q, c, num_iter=100, 
         prev_z = z
         z = 2 ** q * (-dF) ** (2 ** q - 1)
         z = damping * prev_z + (1 - damping) * z
+        if not np.all(np.isfinite(z)):
+            break
         F, dF = F_dF(z)
-        dz = np.max(np.abs(z - 2 ** q * (-dF) ** (2 ** q - 1)) / np.abs(z))
-        if dz < dz_threshold:
+        if not (np.all(np.isfinite(dF)) and np.isfinite(F)):
+            break
+        map_z = 2 ** q * (-dF) ** (2 ** q - 1)
+        delta = z - map_z
+        if not np.all(np.isfinite(delta)):
+            break
+        abs_residual = float(np.linalg.norm(delta, ord=np.inf))
+        z_scale = 1.0 + float(np.linalg.norm(z, ord=np.inf))
+        scaled_residual = abs_residual / z_scale
+        if abs_residual < abs_tol and scaled_residual < rel_tol:
+            converged = True
             break
         if debug_logging:
-            logging.info(f"dz = {dz}")
-    return it + 1, \
-        z, \
-        np.linalg.norm(z - 2 ** q * (-dF) ** (2 ** q - 1)), \
-        F - (1 - 2 ** (-q)) * np.sum(z * dF)
+            logging.info(f"abs_residual={abs_residual} scaled_residual={scaled_residual}")
+    map_z = 2 ** q * (-dF) ** (2 ** q - 1)
+    residual = np.linalg.norm(z - map_z, ord=np.inf) if np.all(np.isfinite(z)) and np.all(np.isfinite(dF)) else np.inf
+    phi = F - (1 - 2 ** (-q)) * np.sum(z * dF) if np.isfinite(F) and np.all(np.isfinite(dF)) and np.all(np.isfinite(z)) else np.nan + 0.0j
+    return it + 1, z, float(residual), phi, converged
 
 
-def generalized_binomial_sum_scaling_exponent_ksat(q, r, betas, gammas, num_iter=100, dz_threshold=1e-2, init_z=None, damping=0.0, debug_logging=False):
+def generalized_binomial_sum_scaling_exponent_ksat(
+    q,
+    r,
+    betas,
+    gammas,
+    num_iter=100,
+    dz_threshold=1e-2,
+    init_z=None,
+    damping=0.0,
+    debug_logging=False,
+    abs_tol=None,
+    rel_tol=None,
+):
     """general infinite-n"""
     p = len(gammas)
     all_s = np.arange(2 ** (2 * p + 1))
@@ -93,7 +130,18 @@ def generalized_binomial_sum_scaling_exponent_ksat(q, r, betas, gammas, num_iter
         log_arg = np.sum(b * s_vector)
         #return np.log(log_arg), c_root * parent_function_s_sum_fft(0.5 * b * s_vector) / log_arg
         return np.log(log_arg), c_root * parent_function_s_sum_sos(0.5 * b * s_vector) / log_arg
-    return generalized_binomial_sum_scaling_exponent_generic(F_dF, q, c, num_iter, dz_threshold, init_z, damping, debug_logging)
+    return generalized_binomial_sum_scaling_exponent_generic(
+        F_dF,
+        q,
+        c,
+        num_iter,
+        dz_threshold,
+        init_z,
+        damping,
+        debug_logging,
+        abs_tol=abs_tol,
+        rel_tol=rel_tol,
+    )
 
 # B-note: np.log(log_arg) uses the principal branch of the complex logarith pointwise. As you scan params, log_arg winds around
 # the origin and the principle value of the log can jump by 2πi -> then Im(F) and Im(Φ) can jump by 2π even if the underlyign saddle track is actually varying smoothly

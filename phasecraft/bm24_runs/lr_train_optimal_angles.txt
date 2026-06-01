@@ -180,3 +180,15 @@ betas  = [0.5731877353286907, 0.5527167447812373, 0.5322457542337842, 0.51177476
 gammas = [0.026679024392541023, 0.053358048785082046, 0.08003707317762307, 0.10671609757016409, 0.13339512196270512, 0.16007414635524614, 0.18675317074778716, 0.21343219514032818, 0.2401112195328692, 0.26679024392541023, 0.2934692683179512, 0.3201482927104923, 0.3468273171030333, 0.3735063414955743, 0.4001853658881154, 0.42686439028065637, 0.45354341467319736, 0.4802224390657384, 0.5069014634582794, 0.5335804878508205, 0.5602595122433615, 0.5869385366359025, 0.6136175610284436, 0.6402965854209846, 0.6669756098135255, 0.6936546342060665, 0.7203336585986075, 0.7470126829911486, 0.7736917073836896]
 best_avg_train_p_succ = 9.205863e-09
 benchmark_cmd = 'python phasecraft/bm24_qaoa_sim.py --benchmark --n-min 12 --n-max 20 --k 8 --r 176.54 --algorithms lr_qaoa walksat walksatlm --depth 29 --lr-dgamma 0.7736917074 --lr-dbeta 0.5936587259 --lr-angle-convention bm24 --lr-beta-schedule decreasing --test-size 200 --seed 27 --plot-benchmark'
+------------------------------------------------------------------------------
+timestamp: 2026-05-27T23:54:15
+settings: {"cobyla_maxiter": 200, "cobyla_tol": 0.001, "depth": 5, "k": 8, "lr_beta_schedule": "decreasing", "m_sampling": "notebook", "r": 176.54, "seed": 27, "skip_grid": false, "train_n": 12, "train_size": 100}
+delta_gamma (BM24, --lr-dgamma): -1.680512330180372
+delta_beta  (BM24, --lr-dbeta):  +1.104485263601898
+betas_bm24:  [0.883588210882, 0.662691158161, 0.441794105441, 0.22089705272, 0.0]
+gammas_bm24: [-0.336102466036, -0.672204932072, -1.008307398108, -1.344409864144, -1.68051233018]
+best_avg_train_p_succ: 0.028385185546
+suggested_benchmark_command: /Users/b/miniforge3/bin/python "/Users/b/Quandela/phasecraft/bm24_qaoa_sim.py" --benchmark --n-min 12 --n-max 20 --k 8 --r 176.54 --test-size 200 --seed 27 --algorithms lr_qaoa walksat walksatlm --depth 5 --lr-dgamma -1.6805123301803717 --lr-dbeta 1.1044852636018978 --lr-beta-schedule decreasing --lr-angle-convention bm24
+exponent_fit: {"eval_base_seed": 1000030, "eval_n_max": 20, "eval_n_min": 12, "eval_test_size": 200, "intercept_ln_mean_p_succ_natural_log": 1.1199262874482416, "mean_p_succ_per_n": {"12": 0.02757306922705844, "13": 0.018095104265442002, "14": 0.011521696083889334, "15": 0.008831898358492378, "16": 0.005737385535175572, "17": 0.004098796337055139, "18": 0.0024625906483833992, "19": 0.0017490231634465416, "20": 0.0011388140117564503}, "ok": true, "slope_ln_mean_p_succ_vs_n_log2": -0.5677214935675673, "slope_ln_mean_p_succ_vs_n_natural_log": -0.3935145526096404, "stderr_slope_ln_nat": 0.0063584402540587176}
+mean_success_exponent_slope_natural_log (d/dn ln E[p_succ]): -0.39351455261
+mean_success_exponent_slope_log2 ( / ln 2 ): -0.567721493568

@@ -20,9 +20,14 @@ if str(REPO_ROOT) not in sys.path:
 import phasecraft.krawczyk_p1_roots as base
 
 _PATCHED_PATH = Path(__file__).resolve().with_name("generalized_binomial_sum.PATCHED.py")
-_PATCHED_SPEC = importlib.util.spec_from_file_location("phasecraft_gbs_patched", _PATCHED_PATH)
+_PATCHED_SPEC = importlib.util.spec_from_file_location(
+    "phasecraft._generalized_binomial_sum_patched_fix",
+    _PATCHED_PATH,
+    submodule_search_locations=[str(_PATCHED_PATH.parent)],
+)
 _PATCHED_MOD = importlib.util.module_from_spec(_PATCHED_SPEC)
 assert _PATCHED_SPEC is not None and _PATCHED_SPEC.loader is not None
+sys.modules[_PATCHED_SPEC.name] = _PATCHED_MOD
 _PATCHED_SPEC.loader.exec_module(_PATCHED_MOD)
 B_patched = _PATCHED_MOD.B
 alpha_sos_patched = _PATCHED_MOD.parent_function_alpha_sum_sos

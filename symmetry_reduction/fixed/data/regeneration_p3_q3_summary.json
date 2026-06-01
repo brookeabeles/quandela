@@ -1,0 +1,114 @@
+{
+  "p": 3,
+  "q": 3,
+  "r": 176.54,
+  "beta": -1.5707963267948966,
+  "equation": "BM24 Eq.(20) with k=2^q; Hessian is nabla^2 F",
+  "panel_gammas": [
+    0.39269908169872414,
+    0.7853981633974483,
+    0.14,
+    0.5
+  ],
+  "sweep_gammas": [
+    0.05,
+    0.1,
+    0.14,
+    0.2,
+    0.39269908169872414,
+    0.5,
+    0.75,
+    0.7853981633974483,
+    1.0,
+    1.5707963267948966
+  ],
+  "homotopy": {
+    "gamma_homotopy_factor": 1.05,
+    "gamma_max_steps": 1000,
+    "target_residual": 0.005,
+    "newton_max_iter": 600,
+    "max_newton_calls": 20000
+  },
+  "runs": [
+    {
+      "gamma": 0.05,
+      "converged": true,
+      "saddle_residual": 0.00390625,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000002
+    },
+    {
+      "gamma": 0.1,
+      "converged": true,
+      "saddle_residual": 0.0004773660936880225,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0
+    },
+    {
+      "gamma": 0.14,
+      "converged": true,
+      "saddle_residual": 7.800767169592604e-05,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 0.9999999999999996
+    },
+    {
+      "gamma": 0.2,
+      "converged": true,
+      "saddle_residual": 0.0003906080074200166,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000004
+    },
+    {
+      "gamma": 0.39269908169872414,
+      "converged": true,
+      "saddle_residual": 0.003931580765754228,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0
+    },
+    {
+      "gamma": 0.5,
+      "converged": true,
+      "saddle_residual": 0.00033285429605045547,
+      "k99_y0": 6,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000004
+    },
+    {
+      "gamma": 0.75,
+      "converged": false,
+      "saddle_residual": 0.25,
+      "k99_y0": 6,
+      "k99_saddle": null,
+      "stable_rank_saddle": null
+    },
+    {
+      "gamma": 0.7853981633974483,
+      "converged": false,
+      "saddle_residual": 0.25,
+      "k99_y0": 6,
+      "k99_saddle": null,
+      "stable_rank_saddle": null
+    },
+    {
+      "gamma": 1.0,
+      "converged": false,
+      "saddle_residual": 0.25,
+      "k99_y0": 6,
+      "k99_saddle": null,
+      "stable_rank_saddle": null
+    },
+    {
+      "gamma": 1.5707963267948966,
+      "converged": false,
+      "saddle_residual": 0.25,
+      "k99_y0": 6,
+      "k99_saddle": null,
+      "stable_rank_saddle": null
+    }
+  ]
+}

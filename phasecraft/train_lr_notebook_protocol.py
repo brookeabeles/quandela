@@ -1,10 +1,10 @@
 """
-train_lr_notebook_protocol.py  (v2 — slope-matched objective)
-=============================================================
+train_lr_notebook_protocol.py  (v3 training objective)
+======================================================
 
 LR-QAOA training pipeline that trains ``(delta_gamma, delta_beta)`` by
-directly minimizing the **same** quantity the evaluation plot measures:
-the slope of ``log(median(1/p_succ))`` vs ``n``.
+minimizing the slope of **mean over instances of log(1/p_succ)** vs ``n``.
+Evaluation plots still use **median(1/p_succ)** vs ``n`` (see notebook eval).
 
 Why this differs from v1
 ------------------------
@@ -93,7 +93,7 @@ from scipy.optimize import minimize
 from scipy.stats import linregress
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
-_DEFAULT_ANGLE_LOG = _SCRIPT_DIR / "bm24_runs" / "lr_train_optimal_angles.txt"
+_DEFAULT_ANGLE_LOG = _SCRIPT_DIR / "bm24_runs" / "lr_train_optimal_angles_v2.txt"
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
@@ -116,11 +116,15 @@ except Exception:  # pragma: no cover
 # Defaults                                                                    #
 # --------------------------------------------------------------------------- #
 
-# Historical notebook (dg, db) search box. We keep the same domain so any
-# v1 trained angles remain "in-distribution" for v2's warm starts.
-DEFAULT_DG_BOUNDS: Tuple[float, float] = (-2.0, 2.0)
+# BM24 LR angles for this instance family use negative delta_gamma. Positive dg
+# is a spurious slope-objective basin (flat ln(1/p) when p≈0); cap dg at -0.01.
+DEFAULT_DG_BOUNDS: Tuple[float, float] = (-2.0, -0.01)
 DEFAULT_DB_BOUNDS: Tuple[float, float] = (0.1, 4.0)
 DEFAULT_INITIAL_DELTAS: Tuple[float, float] = (-0.8, 0.49)
+
+# Reject COBYLA output that collapses mean p_succ or regresses vs warm-start.
+MIN_TRAIN_MEAN_P_SUCC: float = 1e-4
+TRAIN_MEAN_P_REGRESSION_FACTOR: float = 10.0
 
 # Numerical floor: a p_succ = 0 instance becomes 1/eps, a sentinel "huge cost"
 # that the median will treat correctly (it is just one ordered value). We do
@@ -241,8 +245,86 @@ def proxy_n_values_for_training(
     return out
 
 
+# Eval-side guard: reject a depth if benchmark medians blow up vs previous depth.
+DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR = 10.0
+
+
+def eval_median_runtime_reject(
+    med_rt: Dict[int, float],
+    prev_med_rt: Optional[Dict[int, float]],
+    n_min: int,
+    n_max: int,
+    *,
+    factor: float = DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
+) -> Tuple[bool, str]:
+    """
+    Return ``(reject, reason)`` when ``median(1/p)`` at ``n_min`` or ``n_max``
+    exceeds ``factor`` times the previous depth's value at the same ``n``.
+    """
+    if prev_med_rt is None:
+        return False, ""
+    n_lo, n_hi = int(n_min), int(n_max)
+
+    def _get(d: Dict[int, float], n: int) -> float:
+        if n in d:
+            return float(d[n])
+        if str(n) in d:
+            return float(d[str(n)])
+        return float("nan")
+
+    cur_lo, cur_hi = _get(med_rt, n_lo), _get(med_rt, n_hi)
+    prev_lo, prev_hi = _get(prev_med_rt, n_lo), _get(prev_med_rt, n_hi)
+    reasons: List[str] = []
+    if np.isfinite(prev_lo) and prev_lo > 0 and np.isfinite(cur_lo):
+        if cur_lo > factor * prev_lo:
+            reasons.append(
+                f"n_min={n_lo}: {cur_lo:.4g} > {factor:g}× prev {prev_lo:.4g}"
+            )
+    if np.isfinite(prev_hi) and prev_hi > 0 and np.isfinite(cur_hi):
+        if cur_hi > factor * prev_hi:
+            reasons.append(
+                f"n_max={n_hi}: {cur_hi:.4g} > {factor:g}× prev {prev_hi:.4g}"
+            )
+    if reasons:
+        return True, "; ".join(reasons)
+    return False, ""
+
+
+def train_mean_p_collapse_reject(
+    dg: float,
+    db: float,
+    mean_p: float,
+    *,
+    warm_mean_p: Optional[float] = None,
+    min_mean_p: float = MIN_TRAIN_MEAN_P_SUCC,
+    regression_factor: float = TRAIN_MEAN_P_REGRESSION_FACTOR,
+) -> Tuple[bool, str]:
+    """
+    Return ``(reject, reason)`` when trained angles collapse on the proxy set.
+
+    Rejects positive ``dg`` (should not occur with ``DEFAULT_DG_BOUNDS``),
+    ``mean_p`` below ``min_mean_p``, or a large drop vs an acceptable warm start.
+    """
+    reasons: List[str] = []
+    if float(dg) > 0.0:
+        reasons.append(f"dg={float(dg):+.4f} > 0")
+    if float(mean_p) < float(min_mean_p):
+        reasons.append(f"mean_p={float(mean_p):.4e} < {float(min_mean_p):g}")
+    if (
+        warm_mean_p is not None
+        and float(warm_mean_p) >= float(min_mean_p)
+        and float(mean_p) < float(warm_mean_p) / float(regression_factor)
+    ):
+        reasons.append(
+            f"mean_p regressed {regression_factor:g}x vs warm {float(warm_mean_p):.4e}"
+        )
+    if reasons:
+        return True, "; ".join(reasons)
+    return False, ""
+
+
 # --------------------------------------------------------------------------- #
-# Core objective: slope of ln(median(1/p_succ)) vs n                          #
+# Core objectives                                                             #
 # --------------------------------------------------------------------------- #
 
 def _median_inv_p_at_n(
@@ -315,6 +397,50 @@ def _slope_log_median_inv_p(
         return float("nan"), log_med
     res = linregress(np.asarray(ns, dtype=float)[mask], arr[mask])
     return float(res.slope), log_med
+
+
+def _mean_log_inv_p_at_n(
+    h_list: Sequence[np.ndarray],
+    n: int,
+    betas: np.ndarray,
+    gammas: np.ndarray,
+    eps: float = DEFAULT_EPS,
+) -> float:
+    """Mean over instances of ln(1/p_succ) at fixed n (v3 training cost per n)."""
+    if not h_list:
+        return float("nan")
+    total = 0.0
+    for h_diag in h_list:
+        psi = run_qaoa(h_diag, betas, gammas, int(n))
+        p = per_instance_success_probability(psi, h_diag)
+        total += float(np.log(1.0 / max(float(p), float(eps))))
+    return total / len(h_list)
+
+
+def _slope_mean_log_inv_p(
+    h_by_n: Dict[int, List[np.ndarray]],
+    n_values: Sequence[int],
+    betas: np.ndarray,
+    gammas: np.ndarray,
+    eps: float = DEFAULT_EPS,
+) -> Tuple[float, List[float]]:
+    """
+    v3 training objective: least-squares slope of mean_inst(ln(1/p_succ)) vs n.
+
+    Differentiable in (dg, db) at fixed instances (unlike log(median)).
+    """
+    ns = [int(n) for n in n_values]
+    mean_logs: List[float] = []
+    for n in ns:
+        ml = _mean_log_inv_p_at_n(h_by_n[n], n, betas, gammas, eps=eps)
+        mean_logs.append(float(ml) if np.isfinite(ml) else float("nan"))
+
+    arr = np.asarray(mean_logs, dtype=float)
+    mask = np.isfinite(arr)
+    if int(mask.sum()) < 2:
+        return float("nan"), mean_logs
+    res = linregress(np.asarray(ns, dtype=float)[mask], arr[mask])
+    return float(res.slope), mean_logs
 
 
 # --------------------------------------------------------------------------- #
@@ -459,8 +585,9 @@ def train_lr_grid_search_bm24(
     use_log_mean: bool = True,
 ) -> Tuple[np.ndarray, dict]:
     """
-    Train LR-QAOA ``(delta_gamma, delta_beta)`` against the v2 slope-of-
-    log-median objective. Same call signature as v1 for the notebook.
+    Train LR-QAOA ``(delta_gamma, delta_beta)`` against the v3 slope of
+    mean_inst(ln(1/p_succ)) vs ``n``. Eval plots still use median(1/p).
+    Same call signature as v1/v2 for the notebook.
 
     Pipeline
     --------
@@ -520,37 +647,40 @@ def train_lr_grid_search_bm24(
     if verbose:
         total_h = sum(len(h_by_n[n]) for n in ns_for_slope)
         print(
-            f"  > Slope-objective training set: n in {ns_for_slope} "
+            f"  > v3 slope-objective training set: n in {ns_for_slope} "
             f"({total_h} H_diag arrays total; eps={eps:g})"
         )
 
-    # ---------- Build the objective ----------
+    # ---------- Build the objective (v3: slope of mean(log(1/p)); eval uses median) ----------
     can_slope = len(ns_for_slope) >= 2
 
-    def evaluate(dg: float, db: float) -> Tuple[float, List[float], float]:
+    def evaluate(dg: float, db: float) -> Tuple[float, List[float], List[float], float]:
         """
-        Returns (objective_to_minimize, log_med_per_n, mean_p_at_train_n).
-
-        The third return value is for diagnostics only; not used in the
-        objective itself.
+        Returns (objective_to_minimize, mean_log_inv_p_per_n, log_med_per_n, mean_p@train_n).
         """
         betas, gammas = _angles_from_deltas(dg, db, depth, beta_schedule)
+        log_med: List[float] = []
+        mean_logs: List[float] = []
         if can_slope:
-            slope, log_med = _slope_log_median_inv_p(
+            slope, mean_logs = _slope_mean_log_inv_p(
                 h_by_n, ns_for_slope, betas, gammas, eps=eps,
             )
             obj = slope if np.isfinite(slope) else 1e6
+            _, log_med = _slope_log_median_inv_p(
+                h_by_n, ns_for_slope, betas, gammas, eps=eps,
+            )
         else:
             n = ns_for_slope[0]
+            ml = _mean_log_inv_p_at_n(h_by_n[n], n, betas, gammas, eps=eps)
+            mean_logs = [float(ml) if np.isfinite(ml) else float("nan")]
+            obj = mean_logs[0] if np.isfinite(mean_logs[0]) else 1e6
             m = _median_inv_p_at_n(h_by_n[n], n, betas, gammas, eps=eps)
             log_med = [float(np.log(m)) if m > 0 else float("nan")]
-            obj = log_med[0] if np.isfinite(log_med[0]) else 1e6
-        # Diagnostic: mean p at train_n (helps spot saturation)
         if train_n in h_by_n:
             mean_p = _mean_p_succ_at_n(h_by_n[train_n], train_n, betas, gammas)
         else:
             mean_p = float("nan")
-        return float(obj), log_med, float(mean_p)
+        return float(obj), mean_logs, log_med, float(mean_p)
 
     def scalar(dg: float, db: float) -> float:
         return evaluate(dg, db)[0]
@@ -599,28 +729,44 @@ def train_lr_grid_search_bm24(
                 f"db={best_deltas[1]:+.4f} (slope_nat={best_rank_score:+.6f})"
             )
 
-    # ---------- COBYLA: assemble restart starts ----------
+    # ---------- COBYLA: assemble restart starts (warm-start always a candidate) ----------
     gen = rng if rng is not None else np.random.default_rng()
     span_dg = dg_bounds[1] - dg_bounds[0]
     span_db = db_bounds[1] - db_bounds[0]
     starts: List[np.ndarray] = []
     seen: set = set()
-    for dg, db in candidates:
+
+    def _add_start(dg: float, db: float) -> None:
         x = _clip_deltas(np.array([dg, db]), dg_bounds, db_bounds)
         key = (round(float(x[0]), 8), round(float(x[1]), 8))
         if key not in seen:
             starts.append(x)
             seen.add(key)
+
+    warm_obj: Optional[float] = None
+    warm_x: Optional[np.ndarray] = None
+    if warm:
+        warm_x = _clip_deltas(
+            np.array([float(initial_deltas[0]), float(initial_deltas[1])]),
+            dg_bounds,
+            db_bounds,
+        )
+        warm_obj = scalar(float(warm_x[0]), float(warm_x[1]))
+        _add_start(float(warm_x[0]), float(warm_x[1]))
+        if verbose:
+            print(
+                f"  > Warm-start candidate: dg={warm_x[0]:+.4f}, db={warm_x[1]:+.4f} "
+                f"(slope_nat={warm_obj:+.6f})"
+            )
+
+    for dg, db in candidates:
+        _add_start(float(dg), float(db))
     n_perturb = max(0, int(cobyla_restarts) - len(starts))
     anchor = starts[0]
     for _ in range(n_perturb):
         noise = gen.normal(0.0, float(cobyla_perturb_scale), size=2)
         x = anchor + noise * np.array([span_dg, span_db])
-        x = _clip_deltas(x, dg_bounds, db_bounds)
-        key = (round(float(x[0]), 8), round(float(x[1]), 8))
-        if key not in seen:
-            starts.append(x)
-            seen.add(key)
+        _add_start(float(x[0]), float(x[1]))
 
     # ---------- COBYLA: run restarts ----------
     rhobeg = (
@@ -634,6 +780,11 @@ def train_lr_grid_search_bm24(
 
     best_x = np.asarray(best_deltas, dtype=float)
     best_obj = scalar(best_x[0], best_x[1])
+    if warm and warm_x is not None and warm_obj is not None:
+        if warm_obj < best_obj:
+            best_x = warm_x.copy()
+            best_obj = float(warm_obj)
+
     restart_records: List[dict] = []
     for i, x0 in enumerate(starts):
         x_fin, obj, meta = _cobyla_refine(
@@ -661,9 +812,75 @@ def train_lr_grid_search_bm24(
                 f"x={np.round(x_fin, 4).tolist()}"
             )
 
+    # ---------- Anti-regression: never worse than warm-start objective ----------
+    anti_regression_applied = False
+    if warm and warm_x is not None and warm_obj is not None:
+        if best_obj > warm_obj + 1e-12 * max(1.0, abs(warm_obj)):
+            anti_regression_applied = True
+            best_x = warm_x.copy()
+            best_obj = float(warm_obj)
+            if verbose:
+                print(
+                    "  > Anti-regression guard: kept warm-start "
+                    f"(slope_nat={warm_obj:+.6f})"
+                )
+
+    # ---------- Collapse guard: reject flat-slope basins with p_succ ≈ 0 ----------
+    trained_x = np.asarray(best_x, dtype=float).copy()
+    dg_trained, db_trained = float(trained_x[0]), float(trained_x[1])
+    _, _, _, trained_mean_p = evaluate(dg_trained, db_trained)
+    warm_mean_p: Optional[float] = None
+    if warm and warm_x is not None:
+        _, _, _, warm_mean_p = evaluate(float(warm_x[0]), float(warm_x[1]))
+
+    train_rejected, train_reject_reason = train_mean_p_collapse_reject(
+        dg_trained,
+        db_trained,
+        trained_mean_p,
+        warm_mean_p=warm_mean_p,
+    )
+    collapse_guard_applied = False
+    if train_rejected:
+        fallback_x: Optional[np.ndarray] = None
+        fallback_label = ""
+        if (
+            warm_x is not None
+            and warm_mean_p is not None
+            and float(warm_mean_p) >= MIN_TRAIN_MEAN_P_SUCC
+        ):
+            fallback_x = warm_x.copy()
+            fallback_label = "warm-start"
+        elif grid_scores:
+            best_mp = -1.0
+            best_g: Optional[np.ndarray] = None
+            top_n = max(1, min(int(grid_top_k), len(grid_scores)))
+            for _, gdg, gdb in grid_scores[:top_n]:
+                _, _, _, mp = evaluate(float(gdg), float(gdb))
+                if mp > best_mp:
+                    best_mp = float(mp)
+                    best_g = np.array([float(gdg), float(gdb)], dtype=float)
+            if best_g is not None and best_mp >= MIN_TRAIN_MEAN_P_SUCC:
+                fallback_x = best_g
+                fallback_label = "grid best mean_p among top-k"
+        if fallback_x is not None:
+            collapse_guard_applied = True
+            best_x = fallback_x
+            best_obj = scalar(float(best_x[0]), float(best_x[1]))
+            if verbose:
+                print(
+                    "  > Collapse guard: rejected trained "
+                    f"({train_reject_reason}); using {fallback_label} "
+                    f"dg={float(best_x[0]):+.4f} db={float(best_x[1]):+.4f}"
+                )
+        elif verbose:
+            print(
+                "  > Collapse guard: rejected trained "
+                f"({train_reject_reason}); no acceptable fallback"
+            )
+
     # ---------- Final diagnostics at the optimum ----------
     dg_opt, db_opt = float(best_x[0]), float(best_x[1])
-    final_obj, final_log_med, final_mean_p = evaluate(dg_opt, db_opt)
+    final_obj, final_mean_logs, final_log_med, final_mean_p = evaluate(dg_opt, db_opt)
     final_slope_log2 = (
         float(final_obj / np.log(2.0))
         if can_slope and np.isfinite(final_obj)
@@ -676,10 +893,13 @@ def train_lr_grid_search_bm24(
             f"slope_nat={final_obj:+.6f} (slope_log2={final_slope_log2:+.6f})"
         )
         if can_slope:
-            saturation = []
-            for n_i, lm in zip(ns_for_slope, final_log_med):
-                saturation.append(f"n={n_i}: ln(med 1/p)={lm:+.4f}")
-            print("    per-n log medians at optimum: " + " | ".join(saturation))
+            train_parts = []
+            eval_parts = []
+            for n_i, ml, lm in zip(ns_for_slope, final_mean_logs, final_log_med):
+                train_parts.append(f"n={n_i}: mean(ln 1/p)={ml:+.4f}")
+                eval_parts.append(f"n={n_i}: ln(med 1/p)={lm:+.4f}")
+            print("    per-n train (v3): " + " | ".join(train_parts))
+            print("    per-n eval ref:   " + " | ".join(eval_parts))
             if final_log_med[0] < 1e-3 and len(final_log_med) > 1:
                 print(
                     "    WARNING: ln(med 1/p) ≈ 0 at smallest n -> "
@@ -698,14 +918,25 @@ def train_lr_grid_search_bm24(
         "best_train_score": float(-final_obj) if can_slope else float(final_mean_p),
         # ^ legacy: v1 returned a "score to maximize". We give -slope so
         #   higher still means better, but its absolute scale differs.
+        "mean_log_inv_p_per_n": [float(x) for x in final_mean_logs],
         "log_med_inv_p_per_n": [float(x) for x in final_log_med],
         "train_ns": list(ns_for_slope),
         "grid_skipped": not do_grid,
         "warm_start_used": bool(warm),
+        "warm_start_slope_nat": float(warm_obj) if warm_obj is not None else None,
+        "anti_regression_applied": bool(anti_regression_applied),
+        "trained_deltas": [dg_trained, db_trained],
+        "trained_avg_train_p_succ": float(trained_mean_p),
+        "train_rejected": bool(train_rejected),
+        "train_reject_reason": train_reject_reason,
+        "collapse_guard_applied": bool(collapse_guard_applied),
+        "angles_accepted": (
+            float(final_mean_p) >= MIN_TRAIN_MEAN_P_SUCC and float(dg_opt) <= 0.0
+        ),
         "cobyla_rhobeg_used": float(rhobeg),
         "cobyla_restarts": int(len(starts)),
         "restart_records": restart_records,
-        "objective_version": "v2-slope-of-log-median-inv-p",
+        "objective_version": "v3-slope-of-mean-log-inv-p",
     }
     return params_concat, diag
 
@@ -822,8 +1053,7 @@ def main():
     p = argparse.ArgumentParser(
         description=(
             "Train LR-QAOA (delta_gamma, delta_beta) by minimising slope of "
-            "ln(median(1/p_succ)) vs n. v2 objective: matches the evaluation "
-            "plot's y-axis."
+            "mean_inst(ln(1/p_succ)) vs n (v3). Eval plot uses median(1/p)."
         )
     )
     p.add_argument("--depth", type=int, required=True)
@@ -915,7 +1145,7 @@ def main():
     if args.initial_dgamma is not None and args.initial_dbeta is not None:
         initial = (float(args.initial_dgamma), float(args.initial_dbeta))
 
-    print("\n--- Training LR-QAOA (v2 slope-of-log-median-inv-p) ---")
+    print("\n--- Training LR-QAOA (v3 slope-of-mean-log-inv-p) ---")
     params, diag = train_lr_grid_search_bm24(
         training_h,
         train_n=args.train_n,
@@ -998,7 +1228,7 @@ def main():
             "lr_beta_schedule": args.lr_beta_schedule,
             "proxy_n_values": proxy_ns,
             "proxy_size_per_n": args.proxy_size_per_n,
-            "objective": "v2-slope-of-log-median-inv-p",
+            "objective": "v3-slope-of-mean-log-inv-p",
             "cobyla_maxiter": args.cobyla_maxiter,
             "cobyla_restarts": args.cobyla_restarts,
             "angle_convention": "bm24",
@@ -1018,25 +1248,34 @@ def main():
 
     if not args.no_angle_log:
         log_path = Path(args.angle_log)
-        settings_compact = {
-            "train_n": args.train_n, "train_size": args.train_size,
-            "k": args.k, "r": args.r, "depth": depth, "seed": args.seed,
-            "m_sampling": args.m_sampling,
-            "lr_beta_schedule": args.lr_beta_schedule,
-            "proxy_n_values": proxy_ns,
-            "proxy_size_per_n": args.proxy_size_per_n,
-            "objective": "v2-slope-of-log-median-inv-p",
-        }
-        append_optimal_angles_log(
-            log_path,
-            timestamp=datetime.now().isoformat(timespec="seconds"),
-            settings=settings_compact,
-            dg=dg, db=db, betas=betas, gammas=gammas,
-            best_avg_train_p_succ=float(diag["best_avg_train_p_succ"]),
-            benchmark_cmd=cmd,
-            exponent_fit=exponent_fit,
-        )
-        print(f"\nAppended optimal angles to: {log_path.resolve()}")
+        if not diag.get("angles_accepted", True):
+            print(
+                "\nSkipped angle log: training failed acceptance guard "
+                f"({diag.get('train_reject_reason', 'mean_p too low')})"
+            )
+        else:
+            settings_compact = {
+                "train_n": args.train_n, "train_size": args.train_size,
+                "k": args.k, "r": args.r, "depth": depth, "seed": args.seed,
+                "m_sampling": args.m_sampling,
+                "lr_beta_schedule": args.lr_beta_schedule,
+                "proxy_n_values": proxy_ns,
+                "proxy_size_per_n": args.proxy_size_per_n,
+                "objective": "v3-slope-of-mean-log-inv-p",
+            }
+            if diag.get("train_rejected"):
+                settings_compact["trained_deltas_rejected"] = diag.get("trained_deltas")
+                settings_compact["train_reject_reason"] = diag.get("train_reject_reason")
+            append_optimal_angles_log(
+                log_path,
+                timestamp=datetime.now().isoformat(timespec="seconds"),
+                settings=settings_compact,
+                dg=dg, db=db, betas=betas, gammas=gammas,
+                best_avg_train_p_succ=float(diag["best_avg_train_p_succ"]),
+                benchmark_cmd=cmd,
+                exponent_fit=exponent_fit,
+            )
+            print(f"\nAppended optimal angles to: {log_path.resolve()}")
 
 
 if __name__ == "__main__":

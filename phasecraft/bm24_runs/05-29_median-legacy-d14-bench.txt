@@ -1,0 +1,1 @@
+/Users/b/miniforge3/bin/python bm24_qaoa_sim.py --benchmark --n-min 12 --n-max 20 --k 8 --r 176.54 --test-size 200 --seed 27 --algorithms lr_qaoa walksat walksatlm --depth 14 --lr-dgamma -1.5525381513478895 --lr-dbeta 1.0503430602504156 --lr-angle-convention bm24 --lr-beta-schedule decreasing --plot-benchmark

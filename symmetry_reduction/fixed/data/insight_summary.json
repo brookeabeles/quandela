@@ -1,0 +1,273 @@
+{
+  "directions": [
+    "A: universal rank collapse at saddle (even p=1)",
+    "B: 2q vs 2^q bug moves saddle and diagnostics",
+    "C: y=0 k99 scales ~ p^alpha (power law before saddle)",
+    "D: convergence boundary in (p, gamma) \u2014 pi/2 fragile"
+  ],
+  "wrong_vs_correct": {
+    "p": 1,
+    "gamma": 0.7853981633974483,
+    "k_correct": 8,
+    "k_wrong": 6,
+    "conv_correct": false,
+    "conv_wrong": true,
+    "res_correct": 0.00041209935228136985,
+    "res_wrong": 1.1211639652760335e-170,
+    "k99_correct": 1,
+    "k99_wrong": 1,
+    "y_distance": 55501830854448.77
+  },
+  "p12_saddle": [
+    {
+      "p": 1,
+      "gamma": 0.05,
+      "d": 8,
+      "k99_y0": 2,
+      "stable_rank_y0": 2.0,
+      "saddle_converged": true,
+      "saddle_residual": 6.941381291772353e-07,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000002,
+      "entropy": 0.6931471805599453,
+      "kappa": 2.6680277370381245e+32,
+      "ipr": 2.0
+    },
+    {
+      "p": 1,
+      "gamma": 0.14,
+      "d": 8,
+      "k99_y0": 2,
+      "stable_rank_y0": 2.0,
+      "saddle_converged": true,
+      "saddle_residual": 9.531834788385762e-05,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 0.9999999999999996,
+      "entropy": 0.6931471805599453,
+      "kappa": 2.64726498046511e+32,
+      "ipr": 2.0
+    },
+    {
+      "p": 1,
+      "gamma": 0.7853981633974483,
+      "d": 8,
+      "k99_y0": 2,
+      "stable_rank_y0": 2.0000000000000004,
+      "saddle_converged": true,
+      "saddle_residual": 0.004548831549080035,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000004,
+      "entropy": 0.6931471805599453,
+      "kappa": 3.7332419967990015e+32,
+      "ipr": 2.0
+    },
+    {
+      "p": 1,
+      "gamma": 0.5,
+      "d": 8,
+      "k99_y0": 2,
+      "stable_rank_y0": 1.999999999999999,
+      "saddle_converged": true,
+      "saddle_residual": 0.002270066341574062,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 0.9999999999999996,
+      "entropy": 0.6931471805599453,
+      "kappa": 2.2643257311854073e+32,
+      "ipr": 2.0
+    },
+    {
+      "p": 1,
+      "gamma": 1.0,
+      "d": 8,
+      "k99_y0": 2,
+      "stable_rank_y0": 2.0000000000000004,
+      "saddle_converged": true,
+      "saddle_residual": 0.004152148992754512,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000002,
+      "entropy": 0.6931471805599453,
+      "kappa": 1.3733829795401765e+32,
+      "ipr": 2.0
+    },
+    {
+      "p": 2,
+      "gamma": 0.05,
+      "d": 32,
+      "k99_y0": 4,
+      "stable_rank_y0": 2.1084876287942267,
+      "saddle_converged": true,
+      "saddle_residual": 6.904204249939404e-11,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000007,
+      "entropy": 0.6931471805599453,
+      "kappa": 7.118372005604772e+64,
+      "ipr": 2.0
+    },
+    {
+      "p": 2,
+      "gamma": 0.14,
+      "d": 32,
+      "k99_y0": 4,
+      "stable_rank_y0": 2.1282238590563916,
+      "saddle_converged": true,
+      "saddle_residual": 9.196571173868129e-11,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0,
+      "entropy": 0.6931471805599453,
+      "kappa": 7.008011876796941e+64,
+      "ipr": 2.0
+    },
+    {
+      "p": 2,
+      "gamma": 0.7853981633974483,
+      "d": 32,
+      "k99_y0": 4,
+      "stable_rank_y0": 2.172783810077385,
+      "saddle_converged": true,
+      "saddle_residual": 0.0016762497683026067,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 1.0000000000000002,
+      "entropy": 0.6931471805599453,
+      "kappa": 5.1271710169083304e+64,
+      "ipr": 2.0
+    },
+    {
+      "p": 2,
+      "gamma": 0.5,
+      "d": 32,
+      "k99_y0": 4,
+      "stable_rank_y0": 2.1597109704185007,
+      "saddle_converged": true,
+      "saddle_residual": 4.939156174332826e-09,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 0.9999999999999993,
+      "entropy": 0.6931471805599453,
+      "kappa": 8.45327591409397e+64,
+      "ipr": 2.0
+    },
+    {
+      "p": 2,
+      "gamma": 1.0,
+      "d": 32,
+      "k99_y0": 4,
+      "stable_rank_y0": 2.180117694732913,
+      "saddle_converged": true,
+      "saddle_residual": 0.001479077388670369,
+      "k99_saddle": 1,
+      "stable_rank_saddle": 0.9999999999999996,
+      "entropy": 0.6931471805599453,
+      "kappa": 1.3937095806663797e+65,
+      "ipr": 2.0
+    }
+  ],
+  "y0_scaling": [
+    {
+      "p": 1,
+      "gamma": 0.14,
+      "k99_y0": 2,
+      "d": 8
+    },
+    {
+      "p": 2,
+      "gamma": 0.14,
+      "k99_y0": 4,
+      "d": 32
+    },
+    {
+      "p": 3,
+      "gamma": 0.14,
+      "k99_y0": 6,
+      "d": 128
+    },
+    {
+      "p": 4,
+      "gamma": 0.14,
+      "k99_y0": 8,
+      "d": 512
+    },
+    {
+      "p": 5,
+      "gamma": 0.14,
+      "k99_y0": 10,
+      "d": 2048
+    },
+    {
+      "p": 6,
+      "gamma": 0.14,
+      "k99_y0": 11,
+      "d": 8192
+    },
+    {
+      "p": 1,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 2,
+      "d": 8
+    },
+    {
+      "p": 2,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 4,
+      "d": 32
+    },
+    {
+      "p": 3,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 6,
+      "d": 128
+    },
+    {
+      "p": 4,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 8,
+      "d": 512
+    },
+    {
+      "p": 5,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 10,
+      "d": 2048
+    },
+    {
+      "p": 6,
+      "gamma": 0.7853981633974483,
+      "k99_y0": 12,
+      "d": 8192
+    },
+    {
+      "p": 1,
+      "gamma": 1.0,
+      "k99_y0": 2,
+      "d": 8
+    },
+    {
+      "p": 2,
+      "gamma": 1.0,
+      "k99_y0": 4,
+      "d": 32
+    },
+    {
+      "p": 3,
+      "gamma": 1.0,
+      "k99_y0": 6,
+      "d": 128
+    },
+    {
+      "p": 4,
+      "gamma": 1.0,
+      "k99_y0": 8,
+      "d": 512
+    },
+    {
+      "p": 5,
+      "gamma": 1.0,
+      "k99_y0": 10,
+      "d": 2048
+    },
+    {
+      "p": 6,
+      "gamma": 1.0,
+      "k99_y0": 12,
+      "d": 8192
+    }
+  ]
+}

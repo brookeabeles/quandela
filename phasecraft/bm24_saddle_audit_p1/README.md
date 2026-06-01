@@ -16,13 +16,34 @@ Quick smoke (fewer starts, smaller grids):
 python -m phasecraft.bm24_saddle_audit_p1.audit --quick
 ```
 
-Outputs land in `phasecraft/bm24_saddle_audit_p1/results/<timestamp>/`:
+### Certified seed-branch continuation
+
+Track the BM24 iterator seed saddle from small negative γ toward more negative γ
+(Krawczyk-certified, Conv2 primary, no silent root jumps):
+
+```bash
+python -m phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified
+python -m phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified --quick
+```
+
+Writes `results/<run>_seed_branch/` with `seed_branch_continuation.csv/json`,
+`competitor_saddles_by_gamma.json`, and γ-scan plots (exponent, gap, residual,
+nearest competitor Re-action gap). Does **not** claim contour dominance.
+
+Outputs land in `phasecraft/bm24_saddle_audit_p1/results/<run-name>/`:
+
+Run folder names use readable UTC names `run_MM-DD_HH-MM-SSZ` generated at launch.
+If a run aborts early, its folder can be partially populated (or empty).
+See `phasecraft/bm24_saddle_audit_p1/results/RUN_INDEX.md` for the current
+"latest recommended" and relevant historical runs.
 
 | File | Contents |
 |------|----------|
 | `saddle_table.csv` / `saddle_table.json` | Per-saddle certification, Φ, det(H), action gaps, finite-n match flags |
+| `object_comparison_table.csv` / `.json` | BM24 iterator vs Newton-polished vs Krawczyk-certified object-level comparison |
 | `finite_n_exponents.json` | `lambda_abs`, `lambda_local` on the n-grid |
 | `gamma_scan.json` | Stokes / anti-Stokes pairs along the γ sweep |
+| `sanity_checks.json` | q=1 small-γ preflight check (`γ=1e-3,1e-2,5e-2`) |
 | `exponent_vs_saddles.png` | λ curves vs Re Φ_M, Re Φ_M+φ_pref, and φ_pref lines |
 | `gamma_stokes_scan.png` | Near Stokes/anti-Stokes events vs γ |
 
