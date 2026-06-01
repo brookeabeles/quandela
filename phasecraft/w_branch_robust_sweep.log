@@ -1,9 +1,0 @@
-/Users/b/Quandela/phasecraft/continue_w_saddle_branch.py:737: SyntaxWarning: invalid escape sequence '\g'
-  ax.set_title("Zoom: $\gamma\in[-1,-0.7]$")
-{
-  "out": "phasecraft/w_branch_competitors_robust.json",
-  "completed": 118,
-  "requested": 118,
-  "full_mesh": true,
-  "stop": null
-}

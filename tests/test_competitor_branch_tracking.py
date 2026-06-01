@@ -51,6 +51,7 @@ def _synthetic_slices():
     return [
         {
             "gamma": -0.55,
+            "r": 1.0,
             "seed_Phi_real": 0.1,
             "seed_Phi_imag": 0.0,
             "seed_RePhi_interval": [0.1, 0.1],
@@ -61,6 +62,7 @@ def _synthetic_slices():
         },
         {
             "gamma": -0.65,
+            "r": 1.0,
             "seed_Phi_real": 0.12,
             "seed_Phi_imag": 0.0,
             "seed_RePhi_interval": [0.12, 0.12],
@@ -129,6 +131,7 @@ def test_seed_sheet_is_longest_low_distance_branch():
         slices.append(
             {
                 "gamma": g,
+                "r": 1.0,
                 "seed_Phi_real": 0.1,
                 "seed_Phi_imag": 0.0,
                 "seed_RePhi_interval": [0.1, 0.1],

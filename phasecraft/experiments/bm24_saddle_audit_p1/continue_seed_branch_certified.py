@@ -1,0 +1,668 @@
+"""
+Certified continuation of the BM24 seed saddle branch in gamma.
+
+Tracks one z-branch from small negative gamma (certified, Conv2-matched) toward
+more negative gamma. Does not claim contour dominance; reports rigorous
+Krawczyk certification and Conv2 action vs exact finite-n baseline.
+
+Convention (primary throughout):
+    full_exponent = Re Phi_M + bm24_prefactor_exponent_ksat_all_subsets(k=K_clause, r=r)
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import math
+import sys
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from phasecraft.bm24_saddle_audit_p1.audit import (
+    AUDIT_DIR,
+    bm24_prefactor_exponent_ksat_all_subsets,
+    bm24_seed_z,
+    classify_bm24_iterate,
+    diagnose_bm24_iterate,
+    finite_n_exponent_grid,
+    _adaptive_krawczyk_with_diagnostics,
+    _mpmath_newton_polish,
+    _scipy_polish_to_tol,
+    _x_to_z,
+)
+from phasecraft.krawczyk_p1_roots import (
+    SaddleSystem,
+    discover_roots,
+    krawczyk_certify_with_escalation,
+    numerical_jacobian,
+)
+
+from phasecraft.picard_lefschetz import compute_phi
+
+IM_PHI_WARNING = (
+    "Im(Phi) uses principal np.log; raw Im Phi can jump by 2*pi along gamma. "
+    "Do not infer Stokes events without branch-unwrapped phases."
+)
+
+
+@dataclass
+class ContinuationRow:
+    gamma: float
+    step_index: int
+    certified: bool
+    failed: bool
+    failure_reason: str
+    residual_inf: float
+    krawczyk_contraction: float
+    box_radius: float
+    re_phi_m: float
+    im_phi_m: float
+    phi_pref_conv2: float
+    full_conv2_exponent: float
+    lambda_abs_n_max: float
+    gap_to_exact: float
+    z_distance_from_previous: float
+    jacobian_cond: float
+    iterate_used: bool
+    iterate_converged: bool
+    matches_exact_tol: bool
+    z_real: list[float] = field(default_factory=list)
+    z_imag: list[float] = field(default_factory=list)
+
+    def to_row(self) -> dict:
+        d = asdict(self)
+        for k, v in d.items():
+            if isinstance(v, (np.bool_, bool)):
+                d[k] = bool(v)
+            elif isinstance(v, (np.floating, np.integer)):
+                d[k] = float(v)
+        return d
+
+
+def conv2_pref(K_clause: int, r: float) -> float:
+    return float(bm24_prefactor_exponent_ksat_all_subsets(k=K_clause, r=r))
+
+
+def conv2_full_exponent(re_phi_m: float, K_clause: int, r: float) -> float:
+    return float(re_phi_m) + conv2_pref(K_clause, r)
+
+
+def lambda_abs_n_max(
+    q: int,
+    K_clause: int,
+    r: float,
+    beta: float,
+    gamma: float,
+    n_values: list[int],
+) -> float:
+    fn = finite_n_exponent_grid(K_clause, q, r, beta, gamma, n_values)
+    n_large = max(fn["n_values"])
+    return float(fn["lambda_abs"][str(n_large)])
+
+
+def polish_to_residual(
+    sys: SaddleSystem,
+    x0: np.ndarray,
+    *,
+    min_residual: float,
+    dps: int,
+) -> tuple[np.ndarray, float]:
+    x, res = _scipy_polish_to_tol(sys, x0, target_inf=min_residual, max_tries=8, tol=1e-14)
+    if res > min_residual:
+        x, res = _mpmath_newton_polish(sys, x, target_inf=min_residual, dps=max(120, dps), max_iters=16)
+    return x, float(res)
+
+
+def certify_z(
+    sys: SaddleSystem,
+    z: np.ndarray,
+    *,
+    dps: int,
+) -> tuple[bool, dict]:
+    ok, info = _adaptive_krawczyk_with_diagnostics(sys, z, dps=dps)
+    if not ok:
+        ok2, info2 = krawczyk_certify_with_escalation(sys, z, dps_start=dps, max_inflate_iters=8)
+        if ok2:
+            return True, info2
+    return bool(ok), info
+
+
+def initialize_seed_at_gamma(
+    q: int,
+    K_clause: int,
+    r: float,
+    beta: float,
+    gamma: float,
+    *,
+    n_values: list[int],
+    match_tol: float,
+    min_residual: float,
+    dps: int,
+    use_iterator: bool,
+) -> tuple[np.ndarray, ContinuationRow, dict]:
+    """Return certified z at gamma_start; validate iterator only when use_iterator=True."""
+    sys = SaddleSystem.build(q=q, r=r, betas=np.array([beta]), gammas=np.array([gamma]))
+    betas = sys.betas
+    gammas = sys.gammas
+    iterate_used = False
+    iterate_converged = False
+
+    if use_iterator:
+        z_it, phi_it, conv = bm24_seed_z(q, r, beta, gamma)
+        diag_it = diagnose_bm24_iterate(z_it, sys)
+        status, fixed = classify_bm24_iterate(diag_it)
+        if not conv:
+            raise RuntimeError(f"BM24 iterator did not converge at gamma={gamma}")
+        if not fixed:
+            raise RuntimeError(
+                f"BM24 iterator not a fixed point at gamma={gamma}: status={status}, "
+                f"||G||_inf={diag_it['res_inf']}"
+            )
+        x0 = np.concatenate([z_it.real, z_it.imag])
+        iterate_used = True
+        iterate_converged = True
+    else:
+        raise ValueError("initialize_seed_at_gamma requires use_iterator=True for cold start")
+
+    x_pol, res = polish_to_residual(sys, x0, min_residual=min_residual, dps=dps)
+    z_pol = _x_to_z(x_pol, sys.nvars)
+    ok, proof = certify_z(sys, z_pol, dps=dps)
+    phi = compute_phi(z_pol, q=q, r=r, betas=betas, gammas=gammas)
+    pref = conv2_pref(K_clause, r)
+    full = conv2_full_exponent(phi.real, K_clause, r)
+    lam = lambda_abs_n_max(q, K_clause, r, beta, gamma, n_values)
+    gap = full - lam
+    j = numerical_jacobian(sys.G_real, x_pol)
+    jcond = float(np.linalg.cond(j)) if j.size else float("inf")
+    radii = proof.get("box_radius", [])
+    box_r = float(min(radii)) if radii else float("nan")
+    match_tol_eff = max(match_tol, 5e-4 * abs(lam))
+    row = ContinuationRow(
+        gamma=float(gamma),
+        step_index=0,
+        certified=bool(ok),
+        failed=not ok,
+        failure_reason="" if ok else str(proof.get("reason", "krawczyk_failed")),
+        residual_inf=res,
+        krawczyk_contraction=float(proof.get("contraction_bound", math.inf)),
+        box_radius=box_r,
+        re_phi_m=float(phi.real),
+        im_phi_m=float(phi.imag),
+        phi_pref_conv2=pref,
+        full_conv2_exponent=full,
+        lambda_abs_n_max=lam,
+        gap_to_exact=gap,
+        z_distance_from_previous=0.0,
+        jacobian_cond=jcond,
+        iterate_used=iterate_used,
+        iterate_converged=iterate_converged,
+        matches_exact_tol=abs(gap) < match_tol_eff,
+        z_real=z_pol.real.tolist(),
+        z_imag=z_pol.imag.tolist(),
+    )
+    if not ok or res > min_residual:
+        raise RuntimeError(f"Initialization failed certification/residual at gamma={gamma}")
+    return z_pol, row, proof
+
+
+def step_from_previous_z(
+    q: int,
+    K_clause: int,
+    r: float,
+    beta: float,
+    gamma: float,
+    z_prev: np.ndarray,
+    *,
+    step_index: int,
+    n_values: list[int],
+    match_tol: float,
+    min_residual: float,
+    dps: int,
+) -> tuple[Optional[np.ndarray], ContinuationRow]:
+    sys = SaddleSystem.build(q=q, r=r, betas=np.array([beta]), gammas=np.array([gamma]))
+    x_prev = np.concatenate([z_prev.real, z_prev.imag])
+    x_pol, res = polish_to_residual(sys, x_prev, min_residual=min_residual, dps=dps)
+    z_pol = _x_to_z(x_pol, sys.nvars)
+    z_dist = float(np.linalg.norm(z_pol - z_prev, ord=np.inf))
+    ok, proof = certify_z(sys, z_pol, dps=dps)
+    phi = compute_phi(z_pol, q=q, r=r, betas=sys.betas, gammas=sys.gammas)
+    pref = conv2_pref(K_clause, r)
+    full = conv2_full_exponent(phi.real, K_clause, r)
+    lam = lambda_abs_n_max(q, K_clause, r, beta, gamma, n_values)
+    gap = full - lam
+    j = numerical_jacobian(sys.G_real, x_pol)
+    jcond = float(np.linalg.cond(j)) if j.size else float("inf")
+    radii = proof.get("box_radius", [])
+    box_r = float(min(radii)) if radii else float("nan")
+    match_tol_eff = max(match_tol, 5e-4 * abs(lam))
+    failed = (not ok) or (res > min_residual) or (not np.isfinite(res))
+    reason = ""
+    if failed:
+        if not ok:
+            reason = str(proof.get("reason", "krawczyk_failed"))
+        elif res > min_residual:
+            reason = f"residual_above_min_{min_residual}"
+        else:
+            reason = "nonfinite"
+    row = ContinuationRow(
+        gamma=float(gamma),
+        step_index=step_index,
+        certified=bool(ok) and not failed,
+        failed=failed,
+        failure_reason=reason,
+        residual_inf=res,
+        krawczyk_contraction=float(proof.get("contraction_bound", math.inf)),
+        box_radius=box_r,
+        re_phi_m=float(phi.real),
+        im_phi_m=float(phi.imag),
+        phi_pref_conv2=pref,
+        full_conv2_exponent=full,
+        lambda_abs_n_max=lam,
+        gap_to_exact=gap,
+        z_distance_from_previous=z_dist,
+        jacobian_cond=jcond,
+        iterate_used=False,
+        iterate_converged=False,
+        matches_exact_tol=abs(gap) < match_tol_eff,
+        z_real=z_pol.real.tolist(),
+        z_imag=z_pol.imag.tolist(),
+    )
+    if failed:
+        return None, row
+    return z_pol, row
+
+
+def discover_competitors_at_gamma(
+    q: int,
+    K_clause: int,
+    r: float,
+    beta: float,
+    gamma: float,
+    seed_z: np.ndarray,
+    *,
+    num_starts: int,
+    seed: int,
+    branch_tol: float,
+    min_residual: float,
+    dps: int,
+) -> list[dict]:
+    sys = SaddleSystem.build(q=q, r=r, betas=np.array([beta]), gammas=np.array([gamma]))
+    pref = conv2_pref(K_clause, r)
+    seed_full = conv2_full_exponent(
+        float(np.real(compute_phi(seed_z, q=q, r=r, betas=sys.betas, gammas=sys.gammas))),
+        K_clause,
+        r,
+    )
+    roots_x = discover_roots(sys, num_starts=num_starts, seed=seed, tol=1e-12)
+    competitors: list[dict] = []
+    for x in roots_x:
+        z = _x_to_z(x, sys.nvars)
+        z_dist_seed = float(np.linalg.norm(z - seed_z, ord=np.inf))
+        if z_dist_seed < branch_tol:
+            continue
+        x_pol, res = polish_to_residual(sys, x, min_residual=1e-8, dps=dps)
+        z_pol = _x_to_z(x_pol, sys.nvars)
+        ok, proof = certify_z(sys, z_pol, dps=dps)
+        phi = compute_phi(z_pol, q=q, r=r, betas=sys.betas, gammas=sys.gammas)
+        full = conv2_full_exponent(phi.real, K_clause, r)
+        competitors.append(
+            {
+                "gamma": float(gamma),
+                "certified": bool(ok),
+                "residual_inf": float(res),
+                "re_phi_m": float(phi.real),
+                "im_phi_m": float(phi.imag),
+                "full_conv2_exponent": full,
+                "re_action_gap_vs_seed_branch": float(full - seed_full),
+                "z_distance_from_seed_branch": z_dist_seed,
+                "krawczyk_contraction": float(proof.get("contraction_bound", math.inf)),
+                "label": "certified_competitor" if ok else "uncertified_competitor",
+                "note": "largest_algebraic_re_phi is not physical dominance without PL data",
+            }
+        )
+    return competitors
+
+
+def selected_competitor_gammas(gamma_start: float, gamma_end: float, every: float) -> list[float]:
+    """Sample gammas along the continuation direction (start -> end)."""
+    g, g_end = float(gamma_start), float(gamma_end)
+    step = -abs(every) if g > g_end else abs(every)
+    out: list[float] = []
+    while (step < 0 and g >= g_end - 1e-12) or (step > 0 and g <= g_end + 1e-12):
+        out.append(round(g, 10))
+        if abs(g - g_end) < 1e-9:
+            break
+        g += step
+    if not out or abs(out[-1] - g_end) > 1e-9:
+        out.append(g_end)
+    return sorted(set(out))
+
+
+def plot_continuation(rows: list[ContinuationRow], competitors_by_gamma: dict, out_dir: Path) -> None:
+    ok_rows = [r for r in rows if r.certified and not r.failed]
+    if not ok_rows:
+        return
+    gammas = [r.gamma for r in ok_rows]
+    full = [r.full_conv2_exponent for r in ok_rows]
+    lam = [r.lambda_abs_n_max for r in ok_rows]
+    gap = [r.gap_to_exact for r in ok_rows]
+    res = [r.residual_inf for r in ok_rows]
+    kappa = [r.krawczyk_contraction for r in ok_rows]
+    nearest_gap = []
+    for r in ok_rows:
+        comps = competitors_by_gamma.get(str(r.gamma), [])
+        cert_re = [
+            c["re_action_gap_vs_seed_branch"]
+            for c in comps
+            if c.get("certified") and c.get("label") == "certified_competitor"
+        ]
+        nearest_gap.append(min((abs(x) for x in cert_re), default=float("nan")))
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(gammas, full, "o-", label="Seed branch: Re Φ_M + Conv2 pref")
+    ax.plot(gammas, lam, "s--", label="Exact finite-n λ_abs(n_max)")
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel("exponent (natural log)")
+    ax.set_title("Certified seed branch vs Conv2 exact finite-n")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_dir / "gamma_vs_exponents.png", dpi=150)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(gammas, gap, "o-", color="C2")
+    ax.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel("gap_to_exact")
+    ax.set_title("Seed branch Conv2 exponent minus exact λ_abs(n_max)")
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_dir / "gamma_vs_gap_to_exact.png", dpi=150)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.semilogy(gammas, res, "o-", label=r"$||G||_\infty$")
+    ax.semilogy(gammas, kappa, "s-", label="Krawczyk contraction")
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel("value")
+    ax.set_title("Residual and Krawczyk contraction along branch")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_dir / "gamma_vs_residual_krawczyk.png", dpi=150)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(gammas, nearest_gap, "o-", color="C4")
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_ylabel("|Δ(Re action)| vs nearest certified competitor")
+    ax.set_title("Nearest certified competitor Re-action gap (not PL dominance)")
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_dir / "gamma_vs_nearest_competitor_re_gap.png", dpi=150)
+    plt.close(fig)
+
+
+def run_continuation(
+    *,
+    q: int = 3,
+    K_clause: int = 8,
+    r: float = 176.54,
+    beta: float = 0.5433996420760803,
+    gamma_start: float = -0.001,
+    gamma_end: float = -0.75,
+    gamma_step: float = 0.01,
+    min_step: float = 0.0005,
+    n_min: int = 12,
+    n_max: int = 22,
+    match_tol: float = 0.02,
+    min_residual: float = 1e-10,
+    dps: int = 80,
+    competitor_every: float = 0.05,
+    competitor_starts: int = 400,
+    branch_tol: float = 1e-4,
+    seed: int = 0,
+    out_dir: Optional[Path] = None,
+) -> Path:
+    ts = datetime.now(timezone.utc).strftime("run_%m-%d_%H-%M-%SZ")
+    run_dir = (out_dir or (AUDIT_DIR / "results" / f"{ts}_seed_branch")) 
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    n_values = list(range(n_min, n_max + 1))
+    rows: list[ContinuationRow] = []
+    failed_rows: list[ContinuationRow] = []
+
+    z_seed, row0, _ = initialize_seed_at_gamma(
+        q,
+        K_clause,
+        r,
+        beta,
+        gamma_start,
+        n_values=n_values,
+        match_tol=match_tol,
+        min_residual=min_residual,
+        dps=dps,
+        use_iterator=True,
+    )
+    rows.append(row0)
+    z_current = z_seed
+    step_index = 1
+
+    gamma = float(gamma_start)
+    step = float(gamma_step)
+    competitor_gammas = set(selected_competitor_gammas(gamma_start, gamma_end, competitor_every))
+    competitors_by_gamma: dict[str, list[dict]] = {}
+
+    meta = {
+        "q": q,
+        "K_clause": K_clause,
+        "r": r,
+        "beta": beta,
+        "gamma_start": gamma_start,
+        "gamma_end": gamma_end,
+        "gamma_step_initial": gamma_step,
+        "min_step": min_step,
+        "convention": "full_exponent = Re Phi_M + bm24_prefactor_exponent_ksat_all_subsets",
+        "im_phi_warning": IM_PHI_WARNING,
+        "branch_continuity_metric": "||z(gamma)-z(previous)||_inf",
+        "dominance_note": "Do not interpret largest Re Phi as physical dominance without PL/intersection data.",
+        "timestamp": ts,
+    }
+
+    while gamma > float(gamma_end) + 1e-12:
+        target_gamma = gamma - step
+        if target_gamma < float(gamma_end):
+            target_gamma = float(gamma_end)
+        attempt_step = step
+        success = False
+        last_fail_row: Optional[ContinuationRow] = None
+
+        while attempt_step >= float(min_step) - 1e-15:
+            trial_gamma = gamma - attempt_step
+            if trial_gamma < float(gamma_end):
+                trial_gamma = float(gamma_end)
+            z_next, row = step_from_previous_z(
+                q,
+                K_clause,
+                r,
+                beta,
+                trial_gamma,
+                z_current,
+                step_index=step_index,
+                n_values=n_values,
+                match_tol=match_tol,
+                min_residual=min_residual,
+                dps=dps,
+            )
+            if z_next is not None:
+                rows.append(row)
+                z_current = z_next
+                gamma = trial_gamma
+                step_index += 1
+                success = True
+                step = min(float(gamma_step), attempt_step * 1.25)
+                break
+            last_fail_row = row
+            attempt_step *= 0.5
+
+        if not success:
+            if last_fail_row is not None:
+                last_fail_row.failure_reason = (
+                    last_fail_row.failure_reason or "continuation_failed"
+                ) + f"; step_size_tried={attempt_step}"
+                failed_rows.append(last_fail_row)
+            break
+
+        if abs(gamma - float(gamma_end)) < 1e-12:
+            break
+
+    z_by_gamma = {r.gamma: np.array(r.z_real) + 1j * np.array(r.z_imag) for r in rows if r.certified}
+    for g in sorted(competitor_gammas):
+        if g not in z_by_gamma:
+            cert_gammas = sorted(z_by_gamma.keys())
+            if not cert_gammas:
+                continue
+            ref_g = min(cert_gammas, key=lambda x: abs(x - g))
+            seed_z = z_by_gamma[ref_g]
+        else:
+            seed_z = z_by_gamma[g]
+        comps = discover_competitors_at_gamma(
+            q,
+            K_clause,
+            r,
+            beta,
+            g,
+            seed_z,
+            num_starts=competitor_starts,
+            seed=seed + int(1000 * abs(g)),
+            branch_tol=branch_tol,
+            min_residual=min_residual,
+            dps=dps,
+        )
+        largest = max((c["re_phi_m"] for c in comps if c.get("certified")), default=float("nan"))
+        for c in comps:
+            if c.get("certified") and abs(c["re_phi_m"] - largest) < 1e-12:
+                c["largest_algebraic_re_phi_at_gamma"] = True
+            else:
+                c["largest_algebraic_re_phi_at_gamma"] = False
+        competitors_by_gamma[str(g)] = comps
+
+    all_rows = rows + failed_rows
+    row_dicts = [r.to_row() for r in all_rows]
+    with open(run_dir / "seed_branch_continuation.json", "w", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "metadata": meta,
+                "continuation": row_dicts,
+                "summary": _build_summary(rows, failed_rows, gamma_end),
+            },
+            fh,
+            indent=2,
+        )
+    if row_dicts:
+        with open(run_dir / "seed_branch_continuation.csv", "w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=list(row_dicts[0].keys()))
+            writer.writeheader()
+            writer.writerows(row_dicts)
+
+    with open(run_dir / "competitor_saddles_by_gamma.json", "w", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "metadata": meta,
+                "im_phi_warning": IM_PHI_WARNING,
+                "by_gamma": competitors_by_gamma,
+            },
+            fh,
+            indent=2,
+        )
+
+    plot_continuation(rows, competitors_by_gamma, run_dir)
+    print(json.dumps(_build_summary(rows, failed_rows, gamma_end), indent=2))
+    print(f"Results written to {run_dir}")
+    return run_dir
+
+
+def _build_summary(rows: list[ContinuationRow], failed_rows: list[ContinuationRow], gamma_end: float) -> dict:
+    cert = [r for r in rows if r.certified and not r.failed]
+    if not cert:
+        return {"certified_steps": 0, "gamma_reached": None, "message": "no certified continuation"}
+    g_last = cert[-1].gamma
+    gaps = [abs(r.gap_to_exact) for r in cert]
+    return {
+        "certified_steps": len(cert),
+        "failed_steps": len(failed_rows),
+        "gamma_start": cert[0].gamma,
+        "gamma_last_certified": g_last,
+        "reached_gamma_end": bool(g_last <= float(gamma_end) + 1e-9),
+        "max_abs_gap_to_exact": max(gaps),
+        "mean_abs_gap_to_exact": float(np.mean(gaps)),
+        "all_match_exact_within_tol": all(r.matches_exact_tol for r in cert),
+        "max_z_step_inf": max((r.z_distance_from_previous for r in cert[1:]), default=0.0),
+        "statement": (
+            "Numerically rigorous certified continuation of BM24 seed branch in gamma "
+            "(Krawczyk), compared to Conv2 exact finite-n; not a claim of contour dominance."
+        ),
+    }
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description="Certified BM24 seed-branch gamma continuation")
+    p.add_argument("--q", type=int, default=3)
+    p.add_argument("--K-clause", type=int, default=8)
+    p.add_argument("--r", type=float, default=176.54)
+    p.add_argument("--beta", type=float, default=0.5433996420760803)
+    p.add_argument("--gamma-start", type=float, default=-0.001)
+    p.add_argument("--gamma-end", type=float, default=-0.75)
+    p.add_argument("--gamma-step", type=float, default=0.01)
+    p.add_argument("--min-step", type=float, default=0.0005)
+    p.add_argument("--n-min", type=int, default=12)
+    p.add_argument("--n-max", type=int, default=22)
+    p.add_argument("--match-tol", type=float, default=0.02)
+    p.add_argument("--min-residual", type=float, default=1e-10)
+    p.add_argument("--dps", type=int, default=80)
+    p.add_argument("--competitor-every", type=float, default=0.05)
+    p.add_argument("--competitor-starts", type=int, default=400)
+    p.add_argument("--branch-tol", type=float, default=1e-4)
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--out-dir", type=str, default="")
+    p.add_argument("--quick", action="store_true", help="Coarser step/end for smoke test")
+    args = p.parse_args()
+
+    kwargs = dict(
+        q=args.q,
+        K_clause=args.K_clause,
+        r=args.r,
+        beta=args.beta,
+        gamma_start=args.gamma_start,
+        gamma_end=args.gamma_end,
+        gamma_step=args.gamma_step,
+        min_step=args.min_step,
+        n_min=args.n_min,
+        n_max=args.n_max,
+        match_tol=args.match_tol,
+        min_residual=args.min_residual,
+        dps=args.dps,
+        competitor_every=args.competitor_every,
+        competitor_starts=args.competitor_starts,
+        branch_tol=args.branch_tol,
+        seed=args.seed,
+        out_dir=Path(args.out_dir) if args.out_dir else None,
+    )
+    if args.quick:
+        kwargs.update(gamma_end=-0.05, gamma_step=0.01, competitor_every=0.02, competitor_starts=150)
+    run_continuation(**kwargs)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,6 +1,7 @@
-"""Shim → ``python -m phasecraft.w_saddle``."""
-
-from phasecraft.w_saddle.cli import main
+"""Compatibility re-export. Canonical: ``phasecraft.shims.run_w_saddle``."""
+from phasecraft.shims.run_w_saddle import *  # noqa: F401,F403
 
 if __name__ == "__main__":
+    from phasecraft.shims.run_w_saddle import main
+
     main()
