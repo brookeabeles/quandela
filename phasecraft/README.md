@@ -24,7 +24,7 @@ phasecraft/
 | `experiments/lr_scaling/` | LR trainer, sweep, notebooks |
 | `experiments/w_saddle/` | w-coordinate Krawczyk pipeline |
 | `experiments/bm24_saddle_audit_p1/` | p=1 saddle audit |
-| `results/bm24_runs/` | LR benchmark outputs (`bm24_runs` → symlink) |
+| `results/bm24_runs/` | LR benchmark outputs (`MM-DD/runN/`; `bm24_runs` → symlink) |
 | `results/w_saddle_runs/` | w-saddle `runN/` folders |
 | `results/bm24_saddle_audit_p1/` | Audit run outputs |
 | `results/archive/` | Legacy flat outputs, `og_krawczyk_data/`, unused helpers |

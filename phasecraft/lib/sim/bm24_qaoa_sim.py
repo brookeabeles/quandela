@@ -121,6 +121,7 @@ from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
     apply_figure_suptitle,
     format_benchmark_title,
     make_run_stem,
+    resolve_bm24_run_output_paths,
 )
 
 generalized_binomial_sum_full_exponent_ksat = _PATCHED_MOD.generalized_binomial_sum_full_exponent_ksat
@@ -1925,8 +1926,9 @@ def main():
         out_dir = Path(args.output_dir).expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
         stem = make_run_stem("bench" if args.benchmark else "thy")
-        json_path = out_dir / f"{stem}.json"
-        txt_path = out_dir / f"{stem}.txt"
+        run_paths = resolve_bm24_run_output_paths(out_dir, stem)
+        json_path = run_paths["json"]
+        txt_path = run_paths["run_dir"] / f"{stem}.txt"
         plot_stem = stem
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(res, f, indent=2)
@@ -1941,7 +1943,7 @@ def main():
         if args.plot_path:
             plot_path = Path(args.plot_path).expanduser().resolve()
         elif not args.no_auto_save:
-            plot_path = out_dir / f"{plot_stem}.png"
+            plot_path = run_paths["png"]
         else:
             plot_path = Path(BM24_DEFAULT_OUTPUT_DIR).expanduser().resolve() / (
                 f"{make_run_stem('bench')}.png"

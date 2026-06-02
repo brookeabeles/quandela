@@ -31,7 +31,10 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     run_algorithm_benchmark,
     summarize_benchmark_scaling,
 )
-from phasecraft.lib.sim.bm24_run_io import make_run_stem  # noqa: E402
+from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
+    make_run_stem,
+    resolve_bm24_run_output_paths,
+)
 
 from train_lr_notebook_protocol import (  # noqa: E402
     DEFAULT_EVAL_TRAIN_RETRIES,
@@ -211,6 +214,7 @@ def main() -> None:
     out_dir = args.output_dir or bm24_runs_dir()
     out_dir.mkdir(parents=True, exist_ok=True)
     run_stem = make_run_stem("mean-vs-median-train-diag")
+    run_paths = resolve_bm24_run_output_paths(out_dir, run_stem)
 
     proxy_ns = proxy_n_values_for_training(
         args.train_n,
@@ -288,7 +292,7 @@ def main() -> None:
         "trace_median_train": trace_median,
         "elapsed_s": time.time() - t0,
     }
-    json_path = out_dir / f"{run_stem}.json"
+    json_path = run_paths["json"]
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     print(f"\nWrote {json_path}")
@@ -324,7 +328,7 @@ def main() -> None:
     ax.legend(loc="best")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
-    png_path = out_dir / f"{run_stem}.png"
+    png_path = run_paths["png"]
     fig.savefig(png_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"Wrote {png_path}")

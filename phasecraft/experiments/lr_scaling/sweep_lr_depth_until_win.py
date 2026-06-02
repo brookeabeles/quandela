@@ -57,6 +57,7 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
 )
 from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
     make_run_stem,
+    resolve_bm24_run_output_paths,
     normalize_eval_aggregation,
     normalize_eval_axis,
     plot_scaling_vs_depth,
@@ -366,6 +367,7 @@ def main() -> None:
     run_stem = make_run_stem(
         "sweep-scaling-legacy" if args.legacy_objective else "sweep-scaling-v2"
     )
+    run_paths = resolve_bm24_run_output_paths(out_dir, run_stem)
     sweep_t0 = time.time()
 
     print(
@@ -452,14 +454,14 @@ def main() -> None:
             "stop_depth": stop_depth,
             "elapsed_s": time.time() - sweep_t0,
         }
-        trace_path = out_dir / f"{run_stem}.json"
+        trace_path = run_paths["json"]
         with open(trace_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
         summary_plot = None
         if not args.no_plot:
             summary_plot = plot_scaling_vs_depth(
                 exponent_trace,
-                out_dir / f"{run_stem}.png",
+                run_paths["png"],
                 settings={
                     "k": args.k,
                     "r": args.r,

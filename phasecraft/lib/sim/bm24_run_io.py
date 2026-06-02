@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import textwrap
 import time
@@ -40,6 +41,109 @@ def make_run_stem(kind: str, when: float | None = None) -> str:
     return f"{time.strftime(STEM_TIME_FMT, loc)}-{kind}"
 
 
+_DATE_LABEL_RE = re.compile(r"^(\d{2}-\d{2})")
+_STEM_TIME_RE = re.compile(r"^(\d{2}-\d{2})_(\d{4})-")
+
+
+def parse_date_label_from_stem(stem: str) -> str:
+    """Extract ``MM-DD`` date folder label from a run stem (no calendar year)."""
+    m = _DATE_LABEL_RE.match(stem)
+    return m.group(1) if m else "unknown"
+
+
+def parse_sort_key_from_stem(stem: str) -> tuple[str, str, str]:
+    """Sort key for ordering runs within a date folder."""
+    m = _STEM_TIME_RE.match(stem)
+    if m:
+        return (m.group(1), m.group(2), stem)
+    m2 = _DATE_LABEL_RE.match(stem)
+    if m2:
+        return (m2.group(1), "0000", stem)
+    return ("unknown", "9999", stem)
+
+
+def bm24_flat_output_layout() -> bool:
+    """If true, write scaling artifacts directly under ``bm24_runs/`` (legacy flat)."""
+    return os.environ.get("BM24_FLAT_OUTPUT", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def _dated_run_ids(date_dir: Path) -> list[int]:
+    ids: list[int] = []
+    if not date_dir.is_dir():
+        return ids
+    for p in date_dir.iterdir():
+        if p.is_dir() and p.name.startswith("run") and p.name[3:].isdigit():
+            ids.append(int(p.name[3:]))
+    return sorted(ids)
+
+
+def allocate_bm24_run_dir(
+    base: Path | None = None,
+    *,
+    date_label: str | None = None,
+    when: float | None = None,
+    run_id: int | None = None,
+) -> Path:
+    """Create ``bm24_runs/MM-DD/runN`` (next ``N``, or fixed ``run_id``)."""
+    root = Path(base) if base is not None else bm24_runs_dir()
+    if date_label is None:
+        date_label = time.strftime("%m-%d", time.localtime(when or time.time()))
+    date_dir = root / date_label
+    date_dir.mkdir(parents=True, exist_ok=True)
+    if run_id is not None:
+        out = date_dir / f"run{int(run_id)}"
+        out.mkdir(parents=True, exist_ok=True)
+        return out
+    next_id = max(_dated_run_ids(date_dir), default=0) + 1
+    out = date_dir / f"run{next_id}"
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def resolve_bm24_run_output_paths(
+    output_dir: Path,
+    run_stem: str,
+    *,
+    when: float | None = None,
+    run_dir: Path | None = None,
+    flat: bool | None = None,
+) -> dict[str, Path]:
+    """
+    Paths for one benchmark run (JSON, partial JSON, PNG).
+
+  Layout (default): ``output_dir/MM-DD/runN/{stem}.{ext}``
+  Legacy flat: ``BM24_FLAT_OUTPUT=1`` or ``flat=True`` → ``output_dir/{stem}.{ext}``
+    """
+    output_dir = Path(output_dir).expanduser().resolve()
+    if flat is None:
+        flat = bm24_flat_output_layout()
+    if flat:
+        return {
+            "run_dir": output_dir,
+            "json": output_dir / f"{run_stem}.json",
+            "partial_json": output_dir / f"{run_stem}.partial.json",
+            "png": output_dir / f"{run_stem}.png",
+        }
+    date_label = parse_date_label_from_stem(run_stem)
+    if date_label == "unknown":
+        date_label = time.strftime("%m-%d", time.localtime(when or time.time()))
+    if run_dir is None:
+        run_dir = allocate_bm24_run_dir(output_dir, date_label=date_label, when=when)
+    else:
+        run_dir = Path(run_dir).expanduser().resolve()
+        run_dir.mkdir(parents=True, exist_ok=True)
+    return {
+        "run_dir": run_dir,
+        "json": run_dir / f"{run_stem}.json",
+        "partial_json": run_dir / f"{run_stem}.partial.json",
+        "png": run_dir / f"{run_stem}.png",
+    }
+
+
 def default_bm24_runs_dir() -> Path:
     return bm24_runs_dir()
 
@@ -75,7 +179,7 @@ def resolve_bm24_scaling_output_dir(
     legacy_mean_success: bool | None = None,
     base: Path | None = None,
 ) -> Path:
-    """Flat ``bm24_runs/`` (``eval_axis`` is for titles/labels only, not subfolders)."""
+    """``bm24_runs/`` root (dated runs live under ``MM-DD/runN/``)."""
     del eval_axis, legacy_mean_success
     root = Path(base) if base is not None else bm24_runs_dir()
     root.mkdir(parents=True, exist_ok=True)
@@ -343,15 +447,21 @@ def scaling_output_path(
     eval_aggregation: EvalAggregation | str | None = None,
     legacy_mean_success: bool | None = None,
     base: Path | None = None,
+    when: float | None = None,
+    run_dir: Path | None = None,
 ) -> Path:
-    """``bm24_runs/{runtime_scaling|success_scaling}/{stem}.{ext}``."""
-    del eval_aggregation  # path depends only on axis
-    out_dir = resolve_bm24_scaling_output_dir(
-        eval_axis=eval_axis,
-        legacy_mean_success=legacy_mean_success,
-        base=base,
+    """``bm24_runs/MM-DD/runN/{stem}.{ext}`` (or flat layout if ``BM24_FLAT_OUTPUT=1``)."""
+    del eval_axis, eval_aggregation, legacy_mean_success
+    root = resolve_bm24_scaling_output_dir(base=base)
+    paths = resolve_bm24_run_output_paths(
+        root, stem, when=when, run_dir=run_dir
     )
-    return out_dir / f"{stem}.{ext.lstrip('.')}"
+    key = "json" if ext.lstrip(".") == "json" else ext.lstrip(".")
+    if key == "json":
+        return paths["json"]
+    if key == "png":
+        return paths["png"]
+    return paths["run_dir"] / f"{stem}.{ext.lstrip('.')}"
 
 
 def _is_scaling_artifact_stem(stem: str) -> bool:
@@ -364,10 +474,25 @@ def _is_scaling_artifact_stem(stem: str) -> bool:
     )
 
 
+def _is_under_dated_run_layout(p: Path, root: Path) -> bool:
+    try:
+        rel = p.relative_to(root)
+    except ValueError:
+        return False
+    parts = rel.parts
+    return (
+        len(parts) == 3
+        and _DATE_LABEL_RE.match(parts[0]) is not None
+        and parts[1].startswith("run")
+        and parts[1][3:].isdigit()
+    )
+
+
 def iter_bm24_scaling_artifacts(root: Path | None = None) -> list[Path]:
-    """JSON/PNG depth-scaling files under ``bm24_runs/`` (root and legacy subdirs)."""
+    """JSON/PNG depth-scaling files under ``bm24_runs/`` (flat, dated, legacy subdirs)."""
     root = Path(root) if root is not None else bm24_runs_dir()
     out: list[Path] = []
+    seen: set[Path] = set()
 
     def _maybe_add(p: Path) -> None:
         if p.suffix.lower() not in (".json", ".png"):
@@ -375,6 +500,10 @@ def iter_bm24_scaling_artifacts(root: Path | None = None) -> list[Path]:
         stem = p.stem.replace(".partial", "")
         if not _is_scaling_artifact_stem(stem):
             return
+        rp = p.resolve()
+        if rp in seen:
+            return
+        seen.add(rp)
         out.append(p)
 
     for p in sorted(root.iterdir()):
@@ -386,7 +515,85 @@ def iter_bm24_scaling_artifacts(root: Path | None = None) -> list[Path]:
             for p in sorted(sub_path.iterdir()):
                 if p.is_file():
                     _maybe_add(p)
+    for date_dir in sorted(root.iterdir()):
+        if not date_dir.is_dir() or _DATE_LABEL_RE.match(date_dir.name) is None:
+            continue
+        for run_dir in sorted(date_dir.iterdir()):
+            if not run_dir.is_dir():
+                continue
+            for p in sorted(run_dir.iterdir()):
+                if p.is_file():
+                    _maybe_add(p)
     return out
+
+
+def migrate_flat_bm24_runs_to_dated(
+    root: Path | None = None,
+    *,
+    dry_run: bool = False,
+) -> list[tuple[Path, Path]]:
+    """
+    Move flat scaling JSON/PNG artifacts into ``MM-DD/runN/`` folders.
+
+    Angle logs, sweep ``.log`` files, and ``depth_sweep_until_win.jsonl`` stay at
+    the ``bm24_runs/`` root.
+    """
+    root = Path(root) if root is not None else bm24_runs_dir()
+    root.mkdir(parents=True, exist_ok=True)
+
+    all_flat: list[Path] = []
+    for p in iter_bm24_scaling_artifacts(root):
+        if _is_under_dated_run_layout(p, root):
+            continue
+        if p.parent == root or p.parent.name in BM24_SCALING_SUBDIRS:
+            all_flat.append(p)
+
+    run_stems: list[str] = []
+    seen_stems: set[str] = set()
+    for p in all_flat:
+        if p.suffix.lower() != ".json":
+            continue
+        stem = p.stem.replace(".partial", "")
+        if stem not in seen_stems:
+            seen_stems.add(stem)
+            run_stems.append(stem)
+    for p in all_flat:
+        if p.suffix.lower() != ".png":
+            continue
+        stem = p.stem.replace(".partial", "")
+        if any(stem == s or stem.startswith(s) for s in seen_stems):
+            continue
+        if stem not in seen_stems:
+            seen_stems.add(stem)
+            run_stems.append(stem)
+
+    by_date: dict[str, list[str]] = {}
+    for stem in run_stems:
+        date_label = parse_date_label_from_stem(stem)
+        by_date.setdefault(date_label, []).append(stem)
+
+    moves: list[tuple[Path, Path]] = []
+    for date_label in sorted(by_date.keys()):
+        stems = sorted(by_date[date_label], key=parse_sort_key_from_stem)
+        for run_idx, stem in enumerate(stems, start=1):
+            dest_dir = root / date_label / f"run{run_idx}"
+            candidates = [
+                p
+                for p in all_flat
+                if p.stem == stem
+                or p.stem == f"{stem}.partial"
+                or p.stem.startswith(stem)
+            ]
+            for src in sorted(set(candidates), key=lambda x: x.name):
+                dest = dest_dir / src.name
+                if dest.resolve() == src.resolve():
+                    continue
+                moves.append((src, dest))
+                if not dry_run:
+                    dest_dir.mkdir(parents=True, exist_ok=True)
+                    src.rename(dest)
+
+    return moves
 
 
 def plot_scaling_vs_depth(
