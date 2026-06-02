@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "q": 3,
+    "k": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.7487887432117251,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      0.49878874321172506,
+      0.6237887432117251,
+      0.7487887432117251,
+      0.8737887432117251,
+      0.9987887432117251
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "20260527T131328Z"
+  },
+  "num_saddle_candidates": 83,
+  "num_certified": 82,
+  "dominant_certified_re_phi": 1.2666199376731522,
+  "lambda_abs_at_n_max": -25.22051798294415,
+  "match_tol_effective": 0.02,
+  "controlling_saddle_ids": [],
+  "conventions": {
+    "conv1_prefactor": -25.12476339076884,
+    "conv2_prefactor": -0.689609375,
+    "note": "Report Re Phi_M alone, Re Phi_M+Conv1, and Re Phi_M+Conv2 separately."
+  },
+  "bm24_scaling_iterate": {
+    "status": "BM24_NONCONVERGED_ITERATE",
+    "fixed_point": false,
+    "re_phi": -0.0958274551219574,
+    "re_phi_plus_conv1_pref": -25.220590845890797,
+    "re_phi_plus_conv2_pref": -0.7854368301219574,
+    "G_residual_inf": 2.053820231083309,
+    "G_residual_l2": 3.4625959151406014,
+    "scaled_res_inf": 0.30295907042553233,
+    "componentwise_rel": 5.188676703618156,
+    "matches_lambda_abs_full": true,
+    "note": "Iterator output is not labeled as saddle unless fixed-point diagnostics pass."
+  },
+  "closest_certified_to_lambda": {
+    "saddle_id": 36,
+    "re_phi": -0.1509828803307423,
+    "re_phi_plus_pref": -25.27574627109958,
+    "gap": 0.05522828815543335,
+    "is_bm24_seed_saddle": true
+  },
+  "bm24_seed": {
+    "re_phi": -0.0958274551219574,
+    "phi_pref_prop4": -25.12476339076884,
+    "phi_pref_conv2": -0.689609375
+  },
+  "object_table_path": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/20260527T131328Z/object_comparison_table.json"
+}

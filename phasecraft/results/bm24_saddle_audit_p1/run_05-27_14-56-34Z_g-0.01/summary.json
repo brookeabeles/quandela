@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": -0.001,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      -0.251,
+      -0.126,
+      -0.0010000000000000009,
+      0.124,
+      0.249
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_14-56-34Z"
+  },
+  "num_saddle_candidates": 4,
+  "num_certified": 0,
+  "dominant_certified_re_phi": NaN,
+  "lambda_abs_at_n_max": -0.6891100295771402,
+  "match_tol_effective": 0.02,
+  "controlling_saddle_ids": [],
+  "conventions": {
+    "conv1_prefactor": -0.68960954740234,
+    "conv2_prefactor": -0.689609375,
+    "note": "Primary baseline is Conv2 exact finite-n. Conv1 comparisons are cross-check/hybrid only."
+  },
+  "bm24_scaling_iterate": {
+    "status": "BM24_ITERATE_CERTIFIED_AS_FIXED_POINT",
+    "fixed_point": true,
+    "converged_flag_from_iterator": true,
+    "re_phi": 0.00042218112208343385,
+    "re_phi_plus_conv1_pref": -0.6891873662802566,
+    "re_phi_plus_conv2_pref": -0.6891871938779165,
+    "G_residual_inf": 1.4593596910200012e-12,
+    "G_residual_l2": 2.063947167742122e-12,
+    "scaled_res_inf": 2.1527018222754028e-13,
+    "componentwise_rel": 3.729261661659354e-10,
+    "matches_lambda_abs_conv2_primary": true,
+    "matches_lambda_abs_conv1_hybrid": true,
+    "note": "Iterator output is not labeled as saddle/controller unless converged and fixed-point diagnostics pass."
+  },
+  "closest_certified_to_lambda": null,
+  "bm24_seed": {
+    "re_phi": 0.00042218112208343385,
+    "phi_pref_prop4": -0.68960954740234,
+    "phi_pref_conv2": -0.689609375
+  },
+  "object_table_path": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_05-27_14-56-34Z/object_comparison_table.json"
+}

@@ -1,0 +1,218 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": -0.001,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      -0.251,
+      -0.126,
+      -0.0010000000000000009,
+      0.124,
+      0.249
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_14-56-34Z"
+  },
+  "saddles": [
+    {
+      "saddle_id": 0,
+      "beta": 0.5433996420760803,
+      "gamma": -0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 7.413291871719049e-06,
+      "jacobian_cond": 1.0037584116210565,
+      "re_phi": 0.00042213060856285045,
+      "im_phi": -1.2195012093599593e-07,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.6149391274388522,
+      "re_phi_plus_pref": -0.6891874167937772,
+      "re_phi_plus_pref_conv2": -0.6891872443914371,
+      "matches_lambda_abs": true,
+      "matches_lambda_local": true,
+      "matches_lambda_abs_full": true,
+      "matches_lambda_abs_conv2": true,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847089,
+        -0.001459417530907574,
+        -5.779200332898224,
+        0.005715452928074944,
+        -0.0014594175309075707,
+        8.948634858601785e-06,
+        0.005715452928074949,
+        -5.751556610255783e-06
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.007328608646363925,
+        1.8213659025638423e-30,
+        0.0007569433481038056,
+        -0.00732860864636392,
+        -3.706645923157497e-06,
+        -0.0007569433481038009,
+        -1.2760346036536134e-21
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    },
+    {
+      "saddle_id": 1,
+      "beta": 0.5433996420760803,
+      "gamma": -0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 0.03730137048998756,
+      "jacobian_cond": 22.895207411823442,
+      "re_phi": 1.2260835610936547,
+      "im_phi": -0.35076978237788126,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.0038928832416036396,
+      "re_phi_plus_pref": 0.5364740136913146,
+      "re_phi_plus_pref_conv2": 0.5364741860936547,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847083,
+        -0.0014594175309075655,
+        -5.77920033289822,
+        -1.7225115649220382,
+        -0.001459417530907569,
+        0.006607920717278747,
+        0.0056947088685826265,
+        0.0012087452227174638
+      ],
+      "z_imag": [
+        2.2116042197189607,
+        0.007328608646363918,
+        3.92300214084085e-15,
+        3.8334866551732487,
+        -0.007328608646363925,
+        0.0019085418118880361,
+        -0.000724438634410347,
+        -0.0040162470030783255
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    },
+    {
+      "saddle_id": 2,
+      "beta": 0.5433996420760803,
+      "gamma": -0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 0.03759668599541502,
+      "jacobian_cond": 23.268771507259398,
+      "re_phi": 1.2299764443352583,
+      "im_phi": 0.35712112458494627,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.0038928832416036396,
+      "re_phi_plus_pref": 0.5403668969329183,
+      "re_phi_plus_pref_conv2": 0.5403670693352584,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847085,
+        -0.0014594175309075716,
+        -5.779200332898224,
+        0.0056947088685826526,
+        -0.0014594175309075694,
+        0.0033229626913668106,
+        -1.7225115649220388,
+        0.0012087452227174627
+      ],
+      "z_imag": [
+        2.211604219718968,
+        0.007328608646363919,
+        -3.2723836044735283e-15,
+        0.0007244386344103504,
+        -0.007328608646363928,
+        -0.006022048406094975,
+        -3.833486655173249,
+        0.004016247003078329
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    },
+    {
+      "saddle_id": 3,
+      "beta": 0.5433996420760803,
+      "gamma": -0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 0.1170593330095932,
+      "jacobian_cond": 42.45972179053268,
+      "re_phi": 0.615361258047415,
+      "im_phi": -2.6060375905163844,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.6107223030462396,
+      "re_phi_plus_pref": -0.074248289354925,
+      "re_phi_plus_pref_conv2": -0.07424811695258493,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847083,
+        -0.001459417530907565,
+        -5.779200332898233,
+        0.00562257159537474,
+        -0.0014594175309075497,
+        0.008189063825017346,
+        -2.8724153338322367,
+        0.0023546855146207163
+      ],
+      "z_imag": [
+        2.211604219718984,
+        0.0073286086463639185,
+        -1.760181363607002e-14,
+        0.0007505625262766462,
+        -0.007328608646363935,
+        -0.008899290039892559,
+        -3.8326302284750478,
+        0.0041613271492294225
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    }
+  ]
+}

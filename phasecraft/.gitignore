@@ -7,8 +7,6 @@ env/
 .ipynb_checkpoints/
 
 # Data / outputs
-outputs/
-results/
 figures/
 plots/
 logs/

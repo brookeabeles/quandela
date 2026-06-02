@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.001,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      0.001
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_15-06-27Z"
+  },
+  "num_saddle_candidates": 3,
+  "num_certified": 3,
+  "dominant_certified_re_phi": 0.1830109628003751,
+  "lambda_abs_at_n_max": -0.6901083284183993,
+  "match_tol_effective": 0.02,
+  "controlling_saddle_ids": [
+    0
+  ],
+  "conventions": {
+    "conv1_prefactor": -0.68960954740234,
+    "conv2_prefactor": -0.689609375,
+    "note": "Primary baseline is Conv2 exact finite-n. Conv1 comparisons are cross-check/hybrid only."
+  },
+  "bm24_scaling_iterate": {
+    "status": "BM24_ITERATE_CERTIFIED_AS_FIXED_POINT",
+    "fixed_point": true,
+    "converged_flag_from_iterator": true,
+    "re_phi": -0.00042033807351849525,
+    "re_phi_plus_conv1_pref": -0.6900298854758585,
+    "re_phi_plus_conv2_pref": -0.6900297130735185,
+    "G_residual_inf": 1.4537994024024584e-12,
+    "G_residual_l2": 2.0559893387828824e-12,
+    "scaled_res_inf": 2.1444998392324135e-13,
+    "componentwise_rel": 3.8150427440293937e-10,
+    "matches_lambda_abs_conv2_primary": true,
+    "matches_lambda_abs_conv1_hybrid": true,
+    "note": "Iterator output is not labeled as saddle/controller unless converged and fixed-point diagnostics pass."
+  },
+  "closest_certified_to_lambda": {
+    "saddle_id": 0,
+    "re_phi": -0.0004203380733892575,
+    "re_phi_plus_pref_conv2": -0.6900297130733892,
+    "gap_conv2_primary": 7.861534501008016e-05,
+    "re_phi_plus_pref_conv1_hybrid": -0.6900298854757293,
+    "is_bm24_seed_saddle": true
+  },
+  "bm24_seed": {
+    "re_phi": -0.00042033807351849525,
+    "phi_pref_prop4": -0.68960954740234,
+    "phi_pref_conv2": -0.689609375
+  },
+  "object_table_path": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_05-27_15-06-27Z/object_comparison_table.json"
+}

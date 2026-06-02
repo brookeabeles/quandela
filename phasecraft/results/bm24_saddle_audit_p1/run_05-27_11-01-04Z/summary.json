@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "q": 3,
+    "k": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.7487887432117251,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "gamma_scan": [
+      0.3987887432117251,
+      0.7487887432117251,
+      1.098788743211725
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "20260527T110104Z"
+  },
+  "num_saddle_candidates": 2,
+  "num_certified": 2,
+  "dominant_certified_re_phi": -0.2237898457973984,
+  "lambda_abs_at_n_max": -25.219916967473377,
+  "bm24_seed": {
+    "re_phi": -0.0958274551219574,
+    "phi_pref_prop4": -25.12476339076884
+  }
+}

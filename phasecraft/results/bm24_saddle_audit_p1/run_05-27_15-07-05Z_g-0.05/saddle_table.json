@@ -1,0 +1,1532 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": -0.05,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      -0.05
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_15-07-05Z"
+  },
+  "saddles": [
+    {
+      "saddle_id": 0,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 8.881784053831056e-14,
+      "residual": 8.881784197001252e-15,
+      "jacobian_cond": 1.2857318725604663,
+      "re_phi": 0.0232576053854118,
+      "im_phi": 1.5676662786127576e-16,
+      "det_hessian_re_phi": -1.9074479180547174e-60,
+      "nearest_action_gap": 0.046116164550287136,
+      "re_phi_plus_pref": -0.6667827530262089,
+      "re_phi_plus_pref_conv2": -0.6663517696145882,
+      "matches_lambda_abs": true,
+      "matches_lambda_local": true,
+      "matches_lambda_abs_full": true,
+      "matches_lambda_abs_conv2": true,
+      "controls_finite_n": true,
+      "is_bm24_seed_saddle": true,
+      "z_real": [
+        5.339284901847084,
+        -0.04715339036576077,
+        -5.779200332898233,
+        0.19064439480726394,
+        -0.04715339036576077,
+        0.00888817480009241,
+        0.19064439480726408,
+        -0.0063145567605270075
+      ],
+      "z_imag": [
+        2.211604219718962,
+        0.22421125141975295,
+        1.7943769725212225e-29,
+        -0.008618369581093873,
+        -0.22421125141975295,
+        -0.003681602546941049,
+        0.008618369581094177,
+        -2.3402970120363354e-18
+      ],
+      "krawczyk_contraction": 6.765592819054614e-06,
+      "proof": {
+        "box_radius": [
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14,
+          8.881784053831056e-14
+        ],
+        "contraction_bound": 6.765592819054614e-06,
+        "adaptive": true,
+        "G_inf": 8.881784197001252e-15,
+        "cond_J": 1.2857318497846124,
+        "Y_G_inf": 8.881784053831055e-15,
+        "tested_radii": [
+          {
+            "radius": 8.881784053831055e-21,
+            "inclusion": false,
+            "contraction_bound": 6.759113336958224e-06
+          },
+          {
+            "radius": 8.881784053831056e-19,
+            "inclusion": false,
+            "contraction_bound": 6.759113355462578e-06
+          },
+          {
+            "radius": 8.881784053831056e-17,
+            "inclusion": false,
+            "contraction_bound": 6.75911625970386e-06
+          },
+          {
+            "radius": 8.881784053831056e-16,
+            "inclusion": false,
+            "contraction_bound": 6.759178101795921e-06
+          },
+          {
+            "radius": 8.881784053831055e-15,
+            "inclusion": false,
+            "contraction_bound": 6.759761227930984e-06
+          },
+          {
+            "radius": 8.881784053831056e-14,
+            "inclusion": true,
+            "contraction_bound": 6.765592819054614e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 1,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 5.5644184068218365e-15,
+      "residual": 3.4638958368304884e-14,
+      "jacobian_cond": 166.99279519153197,
+      "re_phi": -5.504630776329874,
+      "im_phi": 2.3509677562670124,
+      "det_hessian_re_phi": 1.9462068367763375e-47,
+      "nearest_action_gap": 1.4193626714252447,
+      "re_phi_plus_pref": -6.194671134741495,
+      "re_phi_plus_pref_conv2": -6.194240151329874,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847092,
+        -0.047153390365760925,
+        -5.779200332898233,
+        0.1988204581093881,
+        -0.047153390365760744,
+        0.12361144849772447,
+        -2.119168564715058,
+        0.11222966657783612
+      ],
+      "z_imag": [
+        2.211604219718967,
+        0.22421125141975284,
+        -1.8187694252678533e-15,
+        0.10231662416377743,
+        -0.22421125141975323,
+        0.009179127134706686,
+        -3.9196211133902854,
+        0.1545197505089315
+      ],
+      "krawczyk_contraction": 9.201007307844951e-06,
+      "proof": {
+        "box_radius": [
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15,
+          5.5644184068218365e-15
+        ],
+        "contraction_bound": 9.201007307844951e-06,
+        "adaptive": true,
+        "G_inf": 3.8150339056589873e-14,
+        "cond_J": 166.99271840960142,
+        "Y_G_inf": 5.5644184068218365e-15,
+        "tested_radii": [
+          {
+            "radius": 5.564418406821836e-21,
+            "inclusion": false,
+            "contraction_bound": 9.199071776419953e-06
+          },
+          {
+            "radius": 5.564418406821837e-19,
+            "inclusion": false,
+            "contraction_bound": 9.199071788748058e-06
+          },
+          {
+            "radius": 5.564418406821837e-17,
+            "inclusion": false,
+            "contraction_bound": 9.19907925681476e-06
+          },
+          {
+            "radius": 5.564418406821837e-16,
+            "inclusion": false,
+            "contraction_bound": 9.199290513528935e-06
+          },
+          {
+            "radius": 5.5644184068218365e-15,
+            "inclusion": true,
+            "contraction_bound": 9.201007307844951e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 2,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 6.177392551135629e-15,
+      "residual": 5.329070518200751e-15,
+      "jacobian_cond": 9.240856315980393,
+      "re_phi": 0.12941322121589338,
+      "im_phi": -0.12094695047012571,
+      "det_hessian_re_phi": -4.5716407824984135e-57,
+      "nearest_action_gap": 2.6645352591003757e-15,
+      "re_phi_plus_pref": -0.5606271371957273,
+      "re_phi_plus_pref_conv2": -0.5601961537841066,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847089,
+        -0.04715339036576098,
+        -5.779200332898233,
+        0.1786537817590203,
+        -0.047153390365760856,
+        -0.049166187265846845,
+        -0.871392954741561,
+        0.030117004888208815
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.22421125141975323,
+        4.580762570911648e-16,
+        0.003970187932887044,
+        -0.22421125141975318,
+        -0.09672596712657948,
+        -1.3814707457174182,
+        0.042839756458561855
+      ],
+      "krawczyk_contraction": 9.17369862231642e-06,
+      "proof": {
+        "box_radius": [
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15,
+          6.177392551135629e-15
+        ],
+        "contraction_bound": 9.17369862231642e-06,
+        "adaptive": true,
+        "G_inf": 6.177398824556648e-15,
+        "cond_J": 9.240855741047737,
+        "Y_G_inf": 6.177392551135629e-15,
+        "tested_radii": [
+          {
+            "radius": 6.1773925511356286e-21,
+            "inclusion": false,
+            "contraction_bound": 9.172239045614337e-06
+          },
+          {
+            "radius": 6.177392551135629e-19,
+            "inclusion": false,
+            "contraction_bound": 9.172239062056216e-06
+          },
+          {
+            "radius": 6.177392551135629e-17,
+            "inclusion": false,
+            "contraction_bound": 9.172245392169353e-06
+          },
+          {
+            "radius": 6.177392551135629e-16,
+            "inclusion": false,
+            "contraction_bound": 9.172394362399247e-06
+          },
+          {
+            "radius": 6.177392551135629e-15,
+            "inclusion": true,
+            "contraction_bound": 9.17369862231642e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 3,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 9.00305759259931e-14,
+      "residual": 8.881784197001252e-15,
+      "jacobian_cond": 9.240857279605631,
+      "re_phi": 0.12941322121589605,
+      "im_phi": 0.12094695047012649,
+      "det_hessian_re_phi": -3.7217334350671285e-56,
+      "nearest_action_gap": 2.6645352591003757e-15,
+      "re_phi_plus_pref": -0.5606271371957247,
+      "re_phi_plus_pref_conv2": -0.5601961537841039,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847094,
+        -0.04715339036576065,
+        -5.779200332898224,
+        -0.871392954741561,
+        -0.04715339036576094,
+        0.03362984285126353,
+        0.17865378175902025,
+        0.03011700488820884
+      ],
+      "z_imag": [
+        2.2116042197189585,
+        0.22421125141975273,
+        6.959416792916585e-15,
+        1.3814707457174185,
+        -0.22421125141975282,
+        0.10316133169279935,
+        -0.003970187932887032,
+        -0.04283975645856187
+      ],
+      "krawczyk_contraction": 1.3171040525139315e-05,
+      "proof": {
+        "box_radius": [
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14,
+          9.00305759259931e-14
+        ],
+        "contraction_bound": 1.3171040525139315e-05,
+        "adaptive": true,
+        "G_inf": 9.003048575077688e-15,
+        "cond_J": 9.240855253547895,
+        "Y_G_inf": 9.00305759259931e-15,
+        "tested_radii": [
+          {
+            "radius": 9.00305759259931e-21,
+            "inclusion": false,
+            "contraction_bound": 1.3149736002823536e-05
+          },
+          {
+            "radius": 9.00305759259931e-19,
+            "inclusion": false,
+            "contraction_bound": 1.3149736023437268e-05
+          },
+          {
+            "radius": 9.003057592599311e-17,
+            "inclusion": false,
+            "contraction_bound": 1.3149744970671678e-05
+          },
+          {
+            "radius": 9.003057592599311e-16,
+            "inclusion": false,
+            "contraction_bound": 1.3149947115005078e-05
+          },
+          {
+            "radius": 9.00305759259931e-15,
+            "inclusion": false,
+            "contraction_bound": 1.3151852559518842e-05
+          },
+          {
+            "radius": 9.00305759259931e-14,
+            "inclusion": true,
+            "contraction_bound": 1.3171040525139315e-05
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 4,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.427296611055225e-13,
+      "residual": 1.4210854715202004e-14,
+      "jacobian_cond": 80.20036104631191,
+      "re_phi": -0.5208312010113583,
+      "im_phi": -1.4384550279019006,
+      "det_hessian_re_phi": -3.901821111835913e-51,
+      "nearest_action_gap": 0.0022088196962468665,
+      "re_phi_plus_pref": -1.210871559422979,
+      "re_phi_plus_pref_conv2": -1.2104405760113583,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470745,
+        -0.0471533903657609,
+        -5.779200332898219,
+        0.24895777818622603,
+        -0.047153390365760335,
+        -0.2686519680097314,
+        -2.2805985610455086,
+        0.07876886422816629
+      ],
+      "z_imag": [
+        2.2116042197189634,
+        0.22421125141975287,
+        -2.784284485160995e-15,
+        0.30913824967219344,
+        -0.22421125141975248,
+        -0.48673656808651533,
+        -1.7270192055291382,
+        0.05408918815582286
+      ],
+      "krawczyk_contraction": 1.1440620920416316e-05,
+      "proof": {
+        "box_radius": [
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13,
+          1.427296611055225e-13
+        ],
+        "contraction_bound": 1.1440620920416316e-05,
+        "adaptive": true,
+        "G_inf": 1.464316409798054e-14,
+        "cond_J": 80.20030982922279,
+        "Y_G_inf": 1.427296611055225e-14,
+        "tested_radii": [
+          {
+            "radius": 1.427296611055225e-20,
+            "inclusion": false,
+            "contraction_bound": 1.1424516431843876e-05
+          },
+          {
+            "radius": 1.4272966110552251e-18,
+            "inclusion": false,
+            "contraction_bound": 1.142451644202571e-05
+          },
+          {
+            "radius": 1.427296611055225e-16,
+            "inclusion": false,
+            "contraction_bound": 1.1424523419286122e-05
+          },
+          {
+            "radius": 1.427296611055225e-15,
+            "inclusion": false,
+            "contraction_bound": 1.1424686574912428e-05
+          },
+          {
+            "radius": 1.427296611055225e-14,
+            "inclusion": false,
+            "contraction_bound": 1.1426121688393373e-05
+          },
+          {
+            "radius": 1.427296611055225e-13,
+            "inclusion": true,
+            "contraction_bound": 1.1440620920416316e-05
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 5,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 8.17471674600971e-15,
+      "residual": 7.549516567451064e-15,
+      "jacobian_cond": 22.938518455454226,
+      "re_phi": -1.474960997752051,
+      "im_phi": -0.02241907328197934,
+      "det_hessian_re_phi": -9.522110912361715e-55,
+      "nearest_action_gap": 1.7763568394002505e-15,
+      "re_phi_plus_pref": -2.1650013561636716,
+      "re_phi_plus_pref_conv2": -2.164570372752051,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847089,
+        -0.04715339036576055,
+        -5.779200332898233,
+        -0.17592814081548452,
+        -0.04715339036576077,
+        0.07033687545003249,
+        0.20627710813668168,
+        0.01853559464773967
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.22421125141975307,
+        8.800299960288748e-16,
+        3.7848199763335204,
+        -0.22421125141975295,
+        0.046647332254786775,
+        0.024410248293867575,
+        -0.12871318748418525
+      ],
+      "krawczyk_contraction": 9.864126916028218e-06,
+      "proof": {
+        "box_radius": [
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15,
+          8.17471674600971e-15
+        ],
+        "contraction_bound": 9.864126916028218e-06,
+        "adaptive": true,
+        "G_inf": 8.174720805821592e-15,
+        "cond_J": 22.9385170624716,
+        "Y_G_inf": 8.17471674600971e-15,
+        "tested_radii": [
+          {
+            "radius": 8.17471674600971e-21,
+            "inclusion": false,
+            "contraction_bound": 9.862050185556297e-06
+          },
+          {
+            "radius": 8.174716746009711e-19,
+            "inclusion": false,
+            "contraction_bound": 9.862050198264267e-06
+          },
+          {
+            "radius": 8.174716746009711e-17,
+            "inclusion": false,
+            "contraction_bound": 9.862059277597592e-06
+          },
+          {
+            "radius": 8.174716746009711e-16,
+            "inclusion": false,
+            "contraction_bound": 9.862270406869329e-06
+          },
+          {
+            "radius": 8.17471674600971e-15,
+            "inclusion": true,
+            "contraction_bound": 9.864126916028218e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 6,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 9.227299051869508e-14,
+      "residual": 2.531308496145357e-14,
+      "jacobian_cond": 49.801213376008775,
+      "re_phi": -2.507723420766668,
+      "im_phi": -0.38518513285632494,
+      "det_hessian_re_phi": -1.7490760766723707e-49,
+      "nearest_action_gap": 0.10597073610276952,
+      "re_phi_plus_pref": -3.1977637791782887,
+      "re_phi_plus_pref_conv2": -3.197332795766668,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.04715339036576098,
+        -5.779200332898224,
+        -3.43253979670136,
+        -0.04715339036576077,
+        2.9407970261973966,
+        -0.17859837594688427,
+        0.06095819082744116
+      ],
+      "z_imag": [
+        2.211604219718963,
+        0.2242112514197525,
+        5.823400473865967e-17,
+        2.466950170895249,
+        -0.22421125141975295,
+        2.1279418879903615,
+        -0.4681902677425039,
+        0.03810544291735224
+      ],
+      "krawczyk_contraction": 7.741040116177083e-06,
+      "proof": {
+        "box_radius": [
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14,
+          9.227299051869508e-14
+        ],
+        "contraction_bound": 7.741040116177083e-06,
+        "adaptive": true,
+        "G_inf": 2.596308231915761e-14,
+        "cond_J": 49.80120975714467,
+        "Y_G_inf": 9.227299051869508e-15,
+        "tested_radii": [
+          {
+            "radius": 9.227299051869508e-21,
+            "inclusion": false,
+            "contraction_bound": 7.732535570750334e-06
+          },
+          {
+            "radius": 9.227299051869508e-19,
+            "inclusion": false,
+            "contraction_bound": 7.73253557625715e-06
+          },
+          {
+            "radius": 9.227299051869509e-17,
+            "inclusion": false,
+            "contraction_bound": 7.732538426929227e-06
+          },
+          {
+            "radius": 9.227299051869509e-16,
+            "inclusion": false,
+            "contraction_bound": 7.732618436697703e-06
+          },
+          {
+            "radius": 9.227299051869508e-15,
+            "inclusion": false,
+            "contraction_bound": 7.733377864288884e-06
+          },
+          {
+            "radius": 9.227299051869508e-14,
+            "inclusion": true,
+            "contraction_bound": 7.741040116177083e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 7,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 3.794301274539885e-14,
+      "residual": 3.552713678800501e-15,
+      "jacobian_cond": 11.564811107466106,
+      "re_phi": 0.2226367002862053,
+      "im_phi": -0.09152625120511232,
+      "det_hessian_re_phi": 2.5627439996465247e-53,
+      "nearest_action_gap": 8.881784197001252e-16,
+      "re_phi_plus_pref": -0.4674036581254154,
+      "re_phi_plus_pref_conv2": -0.46697267471379467,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.0471533903657609,
+        -5.779200332898224,
+        -0.20283407156667538,
+        -0.047153390365760835,
+        -0.38611466844698417,
+        -1.1211824310107887,
+        -0.024579750595447057
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.22421125141975287,
+        -2.682824280946268e-15,
+        1.2411261872766965,
+        -0.22421125141975293,
+        -0.4727280280751584,
+        -0.9254801438192631,
+        0.15902676683557077
+      ],
+      "krawczyk_contraction": 8.40883703633595e-06,
+      "proof": {
+        "box_radius": [
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14,
+          3.794301274539885e-14
+        ],
+        "contraction_bound": 8.40883703633595e-06,
+        "adaptive": true,
+        "G_inf": 3.794299872214038e-15,
+        "cond_J": 11.564810348468486,
+        "Y_G_inf": 3.794301274539885e-15,
+        "tested_radii": [
+          {
+            "radius": 3.794301274539885e-21,
+            "inclusion": false,
+            "contraction_bound": 8.405651263657933e-06
+          },
+          {
+            "radius": 3.794301274539885e-19,
+            "inclusion": false,
+            "contraction_bound": 8.405651265667641e-06
+          },
+          {
+            "radius": 3.794301274539885e-17,
+            "inclusion": false,
+            "contraction_bound": 8.405652264849566e-06
+          },
+          {
+            "radius": 3.794301274539885e-16,
+            "inclusion": false,
+            "contraction_bound": 8.405674862822848e-06
+          },
+          {
+            "radius": 3.794301274539885e-15,
+            "inclusion": false,
+            "contraction_bound": 8.405967337099818e-06
+          },
+          {
+            "radius": 3.794301274539885e-14,
+            "inclusion": true,
+            "contraction_bound": 8.40883703633595e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 8,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.5053120258033473e-14,
+      "residual": 2.3092638912203256e-14,
+      "jacobian_cond": 27.298931497994065,
+      "re_phi": -0.022858559164875336,
+      "im_phi": -0.5803108445240504,
+      "det_hessian_re_phi": 3.466092766890188e-52,
+      "nearest_action_gap": 0.046116164550287136,
+      "re_phi_plus_pref": -0.712898917576496,
+      "re_phi_plus_pref_conv2": -0.7124679341648753,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.04715339036576094,
+        -5.779200332898224,
+        -1.1021838368559294,
+        -0.04715339036576069,
+        1.6789683125588828,
+        -0.6501284537872887,
+        0.24376936579025016
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.22421125141975282,
+        -2.173476599903043e-15,
+        0.9460117043277493,
+        -0.2242112514197527,
+        -0.1399967997131501,
+        -3.731101635670606,
+        0.7694857379801833
+      ],
+      "krawczyk_contraction": 9.063654912274844e-06,
+      "proof": {
+        "box_radius": [
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14,
+          1.5053120258033473e-14
+        ],
+        "contraction_bound": 9.063654912274844e-06,
+        "adaptive": true,
+        "G_inf": 3.2345428974576406e-14,
+        "cond_J": 27.298929342324254,
+        "Y_G_inf": 1.5053120258033473e-14,
+        "tested_radii": [
+          {
+            "radius": 1.5053120258033472e-20,
+            "inclusion": false,
+            "contraction_bound": 9.062244434196199e-06
+          },
+          {
+            "radius": 1.5053120258033474e-18,
+            "inclusion": false,
+            "contraction_bound": 9.062244442912979e-06
+          },
+          {
+            "radius": 1.5053120258033474e-16,
+            "inclusion": false,
+            "contraction_bound": 9.062250251932711e-06
+          },
+          {
+            "radius": 1.5053120258033474e-15,
+            "inclusion": false,
+            "contraction_bound": 9.062388987857952e-06
+          },
+          {
+            "radius": 1.5053120258033473e-14,
+            "inclusion": true,
+            "contraction_bound": 9.063654912274844e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 9,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 7.16072459333701e-14,
+      "residual": 2.4424906541753444e-14,
+      "jacobian_cond": 121.4004393717969,
+      "re_phi": -0.5186223813151083,
+      "im_phi": -1.4401507749968432,
+      "det_hessian_re_phi": -3.998178009322355e-51,
+      "nearest_action_gap": 3.1086244689504383e-15,
+      "re_phi_plus_pref": -1.208662739726729,
+      "re_phi_plus_pref_conv2": -1.2082317563151084,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.04715339036576069,
+        -5.779200332898224,
+        0.0058358028090758135,
+        -0.04715339036576078,
+        0.005645668478071592,
+        -2.437458277823738,
+        0.0697900119626523
+      ],
+      "z_imag": [
+        2.211604219718963,
+        0.2242112514197527,
+        8.055219701328718e-16,
+        0.1550413225759596,
+        -0.22421125141975262,
+        -0.6175651826637325,
+        -1.8836546473015123,
+        0.044988028396538676
+      ],
+      "krawczyk_contraction": 8.247928161192843e-06,
+      "proof": {
+        "box_radius": [
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14,
+          7.16072459333701e-14
+        ],
+        "contraction_bound": 8.247928161192843e-06,
+        "adaptive": true,
+        "G_inf": 2.444104990540732e-14,
+        "cond_J": 121.4004331744162,
+        "Y_G_inf": 7.16072459333701e-15,
+        "tested_radii": [
+          {
+            "radius": 7.16072459333701e-21,
+            "inclusion": false,
+            "contraction_bound": 8.24158005491977e-06
+          },
+          {
+            "radius": 7.160724593337009e-19,
+            "inclusion": false,
+            "contraction_bound": 8.241580063182955e-06
+          },
+          {
+            "radius": 7.16072459333701e-17,
+            "inclusion": false,
+            "contraction_bound": 8.241582677963184e-06
+          },
+          {
+            "radius": 7.16072459333701e-16,
+            "inclusion": false,
+            "contraction_bound": 8.241652300213538e-06
+          },
+          {
+            "radius": 7.16072459333701e-15,
+            "inclusion": false,
+            "contraction_bound": 8.242210866300902e-06
+          },
+          {
+            "radius": 7.16072459333701e-14,
+            "inclusion": true,
+            "contraction_bound": 8.247928161192843e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 10,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.4868374494401826e-14,
+      "residual": 1.4210854715202004e-14,
+      "jacobian_cond": 22.938521175423038,
+      "re_phi": -1.4749609977520493,
+      "im_phi": 0.022419073281979784,
+      "det_hessian_re_phi": 7.782027117824522e-54,
+      "nearest_action_gap": 1.7763568394002505e-15,
+      "re_phi_plus_pref": -2.16500135616367,
+      "re_phi_plus_pref_conv2": -2.164570372752049,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.047153390365760633,
+        -5.779200332898219,
+        0.20627710813668115,
+        -0.047153390365760633,
+        0.016751036636569933,
+        -0.1759281408154841,
+        0.018535594647739444
+      ],
+      "z_imag": [
+        2.211604219718965,
+        0.22421125141975273,
+        -2.835171391757503e-15,
+        -0.024410248293867103,
+        -0.22421125141975273,
+        -0.08272032655981326,
+        -3.784819976333519,
+        0.12871318748418542
+      ],
+      "krawczyk_contraction": 9.559360177017998e-06,
+      "proof": {
+        "box_radius": [
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14,
+          1.4868374494401826e-14
+        ],
+        "contraction_bound": 9.559360177017998e-06,
+        "adaptive": true,
+        "G_inf": 1.4868367375023712e-14,
+        "cond_J": 22.938520517326562,
+        "Y_G_inf": 1.4868374494401826e-14,
+        "tested_radii": [
+          {
+            "radius": 1.4868374494401825e-20,
+            "inclusion": false,
+            "contraction_bound": 9.555721809246633e-06
+          },
+          {
+            "radius": 1.4868374494401827e-18,
+            "inclusion": false,
+            "contraction_bound": 9.555721831246574e-06
+          },
+          {
+            "radius": 1.4868374494401826e-16,
+            "inclusion": false,
+            "contraction_bound": 9.555736788561684e-06
+          },
+          {
+            "radius": 1.4868374494401827e-15,
+            "inclusion": false,
+            "contraction_bound": 9.556096732627689e-06
+          },
+          {
+            "radius": 1.4868374494401826e-14,
+            "inclusion": true,
+            "contraction_bound": 9.559360177017998e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 11,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 9.607120952720431e-15,
+      "residual": 2.842170943040401e-14,
+      "jacobian_cond": 79.23737985858172,
+      "re_phi": -0.7205621988941315,
+      "im_phi": 1.4518310594329058,
+      "det_hessian_re_phi": -3.6102731045675036e-49,
+      "nearest_action_gap": 0.19973099788277326,
+      "re_phi_plus_pref": -1.4106025573057521,
+      "re_phi_plus_pref_conv2": -1.4101715738941314,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847098,
+        -0.04715339036576078,
+        -5.779200332898233,
+        -3.6960044655547146,
+        -0.047153390365760856,
+        2.082492758589442,
+        -0.8215920002606966,
+        -0.001776215208275413
+      ],
+      "z_imag": [
+        2.2116042197189674,
+        0.22421125141975323,
+        -2.0345919940714335e-16,
+        1.4203800544713563,
+        -0.22421125141975318,
+        2.641974458538799,
+        0.6630560759880707,
+        0.025893160659182183
+      ],
+      "krawczyk_contraction": 4.615111756117308e-06,
+      "proof": {
+        "box_radius": [
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15,
+          9.607120952720431e-15
+        ],
+        "contraction_bound": 4.615111756117308e-06,
+        "adaptive": true,
+        "G_inf": 3.207987460491992e-14,
+        "cond_J": 79.23734550852494,
+        "Y_G_inf": 9.607120952720431e-15,
+        "tested_radii": [
+          {
+            "radius": 9.607120952720431e-21,
+            "inclusion": false,
+            "contraction_bound": 4.613744275906825e-06
+          },
+          {
+            "radius": 9.607120952720432e-19,
+            "inclusion": false,
+            "contraction_bound": 4.6137442856206075e-06
+          },
+          {
+            "radius": 9.607120952720432e-17,
+            "inclusion": false,
+            "contraction_bound": 4.61374894027333e-06
+          },
+          {
+            "radius": 9.607120952720432e-16,
+            "inclusion": false,
+            "contraction_bound": 4.6138733017360145e-06
+          },
+          {
+            "radius": 9.607120952720431e-15,
+            "inclusion": true,
+            "contraction_bound": 4.615111756117308e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 12,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.6315607178742103e-14,
+      "residual": 1.4210854715202004e-14,
+      "jacobian_cond": 117.94937907529378,
+      "re_phi": -2.6136941568694376,
+      "im_phi": -1.9286819271418953,
+      "det_hessian_re_phi": -2.257360741480085e-50,
+      "nearest_action_gap": 0.10597073610276952,
+      "re_phi_plus_pref": -3.303734515281058,
+      "re_phi_plus_pref_conv2": -3.3033035318694375,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847093,
+        -0.04715339036576109,
+        -5.779200332898233,
+        0.02953683368297978,
+        -0.04715339036576055,
+        0.49107294220250886,
+        -2.569223740201682,
+        0.12686907338692024
+      ],
+      "z_imag": [
+        2.211604219718971,
+        0.22421125141975318,
+        -4.186276023324772e-15,
+        0.02591045568595582,
+        -0.22421125141975307,
+        -0.011842196235330895,
+        -2.990565519335262,
+        0.09632470703431542
+      ],
+      "krawczyk_contraction": 9.236646835115119e-06,
+      "proof": {
+        "box_radius": [
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14,
+          1.6315607178742103e-14
+        ],
+        "contraction_bound": 9.236646835115119e-06,
+        "adaptive": true,
+        "G_inf": 1.631561023638899e-14,
+        "cond_J": 117.94931975574839,
+        "Y_G_inf": 1.6315607178742103e-14,
+        "tested_radii": [
+          {
+            "radius": 1.6315607178742104e-20,
+            "inclusion": false,
+            "contraction_bound": 9.235412752314585e-06
+          },
+          {
+            "radius": 1.6315607178742104e-18,
+            "inclusion": false,
+            "contraction_bound": 9.235412762360795e-06
+          },
+          {
+            "radius": 1.6315607178742105e-16,
+            "inclusion": false,
+            "contraction_bound": 9.23541758518844e-06
+          },
+          {
+            "radius": 1.6315607178742105e-15,
+            "inclusion": false,
+            "contraction_bound": 9.2355434660682e-06
+          },
+          {
+            "radius": 1.6315607178742103e-14,
+            "inclusion": true,
+            "contraction_bound": 9.236646835115119e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 13,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.5138006180316754e-14,
+      "residual": 1.687538997430238e-14,
+      "jacobian_cond": 100.02602060593077,
+      "re_phi": -0.4977994128086476,
+      "im_phi": -0.05707475227268044,
+      "det_hessian_re_phi": -3.398746887572648e-53,
+      "nearest_action_gap": 0.020822968506460704,
+      "re_phi_plus_pref": -1.1878397712202684,
+      "re_phi_plus_pref_conv2": -1.1874087878086477,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847098,
+        -0.04715339036576074,
+        -5.779200332898238,
+        -0.0013148274335534266,
+        -0.047153390365761085,
+        1.9172856003180132,
+        -3.7143709027921408,
+        0.07266122879998056
+      ],
+      "z_imag": [
+        2.2116042197189616,
+        0.22421125141975295,
+        1.89006861156819e-15,
+        0.00015872077520271785,
+        -0.22421125141975348,
+        -3.3473439238453997,
+        -2.4035223684270153,
+        -0.08222033383932581
+      ],
+      "krawczyk_contraction": 9.480043239409975e-06,
+      "proof": {
+        "box_radius": [
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14,
+          1.5138006180316754e-14
+        ],
+        "contraction_bound": 9.480043239409975e-06,
+        "adaptive": true,
+        "G_inf": 2.0961763384985135e-14,
+        "cond_J": 100.02600941103209,
+        "Y_G_inf": 1.5138006180316754e-14,
+        "tested_radii": [
+          {
+            "radius": 1.5138006180316753e-20,
+            "inclusion": false,
+            "contraction_bound": 9.478573631072675e-06
+          },
+          {
+            "radius": 1.5138006180316755e-18,
+            "inclusion": false,
+            "contraction_bound": 9.478573649369336e-06
+          },
+          {
+            "radius": 1.5138006180316755e-16,
+            "inclusion": false,
+            "contraction_bound": 9.478579012154567e-06
+          },
+          {
+            "radius": 1.5138006180316754e-15,
+            "inclusion": false,
+            "contraction_bound": 9.478723770971812e-06
+          },
+          {
+            "radius": 1.5138006180316754e-14,
+            "inclusion": true,
+            "contraction_bound": 9.480043239409975e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 14,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 5.704876920370606e-14,
+      "residual": 6.328271240363392e-14,
+      "jacobian_cond": 69.70829341253693,
+      "re_phi": -4.085268104904629,
+      "im_phi": -5.046466529571223,
+      "det_hessian_re_phi": -8.429252268285457e-51,
+      "nearest_action_gap": 1.4193626714252447,
+      "re_phi_plus_pref": -4.77530846331625,
+      "re_phi_plus_pref_conv2": -4.774877479904629,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847086,
+        -0.04715339036576113,
+        -5.779200332898233,
+        -1.4343959489321136,
+        -0.047153390365760633,
+        0.06466126555457034,
+        0.2416260623753577,
+        0.07663494100195739
+      ],
+      "z_imag": [
+        2.2116042197189665,
+        0.22421125141975312,
+        -3.1171782913360707e-15,
+        4.169521024389068,
+        -0.22421125141975304,
+        0.002601907358725206,
+        -0.003879336039336075,
+        -0.14527195549535304
+      ],
+      "krawczyk_contraction": 7.752137951107626e-06,
+      "proof": {
+        "box_radius": [
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14,
+          5.704876920370606e-14
+        ],
+        "contraction_bound": 7.752137951107626e-06,
+        "adaptive": true,
+        "G_inf": 6.527091712587354e-14,
+        "cond_J": 69.7082883128527,
+        "Y_G_inf": 5.704876920370606e-15,
+        "tested_radii": [
+          {
+            "radius": 5.704876920370606e-21,
+            "inclusion": false,
+            "contraction_bound": 7.747186459815795e-06
+          },
+          {
+            "radius": 5.704876920370607e-19,
+            "inclusion": false,
+            "contraction_bound": 7.747186465060928e-06
+          },
+          {
+            "radius": 5.704876920370606e-17,
+            "inclusion": false,
+            "contraction_bound": 7.747188351741214e-06
+          },
+          {
+            "radius": 5.704876920370607e-16,
+            "inclusion": false,
+            "contraction_bound": 7.747243035366596e-06
+          },
+          {
+            "radius": 5.704876920370606e-15,
+            "inclusion": false,
+            "contraction_bound": 7.747673238172742e-06
+          },
+          {
+            "radius": 5.704876920370606e-14,
+            "inclusion": true,
+            "contraction_bound": 7.752137951107626e-06
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 15,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.462805716045269e-13,
+      "residual": 1.4210854715202004e-14,
+      "jacobian_cond": 121.4005038205077,
+      "re_phi": -0.5186223813151114,
+      "im_phi": 1.4401507749968425,
+      "det_hessian_re_phi": -8.395828781078141e-51,
+      "nearest_action_gap": 3.1086244689504383e-15,
+      "re_phi_plus_pref": -1.2086627397267322,
+      "re_phi_plus_pref_conv2": -1.2082317563151115,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847081,
+        -0.047153390365761105,
+        -5.779200332898224,
+        -2.437458277823739,
+        -0.047153390365760536,
+        0.4406766189514096,
+        0.005835802809075928,
+        0.06979001196265235
+      ],
+      "z_imag": [
+        2.211604219718966,
+        0.22421125141975287,
+        -6.894794490970964e-15,
+        1.8836546473015112,
+        -0.22421125141975307,
+        0.43269243802105994,
+        -0.15504132257596043,
+        -0.04498802839653866
+      ],
+      "krawczyk_contraction": 1.159821278553707e-05,
+      "proof": {
+        "box_radius": [
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13,
+          1.462805716045269e-13
+        ],
+        "contraction_bound": 1.159821278553707e-05,
+        "adaptive": true,
+        "G_inf": 1.4628054969980576e-14,
+        "cond_J": 121.4004108631982,
+        "Y_G_inf": 1.462805716045269e-14,
+        "tested_radii": [
+          {
+            "radius": 1.462805716045269e-20,
+            "inclusion": false,
+            "contraction_bound": 1.1583036177422075e-05
+          },
+          {
+            "radius": 1.462805716045269e-18,
+            "inclusion": false,
+            "contraction_bound": 1.1583036193755872e-05
+          },
+          {
+            "radius": 1.462805716045269e-16,
+            "inclusion": false,
+            "contraction_bound": 1.1583042563611856e-05
+          },
+          {
+            "radius": 1.4628057160452689e-15,
+            "inclusion": false,
+            "contraction_bound": 1.15831946695464e-05
+          },
+          {
+            "radius": 1.462805716045269e-14,
+            "inclusion": false,
+            "contraction_bound": 1.1584540495571422e-05
+          },
+          {
+            "radius": 1.462805716045269e-13,
+            "inclusion": true,
+            "contraction_bound": 1.159821278553707e-05
+          }
+        ]
+      }
+    },
+    {
+      "saddle_id": 16,
+      "beta": 0.5433996420760803,
+      "gamma": -0.05,
+      "certified": true,
+      "box_radius": 1.2716775338238873e-14,
+      "residual": 1.2656542480726785e-14,
+      "jacobian_cond": 11.564813323900932,
+      "re_phi": 0.2226367002862062,
+      "im_phi": 0.09152625120511199,
+      "det_hessian_re_phi": -1.351839961410727e-52,
+      "nearest_action_gap": 8.881784197001252e-16,
+      "re_phi_plus_pref": -0.4674036581254145,
+      "re_phi_plus_pref_conv2": -0.4669726747137938,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470905,
+        -0.04715339036576098,
+        -5.779200332898233,
+        -1.1211824310107878,
+        -0.04715339036576066,
+        0.06124489393443205,
+        -0.20283407156667535,
+        -0.02457975059544714
+      ],
+      "z_imag": [
+        2.2116042197189705,
+        0.22421125141975323,
+        -2.405519835397296e-15,
+        0.9254801438192629,
+        -0.224211251419753,
+        0.6072934946833464,
+        -1.2411261872766963,
+        -0.15902676683557052
+      ],
+      "krawczyk_contraction": 1.1477533695295208e-05,
+      "proof": {
+        "box_radius": [
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14,
+          1.2716775338238873e-14
+        ],
+        "contraction_bound": 1.1477533695295208e-05,
+        "adaptive": true,
+        "G_inf": 1.4004661458263604e-14,
+        "cond_J": 11.564810661309764,
+        "Y_G_inf": 1.2716775338238873e-14,
+        "tested_radii": [
+          {
+            "radius": 1.2716775338238872e-20,
+            "inclusion": false,
+            "contraction_bound": 1.1473599332839539e-05
+          },
+          {
+            "radius": 1.2716775338238873e-18,
+            "inclusion": false,
+            "contraction_bound": 1.1473599357750119e-05
+          },
+          {
+            "radius": 1.2716775338238874e-16,
+            "inclusion": false,
+            "contraction_bound": 1.147361867029134e-05
+          },
+          {
+            "radius": 1.2716775338238873e-15,
+            "inclusion": false,
+            "contraction_bound": 1.147396230809323e-05
+          },
+          {
+            "radius": 1.2716775338238873e-14,
+            "inclusion": true,
+            "contraction_bound": 1.1477533695295208e-05
+          }
+        ]
+      }
+    }
+  ]
+}

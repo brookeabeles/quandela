@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.001,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      -0.249,
+      -0.124,
+      0.0010000000000000009,
+      0.126,
+      0.251
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_14-56-16Z"
+  },
+  "saddles": [
+    {
+      "saddle_id": 0,
+      "beta": 0.5433996420760803,
+      "gamma": 0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 7.376343116145138e-06,
+      "jacobian_cond": 1.0037714149739683,
+      "re_phi": -0.0004203885507370435,
+      "im_phi": 1.218630937721022e-07,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.18028731414425184,
+      "re_phi_plus_pref": -0.690029935953077,
+      "re_phi_plus_pref_conv2": -0.690029763550737,
+      "matches_lambda_abs": true,
+      "matches_lambda_local": true,
+      "matches_lambda_abs_full": true,
+      "matches_lambda_abs_conv2": true,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.3392849018470825,
+        -0.0014594175309075726,
+        -5.779200332898224,
+        -0.004950476953916849,
+        -0.0014594175309075672,
+        8.904033826703515e-06,
+        -0.004950476953916854,
+        -5.699761825791125e-06
+      ],
+      "z_imag": [
+        2.211604219718963,
+        -0.007328608646363925,
+        6.206367686325796e-29,
+        -0.0029039302814711813,
+        0.007328608646363911,
+        3.6881715708494268e-06,
+        0.0029039302814711744,
+        -9.280220813019963e-21
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    },
+    {
+      "saddle_id": 1,
+      "beta": 0.5433996420760803,
+      "gamma": 0.001,
+      "certified": false,
+      "box_radius": NaN,
+      "residual": 0.028396718689161285,
+      "jacobian_cond": 22.81984543462309,
+      "re_phi": 0.1798669255935148,
+      "im_phi": 1.4953091798075904,
+      "det_hessian_re_phi": NaN,
+      "nearest_action_gap": 0.18028731414425184,
+      "re_phi_plus_pref": -0.5097426218088252,
+      "re_phi_plus_pref_conv2": -0.5097424494064852,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "matches_lambda_abs_full": false,
+      "matches_lambda_abs_conv2": false,
+      "controls_finite_n": false,
+      "is_bm24_seed_saddle": false,
+      "z_real": [
+        5.339284901847092,
+        -0.0014594175309075726,
+        -5.7792003328982275,
+        -0.004930135217661737,
+        -0.0014594175309075703,
+        -0.0052586420320810835,
+        -2.8534995286151625,
+        -0.0006058613388534628
+      ],
+      "z_imag": [
+        2.211604219718967,
+        -0.007328608646363925,
+        6.213479159600505e-17,
+        -0.0029261124974746112,
+        0.007328608646363927,
+        0.0008179247757634559,
+        -3.6469509934430415,
+        -0.004554667381095137
+      ],
+      "krawczyk_contraction": Infinity,
+      "proof": {
+        "reason": "inclusion/contraction failed",
+        "dps_used": 255
+      }
+    }
+  ]
+}

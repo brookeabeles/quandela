@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "q": 3,
+    "k": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.7487887432117251,
+    "n_grid": [
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "gamma_scan": [
+      0.5487887432117251,
+      0.6487887432117251,
+      0.7487887432117251,
+      0.848788743211725,
+      0.948788743211725
+    ],
+    "rigorous_krawczyk": false,
+    "timestamp": "20260527T105928Z"
+  },
+  "saddles": [
+    {
+      "saddle_id": 0,
+      "beta": 0.5433996420760803,
+      "gamma": 0.7487887432117251,
+      "certified": true,
+      "box_radius": 1e-06,
+      "residual": 1.0190778508706368e-13,
+      "jacobian_cond": 19.019269331537313,
+      "re_phi": -0.2080123143118695,
+      "im_phi": -1.4888848540807512e-14,
+      "det_hessian_re_phi": 7.647212969806156e-56,
+      "nearest_action_gap": 0.001119577891043777,
+      "matches_lambda_abs": false,
+      "matches_lambda_local": false,
+      "is_bm24_seed_saddle": 

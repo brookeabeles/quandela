@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "q": 1,
+    "r": 176.54,
+    "beta": 0.5433996420760803
+  },
+  "all_passed": false,
+  "checks": [
+    {
+      "gamma": 0.001,
+      "ok": true,
+      "iterate_status": "BM24_ITERATE_CERTIFIED_AS_FIXED_POINT",
+      "iterate_res_inf": 6.377555790148159e-11,
+      "z_inf_distance_iter_vs_polished": 6.443573444918073e-11,
+      "phi_abs_diff_iter_vs_polished": 8.327366581306477e-14,
+      "krawczyk_certified_polished": true
+    },
+    {
+      "gamma": 0.01,
+      "ok": false,
+      "reason": "newton_polish_failed"
+    },
+    {
+      "gamma": 0.05,
+      "ok": false,
+      "reason": "newton_polish_failed"
+    }
+  ],
+  "z_tol": 0.0001,
+  "phi_tol": 1e-05,
+  "q": 1
+}

@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "p": 1,
+    "beta": 0.5433996420760803,
+    "gamma": 0.7487887432117251,
+    "n_grid": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "gamma_scan": [
+      0.49878874321172506,
+      0.6237887432117251,
+      0.7487887432117251,
+      0.8737887432117251,
+      0.9987887432117251
+    ],
+    "rigorous_krawczyk": true,
+    "timestamp": "run_05-27_14-18-48Z"
+  },
+  "num_saddle_candidates": 83,
+  "num_certified": 82,
+  "dominant_certified_re_phi": 1.2666199376731522,
+  "lambda_abs_at_n_max": -0.8809034481375314,
+  "match_tol_effective": 0.02,
+  "controlling_saddle_ids": [
+    1,
+    4,
+    32,
+    69
+  ],
+  "conventions": {
+    "conv1_prefactor": -0.7851488559615263,
+    "conv2_prefactor": -0.689609375,
+    "note": "Primary baseline is Conv2 exact finite-n. Conv1 comparisons are cross-check/hybrid only."
+  },
+  "bm24_scaling_iterate": {
+    "status": "BM24_NONCONVERGED_ITERATE",
+    "fixed_point": false,
+    "converged_flag_from_iterator": false,
+    "re_phi": -0.0958274551219574,
+    "re_phi_plus_conv1_pref": -0.8809763110834836,
+    "re_phi_plus_conv2_pref": -0.7854368301219574,
+    "G_residual_inf": 2.053820231083309,
+    "G_residual_l2": 3.4625959151406014,
+    "scaled_res_inf": 0.30295907042553233,
+    "componentwise_rel": 5.188676703618156,
+    "matches_lambda_abs_conv2_primary": false,
+    "matches_lambda_abs_conv1_hybrid": true,
+    "note": "Iterator output is not labeled as saddle/controller unless converged and fixed-point diagnostics pass."
+  },
+  "closest_certified_to_lambda": {
+    "saddle_id": 4,
+    "re_phi": -0.1990365675376529,
+    "re_phi_plus_pref_conv2": -0.8886459425376528,
+    "gap_conv2_primary": 0.007742494400121425,
+    "re_phi_plus_pref_conv1_hybrid": -0.9841854234991791,
+    "is_bm24_seed_saddle": false
+  },
+  "bm24_seed": {
+    "re_phi": -0.0958274551219574,
+    "phi_pref_prop4": -0.7851488559615263,
+    "phi_pref_conv2": -0.689609375
+  },
+  "object_table_path": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_05-27_14-18-48Z/object_comparison_table.json"
+}

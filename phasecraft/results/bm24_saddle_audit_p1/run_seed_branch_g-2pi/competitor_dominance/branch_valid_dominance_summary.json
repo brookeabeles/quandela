@@ -1,0 +1,101 @@
+{
+  "metadata": {
+    "gammas": [
+      -0.3,
+      -0.6,
+      -0.83,
+      -1.0,
+      -1.6,
+      -2.0
+    ],
+    "local_deltas": [
+      0.001,
+      0.002,
+      0.005,
+      0.01,
+      0.02
+    ],
+    "classification_thresholds": {
+      "z_step_max": 1.0,
+      "z_step_prefer": 0.5,
+      "seed_z_tol": 0.05,
+      "seed_re_tol": 0.05,
+      "high_re_gap": 0.5,
+      "near_seed_gap": 0.2
+    },
+    "inputs": {
+      "competitor_dominance_summary": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/competitor_dominance/competitor_dominance_summary.json",
+      "continuation_json": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/seed_branch_continuation.json"
+    },
+    "im_phi_warning": "Im(Phi) uses principal np.log; raw Im Phi can jump by 2*pi along gamma. Do not infer Stokes events without branch-unwrapped phases.",
+    "timestamp": "run_06-01_09-13-36Z"
+  },
+  "per_gamma": [
+    {
+      "gamma": -0.3,
+      "seed_re_phi": 0.1385239853842315,
+      "num_discovered_certified_competitors": 87,
+      "max_algebraic_signed_re_gap_vs_seed": 2.8426752292074235,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 0,
+      "max_branch_valid_signed_re_gap_vs_seed": null,
+      "branch_valid_dominates_seed": false,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    },
+    {
+      "gamma": -0.6,
+      "seed_re_phi": 0.2085805531942091,
+      "num_discovered_certified_competitors": 121,
+      "max_algebraic_signed_re_gap_vs_seed": 2.7422559150689136,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 0,
+      "max_branch_valid_signed_re_gap_vs_seed": null,
+      "branch_valid_dominates_seed": false,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    },
+    {
+      "gamma": -0.83,
+      "seed_re_phi": 0.22297853117187239,
+      "num_discovered_certified_competitors": 145,
+      "max_algebraic_signed_re_gap_vs_seed": 2.501568820246465,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 2,
+      "max_branch_valid_signed_re_gap_vs_seed": 2.084377912916871,
+      "branch_valid_dominates_seed": true,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    },
+    {
+      "gamma": -1.0,
+      "seed_re_phi": 0.21613463946281625,
+      "num_discovered_certified_competitors": 147,
+      "max_algebraic_signed_re_gap_vs_seed": 2.4098881448413234,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 2,
+      "max_branch_valid_signed_re_gap_vs_seed": 1.9771451533832147,
+      "branch_valid_dominates_seed": true,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    },
+    {
+      "gamma": -1.6,
+      "seed_re_phi": 0.09762496870981185,
+      "num_discovered_certified_competitors": 207,
+      "max_algebraic_signed_re_gap_vs_seed": 3.013010375502386,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 1,
+      "max_branch_valid_signed_re_gap_vs_seed": 1.5953769550825745,
+      "branch_valid_dominates_seed": true,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    },
+    {
+      "gamma": -2.0,
+      "seed_re_phi": -0.03881740568762515,
+      "num_discovered_certified_competitors": 258,
+      "max_algebraic_signed_re_gap_vs_seed": 4.458029469882835,
+      "seed_has_largest_algebraic_re_phi": false,
+      "num_branch_valid_competitors": 5,
+      "max_branch_valid_signed_re_gap_vs_seed": 1.3470030003898876,
+      "branch_valid_dominates_seed": true,
+      "disclaimer": "branch_valid requires local continuation stability; not PL/intersection dominance."
+    }
+  ]
+}
