@@ -113,6 +113,15 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     per_instance_success_probability,
     run_qaoa,
 )
+from phasecraft.experiments.lr_scaling.config import (  # noqa: E402
+    DEFAULT_DB_BOUNDS as _CFG_DEFAULT_DB_BOUNDS,
+    DEFAULT_DG_BOUNDS as _CFG_DEFAULT_DG_BOUNDS,
+    DEFAULT_EPS as _CFG_DEFAULT_EPS,
+    DEFAULT_INITIAL_DELTAS as _CFG_DEFAULT_INITIAL_DELTAS,
+    MIN_RECOMMENDED_NS_FOR_SLOPE as _CFG_MIN_RECOMMENDED_NS_FOR_SLOPE,
+    MIN_TRAIN_MEAN_P_SUCC as _CFG_MIN_TRAIN_MEAN_P_SUCC,
+    TRAIN_MEAN_P_REGRESSION_FACTOR as _CFG_TRAIN_MEAN_P_REGRESSION_FACTOR,
+)
 
 try:  # progress bars are nice-to-have, never required
     from tqdm import tqdm
@@ -127,22 +136,22 @@ except Exception:  # pragma: no cover
 
 # BM24 LR angles for this instance family use negative delta_gamma. Positive dg
 # is a spurious slope-objective basin (flat ln(1/p) when p≈0); cap dg at -0.01.
-DEFAULT_DG_BOUNDS: Tuple[float, float] = (-2.0, -0.01)
-DEFAULT_DB_BOUNDS: Tuple[float, float] = (0.1, 4.0)
-DEFAULT_INITIAL_DELTAS: Tuple[float, float] = (-0.8, 0.49)
+DEFAULT_DG_BOUNDS: Tuple[float, float] = _CFG_DEFAULT_DG_BOUNDS
+DEFAULT_DB_BOUNDS: Tuple[float, float] = _CFG_DEFAULT_DB_BOUNDS
+DEFAULT_INITIAL_DELTAS: Tuple[float, float] = _CFG_DEFAULT_INITIAL_DELTAS
 
 # Reject COBYLA output that collapses mean p_succ or regresses vs warm-start.
-MIN_TRAIN_MEAN_P_SUCC: float = 1e-4
-TRAIN_MEAN_P_REGRESSION_FACTOR: float = 10.0
+MIN_TRAIN_MEAN_P_SUCC: float = _CFG_MIN_TRAIN_MEAN_P_SUCC
+TRAIN_MEAN_P_REGRESSION_FACTOR: float = _CFG_TRAIN_MEAN_P_REGRESSION_FACTOR
 
 # Numerical floor: a p_succ = 0 instance becomes 1/eps, a sentinel "huge cost"
 # that the median will treat correctly (it is just one ordered value). We do
 # NOT clip in log space; the floor is applied to p before reciprocal.
-DEFAULT_EPS: float = 1e-300
+DEFAULT_EPS: float = _CFG_DEFAULT_EPS
 
 # We have been bitten enough times by this in v1: warn loudly if the multi-n
 # training set has fewer than this many distinct n values.
-_MIN_RECOMMENDED_NS_FOR_SLOPE = 3
+_MIN_RECOMMENDED_NS_FOR_SLOPE = _CFG_MIN_RECOMMENDED_NS_FOR_SLOPE
 
 # Single-shot deprecation flag so we don't spam the v1 notebook user.
 _LEGACY_KWARGS_WARNED = False

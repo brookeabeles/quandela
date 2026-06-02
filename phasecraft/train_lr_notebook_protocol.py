@@ -1,4 +1,7 @@
-"""Compatibility CLI entrypoint. Canonical: ``phasecraft.experiments.lr_scaling.train_lr_notebook_protocol``."""
+"""Compatibility CLI entrypoint.
+
+Canonical implementation lives in ``phasecraft.experiments.lr_scaling.cli``.
+"""
 from __future__ import annotations
 
 import sys
@@ -13,6 +16,6 @@ for _p in (_ROOT, _PHASECRAFT):
 from phasecraft.experiments.lr_scaling.train_lr_notebook_protocol import *  # noqa: F401,F403
 
 if __name__ == "__main__":
-    from phasecraft.experiments.lr_scaling.train_lr_notebook_protocol import main
+    from phasecraft.experiments.lr_scaling.cli import main
 
     main()

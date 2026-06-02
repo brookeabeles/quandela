@@ -69,7 +69,7 @@ For Claude to reproduce/extend the universality evidence set, the minimal set of
 3. `run_8sat_block_decay.py` (rewritten to generate the new figures + grids)
 
 Optional context (only if Claude needs it):
-4. `NEW_CHAT_HANDOFF.md` (high-level narrative + solver motivation)
+4. `docs/NEW_CHAT_HANDOFF.md` (high-level narrative + solver motivation)
 
 ## How to run
 From repo root:
