@@ -1,7 +1,7 @@
 # BM24 / LR-QAOA run artifacts
 
 Outputs from `bm24_qaoa_sim.py`, `sweep_lr_depth_until_win.py`, and
-`LR_QAOA_benchmark_efficient.ipynb`.
+`experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb`.
 
 Depth-scaling JSON/PNG files live in this directory (flat layout).
 
@@ -27,7 +27,7 @@ Timestamp = run start (local). Plot titles use wrapped two-line headers.
 | Kind | Source |
 |------|--------|
 | `sweep-scaling` | `sweep_lr_depth_until_win.py` aggregate JSON + PNG |
-| `efficient-scaling` | `LR_QAOA_benchmark_efficient.ipynb` |
+| `efficient-scaling` | `experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb` |
 | `bench` / `thy` | `bm24_qaoa_sim.py` (root) |
 
 ## Logs (not stamped)

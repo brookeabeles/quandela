@@ -61,7 +61,7 @@ they no longer have a clean interpretation under the new objective.
 
 Recommended notebook settings
 -----------------------------
-For the user's existing ``LR_QAOA_benchmark_efficient.ipynb``::
+For the canonical notebook ``experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb``::
 
     CFG["proxy_n_span"]      = 4    # was 2; with step=2 -> [train_n, +2, +4]
     CFG["proxy_size_per_n"]  = 50   # was 25
