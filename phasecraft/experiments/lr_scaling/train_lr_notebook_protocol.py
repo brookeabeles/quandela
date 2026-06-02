@@ -98,9 +98,13 @@ for _p in (_REPO_ROOT, _PHASECRAFT_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from phasecraft.lib.paths import bm24_runs_dir  # noqa: E402
+from phasecraft.lib.paths import bm24_runs_dir, lr_train_optimal_angles_v2_path  # noqa: E402
+from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
+    trace_depth_training_failed,
+    trace_failed_depths,
+)
 
-_DEFAULT_ANGLE_LOG = bm24_runs_dir() / "lr_train_optimal_angles_v2.txt"
+_DEFAULT_ANGLE_LOG = lr_train_optimal_angles_v2_path()
 
 from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     build_h_diagonal,
@@ -252,6 +256,8 @@ def proxy_n_values_for_training(
 
 # Eval-side guard: reject a depth if benchmark medians blow up vs previous depth.
 DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR = 10.0
+# Re-train this many extra times after an eval regression before keeping prior angles.
+DEFAULT_EVAL_TRAIN_RETRIES: int = 3
 
 
 def eval_median_runtime_reject(
@@ -293,6 +299,93 @@ def eval_median_runtime_reject(
     if reasons:
         return True, "; ".join(reasons)
     return False, ""
+
+
+def run_train_eval_with_retries(
+    *,
+    train_at_depth,
+    evaluate_at_angles,
+    prev_med_rt: Optional[Dict[int, float]],
+    prev_accepted_deltas: Optional[Tuple[float, float]],
+    n_min: int,
+    n_max: int,
+    max_retries: int = DEFAULT_EVAL_TRAIN_RETRIES,
+    regression_factor: float = DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
+    verbose: bool = True,
+) -> dict:
+    """
+    Train, benchmark-evaluate, and on eval regression re-call ``train_at_depth``
+    up to ``max_retries`` times before falling back to ``prev_accepted_deltas``.
+
+    ``train_at_depth(retry_index)`` must return ``(dg, db, diag)``.
+    ``evaluate_at_angles(dg, db)`` must return ``median(1/p_succ)`` per ``n``.
+    """
+    max_retries = max(0, int(max_retries))
+    last_diag: dict = {}
+    last_reject_reason = ""
+
+    for attempt in range(max_retries + 1):
+        if attempt > 0 and verbose:
+            print(
+                f"  eval regression: re-training "
+                f"(attempt {attempt + 1}/{max_retries + 1}) ..."
+            )
+        dg, db, diag = train_at_depth(int(attempt))
+        last_diag = diag
+        med_rt = evaluate_at_angles(float(dg), float(db))
+        reject, reject_reason = eval_median_runtime_reject(
+            med_rt,
+            prev_med_rt,
+            int(n_min),
+            int(n_max),
+            factor=float(regression_factor),
+        )
+        if not reject:
+            return {
+                "dg": float(dg),
+                "db": float(db),
+                "diag": diag,
+                "med_rt": med_rt,
+                "eval_rejected": False,
+                "eval_reject_reason": None,
+                "eval_train_attempts": int(attempt) + 1,
+                "used_previous_angles": False,
+            }
+        last_reject_reason = reject_reason
+        if verbose:
+            print(f"  REJECT eval regression: {reject_reason}")
+        if attempt < max_retries:
+            continue
+
+    used_previous = False
+    if prev_accepted_deltas is not None:
+        dg, db = float(prev_accepted_deltas[0]), float(prev_accepted_deltas[1])
+        med_rt = evaluate_at_angles(dg, db)
+        used_previous = True
+        if verbose:
+            print(
+                f"  eval regression: kept prior angles after "
+                f"{max_retries + 1} train attempt(s): dg={dg:.6f} db={db:.6f}"
+            )
+    else:
+        dg, db = float(last_diag["best_deltas"][0]), float(last_diag["best_deltas"][1])
+        med_rt = evaluate_at_angles(dg, db)
+        if verbose:
+            print(
+                "  eval regression: no prior accepted angles; "
+                f"keeping last train dg={dg:.6f} db={db:.6f}"
+            )
+
+    return {
+        "dg": float(dg),
+        "db": float(db),
+        "diag": last_diag,
+        "med_rt": med_rt,
+        "eval_rejected": True,
+        "eval_reject_reason": last_reject_reason,
+        "eval_train_attempts": int(max_retries) + 1,
+        "used_previous_angles": used_previous,
+    }
 
 
 def train_mean_p_collapse_reject(
@@ -584,14 +677,18 @@ def train_lr_grid_search_bm24(
     eps: float = DEFAULT_EPS,
     rng: Optional[np.random.Generator] = None,
     verbose: bool = True,
+    train_on_median: bool = False,
     # --- v1 kwargs accepted for backward compatibility; ignored in v2 ----
     w_mean: float = 0.0,
     w_slope: float = 1.0,
     use_log_mean: bool = True,
 ) -> Tuple[np.ndarray, dict]:
     """
-    Train LR-QAOA ``(delta_gamma, delta_beta)`` against the v3 slope of
-    mean_inst(ln(1/p_succ)) vs ``n``. Eval plots still use median(1/p).
+    Train LR-QAOA ``(delta_gamma, delta_beta)`` against a multi-n slope objective.
+
+    Default (``train_on_median=False``): v3 — slope of mean_inst(ln(1/p_succ)) vs ``n``.
+    ``train_on_median=True``: v2 — slope of ln(median(1/p_succ)) vs ``n``.
+    Eval plots still use median(1/p) regardless.
     Same call signature as v1/v2 for the notebook.
 
     Pipeline
@@ -649,14 +746,18 @@ def train_lr_grid_search_bm24(
             stacklevel=2,
         )
 
+    obj_label = (
+        "v2 slope of ln(median 1/p)" if train_on_median
+        else "v3 slope of mean(ln 1/p)"
+    )
     if verbose:
         total_h = sum(len(h_by_n[n]) for n in ns_for_slope)
         print(
-            f"  > v3 slope-objective training set: n in {ns_for_slope} "
+            f"  > {obj_label} training set: n in {ns_for_slope} "
             f"({total_h} H_diag arrays total; eps={eps:g})"
         )
 
-    # ---------- Build the objective (v3: slope of mean(log(1/p)); eval uses median) ----------
+    # ---------- Training objective (median=v2, mean=v3); eval ref always median ----------
     can_slope = len(ns_for_slope) >= 2
 
     def evaluate(dg: float, db: float) -> Tuple[float, List[float], List[float], float]:
@@ -667,13 +768,22 @@ def train_lr_grid_search_bm24(
         log_med: List[float] = []
         mean_logs: List[float] = []
         if can_slope:
-            slope, mean_logs = _slope_mean_log_inv_p(
-                h_by_n, ns_for_slope, betas, gammas, eps=eps,
-            )
-            obj = slope if np.isfinite(slope) else 1e6
-            _, log_med = _slope_log_median_inv_p(
-                h_by_n, ns_for_slope, betas, gammas, eps=eps,
-            )
+            if train_on_median:
+                slope, log_med = _slope_log_median_inv_p(
+                    h_by_n, ns_for_slope, betas, gammas, eps=eps,
+                )
+                obj = slope if np.isfinite(slope) else 1e6
+                _, mean_logs = _slope_mean_log_inv_p(
+                    h_by_n, ns_for_slope, betas, gammas, eps=eps,
+                )
+            else:
+                slope, mean_logs = _slope_mean_log_inv_p(
+                    h_by_n, ns_for_slope, betas, gammas, eps=eps,
+                )
+                obj = slope if np.isfinite(slope) else 1e6
+                _, log_med = _slope_log_median_inv_p(
+                    h_by_n, ns_for_slope, betas, gammas, eps=eps,
+                )
         else:
             n = ns_for_slope[0]
             ml = _mean_log_inv_p_at_n(h_by_n[n], n, betas, gammas, eps=eps)
@@ -901,10 +1011,14 @@ def train_lr_grid_search_bm24(
             train_parts = []
             eval_parts = []
             for n_i, ml, lm in zip(ns_for_slope, final_mean_logs, final_log_med):
-                train_parts.append(f"n={n_i}: mean(ln 1/p)={ml:+.4f}")
+                if train_on_median:
+                    train_parts.append(f"n={n_i}: ln(med 1/p)={lm:+.4f}")
+                else:
+                    train_parts.append(f"n={n_i}: mean(ln 1/p)={ml:+.4f}")
                 eval_parts.append(f"n={n_i}: ln(med 1/p)={lm:+.4f}")
-            print("    per-n train (v3): " + " | ".join(train_parts))
-            print("    per-n eval ref:   " + " | ".join(eval_parts))
+            train_tag = "median" if train_on_median else "mean"
+            print(f"    per-n train ({train_tag} obj): " + " | ".join(train_parts))
+            print("    per-n eval ref (median): " + " | ".join(eval_parts))
             if final_log_med[0] < 1e-3 and len(final_log_med) > 1:
                 print(
                     "    WARNING: ln(med 1/p) ≈ 0 at smallest n -> "
@@ -941,7 +1055,11 @@ def train_lr_grid_search_bm24(
         "cobyla_rhobeg_used": float(rhobeg),
         "cobyla_restarts": int(len(starts)),
         "restart_records": restart_records,
-        "objective_version": "v3-slope-of-mean-log-inv-p",
+        "objective_version": (
+            "v2-slope-of-log-median-inv-p" if train_on_median
+            else "v3-slope-of-mean-log-inv-p"
+        ),
+        "train_on_median": bool(train_on_median),
     }
     return params_concat, diag
 
@@ -1094,6 +1212,11 @@ def main():
                    help="Step between training n values (v2 default 2).")
     p.add_argument("--no-proxy-set", action="store_true",
                    help="Disable multi-n; fall back to single-n median objective.")
+    p.add_argument(
+        "--train-on-median",
+        action="store_true",
+        help="v2 training: minimize slope of ln(median(1/p)) vs n (default: v3 mean).",
+    )
     p.add_argument("--n-max-benchmark", type=int, default=20)
     p.add_argument("--test-size-benchmark", type=int, default=200)
     p.add_argument("--eval-exponent-test-size", type=int, default=50)
@@ -1150,7 +1273,11 @@ def main():
     if args.initial_dgamma is not None and args.initial_dbeta is not None:
         initial = (float(args.initial_dgamma), float(args.initial_dbeta))
 
-    print("\n--- Training LR-QAOA (v3 slope-of-mean-log-inv-p) ---")
+    obj_name = (
+        "v2 slope-of-log-median-inv-p" if args.train_on_median
+        else "v3 slope-of-mean-log-inv-p"
+    )
+    print(f"\n--- Training LR-QAOA ({obj_name}) ---")
     params, diag = train_lr_grid_search_bm24(
         training_h,
         train_n=args.train_n,
@@ -1167,6 +1294,7 @@ def main():
         grid_top_k=args.grid_top_k,
         proxy_h_by_n=proxy_h,
         proxy_n_values=proxy_ns if proxy_h is not None else None,
+        train_on_median=bool(args.train_on_median),
         rng=np.random.default_rng(int(args.seed) + 1000 + int(args.depth)),
     )
     depth = int(args.depth)
@@ -1233,7 +1361,8 @@ def main():
             "lr_beta_schedule": args.lr_beta_schedule,
             "proxy_n_values": proxy_ns,
             "proxy_size_per_n": args.proxy_size_per_n,
-            "objective": "v3-slope-of-mean-log-inv-p",
+            "objective": obj_name,
+            "train_on_median": bool(args.train_on_median),
             "cobyla_maxiter": args.cobyla_maxiter,
             "cobyla_restarts": args.cobyla_restarts,
             "angle_convention": "bm24",
@@ -1266,7 +1395,8 @@ def main():
                 "lr_beta_schedule": args.lr_beta_schedule,
                 "proxy_n_values": proxy_ns,
                 "proxy_size_per_n": args.proxy_size_per_n,
-                "objective": "v3-slope-of-mean-log-inv-p",
+                "objective": obj_name,
+                "train_on_median": bool(args.train_on_median),
             }
             if diag.get("train_rejected"):
                 settings_compact["trained_deltas_rejected"] = diag.get("trained_deltas")

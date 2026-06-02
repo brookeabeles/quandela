@@ -55,17 +55,25 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     run_algorithm_benchmark,
     summarize_benchmark_scaling,
 )
-from phasecraft.lib.sim.bm24_run_io import format_benchmark_title, make_run_stem  # noqa: E402
+from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
+    make_run_stem,
+    normalize_eval_aggregation,
+    normalize_eval_axis,
+    plot_scaling_vs_depth,
+    scaling_plot_headline,
+)
 import numpy as np  # noqa: E402
 
 from train_lr_notebook_protocol import (  # noqa: E402
     DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
+    DEFAULT_EVAL_TRAIN_RETRIES,
     _benchmark_cli_snippet,
     append_optimal_angles_log,
     eval_median_runtime_reject,
     generate_training_h_diagonals,
     generate_training_h_diagonals_multi_n,
     proxy_n_values_for_training,
+    run_train_eval_with_retries,
     train_lr_grid_search_bm24,
 )
 
@@ -157,90 +165,6 @@ def _print_scaling(sc: dict) -> None:
         print("  scaling fit: need >= 2 distinct n in [n_min, n_max]")
 
 
-def plot_scaling_vs_depth(
-    trace: list[dict],
-    output_path: Path,
-    *,
-    settings: dict | None = None,
-    k: int | None = None,
-    r: float | None = None,
-    n_min: int | None = None,
-    n_max: int | None = None,
-    test_size: int | None = None,
-    seed: int | None = None,
-    depth_min: int | None = None,
-    depth_max: int | None = None,
-    train_n: int | None = None,
-    train_size: int | None = None,
-) -> Path:
-    """Plot log2 scaling slopes vs QAOA depth p from a scaling-vs-depth JSON trace."""
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError as e:
-        raise ImportError(
-            "plot_scaling_vs_depth requires matplotlib. Install with: pip install matplotlib"
-        ) from e
-
-    if not trace:
-        raise ValueError("empty scaling trace")
-
-    depths = [int(row["depth"]) for row in trace]
-    lr = [float(row["lr_log2_slope"]) for row in trace]
-    ws = [float(row["walksat_log2_slope"]) for row in trace]
-    lm = [float(row["walksatlm_log2_slope"]) for row in trace]
-    win_depths = [int(row["depth"]) for row in trace if row.get("lr_beats_both_scaling")]
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(depths, lr, "o-", color="C0", linewidth=2, markersize=7, label="LR-QAOA (median 1/p)")
-    ax.axhline(ws[0], color="C1", linestyle="--", linewidth=1.5, label=f"WalkSAT ({ws[0]:.3f})")
-    ax.axhline(lm[0], color="C2", linestyle="--", linewidth=1.5, label=f"WalkSATlm ({lm[0]:.3f})")
-
-    first_win = min(win_depths) if win_depths else None
-    if first_win is not None:
-        ax.axvline(first_win, color="0.4", linestyle=":", linewidth=1.2, alpha=0.8)
-        idx = depths.index(first_win)
-        ax.scatter([first_win], [lr[idx]], s=120, facecolors="none", edgecolors="C0", linewidths=2, zorder=5)
-        ax.annotate(
-            f"first win p={first_win}",
-            xy=(first_win, lr[idx]),
-            xytext=(8, 12),
-            textcoords="offset points",
-            fontsize=9,
-        )
-
-    ax.set_xlabel("QAOA depth p")
-    ax.set_ylabel(r"$\log_2$ slope of median cost vs $n$")
-    title_settings = dict(settings or {})
-    for key, val in (
-        ("k", k), ("r", r), ("n_min", n_min), ("n_max", n_max),
-        ("test_size", test_size), ("seed", seed),
-        ("depth_min", depth_min), ("depth_max", depth_max),
-        ("train_n", train_n), ("train_size", train_size),
-    ):
-        if val is not None:
-            title_settings[key] = val
-    ax.set_title(
-        format_benchmark_title(
-            title_settings,
-            headline="LR depth sweep",
-            depths=depths,
-        ),
-        fontsize=10,
-    )
-    ax.legend(loc="upper right", fontsize=9)
-    ax.grid(True, alpha=0.3)
-    ax.set_xticks(depths)
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
-    return output_path
-
-
 def _load_settings_for_title(settings_json: Path | None) -> dict:
     if not settings_json or not settings_json.is_file():
         return {}
@@ -295,6 +219,12 @@ def main() -> None:
     p.add_argument("--cobyla-perturb-scale", type=float, default=0.2)
     p.add_argument("--grid-top-k", type=int, default=5)
     p.add_argument(
+        "--eval-train-retries",
+        type=int,
+        default=DEFAULT_EVAL_TRAIN_RETRIES,
+        help="Re-train after eval median-cost regression before keeping prior depth angles.",
+    )
+    p.add_argument(
         "--skip-grid-if-warm-start",
         action="store_true",
         help="v2: skip 11x11 grid when warm-starting from previous depth (risky at high p).",
@@ -316,6 +246,18 @@ def main() -> None:
     p.add_argument("--win-mode", choices=["all-n", "any-n"], default="all-n",
                    help="For per-n stop only: all-n or any-n.")
     p.add_argument("--max-flips", type=int, default=100000)
+    p.add_argument(
+        "--eval-axis",
+        choices=("runtime", "success"),
+        default="runtime",
+        help="Scaling eval axis: runtime (cost/1/p) or success (p_succ). Sets output subfolder.",
+    )
+    p.add_argument(
+        "--eval-aggregation",
+        choices=("median", "mean"),
+        default="median",
+        help="Median vs mean on the eval axis (independent of runtime vs success).",
+    )
     p.add_argument("--output-dir", type=str, default=str(bm24_runs_dir()))
     p.add_argument("--no-plot", action="store_true", help="Skip final scaling-vs-depth plot.")
     p.add_argument(
@@ -383,14 +325,21 @@ def main() -> None:
             "Consider --lr-beta-schedule increasing for p=1, or start --depth-min 2."
         )
 
+    eval_axis = normalize_eval_axis(
+        "success" if args.legacy_objective else args.eval_axis
+    )
+    eval_agg = normalize_eval_aggregation(args.eval_aggregation)
     out_dir = Path(args.output_dir).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    from phasecraft.lib.paths import (  # noqa: E402
+        lr_train_optimal_angles_legacy_path,
+        lr_train_optimal_angles_v2_path,
+    )
+
     default_angle_log = (
-        bm24_runs_dir() / (
-            "lr_train_optimal_angles_legacy.txt"
-            if args.legacy_objective
-            else "lr_train_optimal_angles_v2.txt"
-        )
+        lr_train_optimal_angles_legacy_path()
+        if args.legacy_objective
+        else lr_train_optimal_angles_v2_path()
     )
     angle_log_path = Path(args.angle_log).expanduser() if args.angle_log else default_angle_log
     angles_json_path = Path(args.angles_json).expanduser() if args.angles_json else None
@@ -495,6 +444,8 @@ def main() -> None:
                 "stop_criterion": args.stop_criterion,
                 "win_mode": args.win_mode,
                 "plot_equiv_flips_per_shot": args.plot_equiv_flips_per_shot,
+                "eval_axis": eval_axis,
+                "eval_aggregation": eval_agg,
             },
             "trace": exponent_trace,
             "stopped_early": stopped_early,
@@ -521,13 +472,40 @@ def main() -> None:
                     "train_n": args.train_n,
                     "train_size": args.train_size,
                     "require_sat": True,
+                    "eval_axis": eval_axis,
+                    "eval_aggregation": eval_agg,
                 },
+                headline=scaling_plot_headline("LR depth sweep", eval_axis, eval_agg),
             )
         return trace_path, summary_plot
 
     for depth in range(args.depth_min, args.depth_max + 1):
         t0 = time.time()
         print(f"\n{'=' * 72}\nDepth p = {depth}\n{'=' * 72}")
+
+        diag: dict = {}
+        eval_rejected = False
+        used_previous_angles = False
+        eval_factor = float(
+            getattr(args, "eval_runtime_regression_factor", None)
+            or DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR
+        )
+
+        def _run_benchmark(dg_b: float, db_b: float) -> dict:
+            return run_algorithm_benchmark(
+                n_min=args.n_min, n_max=args.n_max, k=args.k, r=args.r,
+                test_size=args.test_size, base_seed=args.seed,
+                algorithms=["lr_qaoa", "walksat", "walksatlm"],
+                depth=depth, lr_delta_gamma=dg_b, lr_delta_beta=db_b,
+                lr_beta_schedule=args.lr_beta_schedule,
+                lr_angle_convention="bm24",
+                max_flips=args.max_flips,
+                require_sat=True,
+            )
+
+        def _med_rt_from_bres(bres_local: dict) -> dict:
+            lr_pn = bres_local.get("results", {}).get("lr_qaoa", {}).get("per_n", {})
+            return {int(n): float(d["median_runtime"]) for n, d in lr_pn.items()}
 
         if args.skip_train:
             if depth not in cached:
@@ -537,53 +515,118 @@ def main() -> None:
                 )
                 continue
             dg, db = cached[depth]
+            trained_dg, trained_db = dg, db
             print(f"  using cached angles: dg={dg:.6f}, db={db:.6f}")
+            print("  benchmarking...")
+            bres = _run_benchmark(dg, db)
+            med_rt = _med_rt_from_bres(bres)
+            reject, reject_reason = eval_median_runtime_reject(
+                med_rt, prev_med_rt, int(args.n_min), int(args.n_max),
+                factor=eval_factor,
+            )
+            if reject and prev_accepted_deltas is not None:
+                eval_rejected = True
+                used_previous_angles = True
+                dg, db = prev_accepted_deltas
+                print(f"  REJECT eval regression: {reject_reason}")
+                print(f"  re-benchmark with previous depth angles dg={dg:.6f} db={db:.6f}")
+                bres = _run_benchmark(dg, db)
+                med_rt = _med_rt_from_bres(bres)
+            elif not reject:
+                prev_accepted_deltas = (dg, db)
+                prev_med_rt = dict(med_rt)
+                prev_deltas = prev_accepted_deltas
         else:
             assert training_h is not None
-            if args.legacy_objective:
-                from train_lr_notebook_protocol_legacy import (  # noqa: E402
-                    train_lr_grid_search_bm24 as train_lr_legacy,
+            bench_holder: list = []
+
+            def _train_at_depth(retry_index: int):
+                warm = (
+                    tuple(prev_accepted_deltas)
+                    if retry_index > 0 and prev_accepted_deltas is not None
+                    else prev_deltas
                 )
-                print("  training LR angles (legacy mean-p @ train_n)...")
-                params, diag = train_lr_legacy(
-                    training_h, train_n=args.train_n, depth=depth,
-                    skip_grid=args.skip_grid,
-                    beta_schedule=args.lr_beta_schedule,
-                    cobyla_maxiter=args.cobyla_maxiter,
+                skip_grid = bool(args.skip_grid)
+                if retry_index > 0:
+                    skip_grid = False
+                perturb = float(args.cobyla_perturb_scale) * (1.25 ** int(retry_index))
+                train_rng = np.random.default_rng(
+                    int(args.seed) + 1000 + depth + 10_000 * int(retry_index)
                 )
-            else:
-                print("  training LR angles (v3 mean-log slope objective, BM24 simulator)...")
-                params, diag = train_lr_grid_search_bm24(
-                    training_h,
-                    train_n=args.train_n,
-                    depth=depth,
-                    skip_grid=args.skip_grid,
-                    initial_deltas=prev_deltas,
-                    skip_grid_if_warm_start=bool(args.skip_grid_if_warm_start),
-                    beta_schedule=args.lr_beta_schedule,
-                    cobyla_maxiter=args.cobyla_maxiter,
-                    cobyla_restarts=int(args.cobyla_restarts),
-                    cobyla_perturb_scale=float(args.cobyla_perturb_scale),
-                    grid_top_k=int(args.grid_top_k),
-                    proxy_h_by_n=proxy_h,
-                    proxy_n_values=proxy_ns if proxy_h else None,
-                    rng=np.random.default_rng(int(args.seed) + 1000 + depth),
+                if args.legacy_objective:
+                    from train_lr_notebook_protocol_legacy import (  # noqa: E402
+                        train_lr_grid_search_bm24 as train_lr_legacy,
+                    )
+                    print("  training LR angles (legacy mean-p @ train_n)...")
+                    _, diag_local = train_lr_legacy(
+                        training_h, train_n=args.train_n, depth=depth,
+                        skip_grid=skip_grid,
+                        beta_schedule=args.lr_beta_schedule,
+                        cobyla_maxiter=args.cobyla_maxiter,
+                    )
+                else:
+                    print("  training LR angles (v3 mean-log slope objective, BM24 simulator)...")
+                    _, diag_local = train_lr_grid_search_bm24(
+                        training_h,
+                        train_n=args.train_n,
+                        depth=depth,
+                        skip_grid=skip_grid,
+                        initial_deltas=warm,
+                        skip_grid_if_warm_start=bool(args.skip_grid_if_warm_start)
+                        and retry_index == 0,
+                        beta_schedule=args.lr_beta_schedule,
+                        cobyla_maxiter=args.cobyla_maxiter,
+                        cobyla_restarts=int(args.cobyla_restarts),
+                        cobyla_perturb_scale=perturb,
+                        grid_top_k=int(args.grid_top_k),
+                        proxy_h_by_n=proxy_h,
+                        proxy_n_values=proxy_ns if proxy_h else None,
+                        rng=train_rng,
+                    )
+                dg_l = float(diag_local["best_deltas"][0])
+                db_l = float(diag_local["best_deltas"][1])
+                print(
+                    f"  trained: dg={dg_l:.6f}, db={db_l:.6f}  "
+                    f"train_score={diag_local.get('best_train_slope_log2', diag_local.get('best_avg_train_p_succ'))}"
                 )
+                if diag_local.get("train_rejected"):
+                    print(
+                        f"  collapse guard: {diag_local.get('train_reject_reason', '')} "
+                        f"(applied={diag_local.get('collapse_guard_applied', False)})"
+                    )
+                return dg_l, db_l, diag_local
+
+            def _evaluate_at_angles(dg_e: float, db_e: float) -> dict:
+                print("  benchmarking...")
+                b_local = _run_benchmark(dg_e, db_e)
+                bench_holder.append(b_local)
+                return _med_rt_from_bres(b_local)
+
+            te = run_train_eval_with_retries(
+                train_at_depth=_train_at_depth,
+                evaluate_at_angles=_evaluate_at_angles,
+                prev_med_rt=prev_med_rt,
+                prev_accepted_deltas=prev_accepted_deltas,
+                n_min=int(args.n_min),
+                n_max=int(args.n_max),
+                max_retries=int(args.eval_train_retries),
+                regression_factor=eval_factor,
+            )
+            dg, db = te["dg"], te["db"]
+            diag = te["diag"]
+            med_rt = te["med_rt"]
+            eval_rejected = bool(te["eval_rejected"])
+            used_previous_angles = bool(te["used_previous_angles"])
             trained_dg, trained_db = (
                 float(diag["best_deltas"][0]),
                 float(diag["best_deltas"][1]),
             )
-            dg, db = trained_dg, trained_db
-            print(
-                f"  trained: dg={dg:.6f}, db={db:.6f}  "
-                f"train_score={diag.get('best_train_slope_log2', diag.get('best_avg_train_p_succ'))}"
-            )
-            if diag.get("train_rejected"):
-                print(
-                    f"  collapse guard: {diag.get('train_reject_reason', '')} "
-                    f"(applied={diag.get('collapse_guard_applied', False)})"
-                )
-            if not args.no_angle_log and diag.get("angles_accepted", True):
+            bres = bench_holder[-1]
+            if not eval_rejected:
+                prev_accepted_deltas = (dg, db)
+                prev_med_rt = dict(med_rt)
+                prev_deltas = prev_accepted_deltas
+            if not args.no_angle_log and diag.get("angles_accepted", True) and not eval_rejected:
                 from datetime import datetime
                 from phasecraft.lib.sim.bm24_qaoa_sim import make_lr_angles  # noqa: E402
                 betas, gammas = make_lr_angles(
@@ -623,23 +666,11 @@ def main() -> None:
                     ),
                 )
                 print(f"  appended angles to {angle_log_path}")
-            elif not args.no_angle_log:
+            elif not args.no_angle_log and not eval_rejected:
                 print("  skipped angle log: training failed acceptance guard")
 
         if depth == 1 and args.lr_beta_schedule == "decreasing" and abs(db) > 0:
             print("  warning: db has no effect at p=1 with decreasing schedule (beta[0]=0).")
-
-        print("  benchmarking...")
-        bres = run_algorithm_benchmark(
-            n_min=args.n_min, n_max=args.n_max, k=args.k, r=args.r,
-            test_size=args.test_size, base_seed=args.seed,
-            algorithms=["lr_qaoa", "walksat", "walksatlm"],
-            depth=depth, lr_delta_gamma=dg, lr_delta_beta=db,
-            lr_beta_schedule=args.lr_beta_schedule,
-            lr_angle_convention="bm24",
-            max_flips=args.max_flips,
-            require_sat=True,
-        )
 
         json_path = None
         if args.save_per_depth:
@@ -656,47 +687,6 @@ def main() -> None:
             print(f"  plot: {plot_path}")
 
         scaling = summarize_benchmark_scaling(bres)
-        lr_pn = bres.get("results", {}).get("lr_qaoa", {}).get("per_n", {})
-        med_rt = {
-            int(n): float(d["median_runtime"])
-            for n, d in lr_pn.items()
-        }
-        reject, reject_reason = eval_median_runtime_reject(
-            med_rt,
-            prev_med_rt,
-            int(args.n_min),
-            int(args.n_max),
-            factor=float(
-                getattr(args, "eval_runtime_regression_factor", None)
-                or DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR
-            ),
-        )
-        eval_rejected = False
-        if reject and prev_accepted_deltas is not None:
-            eval_rejected = True
-            dg, db = prev_accepted_deltas
-            print(f"  REJECT eval regression: {reject_reason}")
-            print(f"  re-benchmark with previous depth angles dg={dg:.6f} db={db:.6f}")
-            bres = run_algorithm_benchmark(
-                n_min=args.n_min, n_max=args.n_max, k=args.k, r=args.r,
-                test_size=args.test_size, base_seed=args.seed,
-                algorithms=["lr_qaoa", "walksat", "walksatlm"],
-                depth=depth, lr_delta_gamma=dg, lr_delta_beta=db,
-                lr_beta_schedule=args.lr_beta_schedule,
-                lr_angle_convention="bm24",
-                max_flips=args.max_flips,
-                require_sat=True,
-            )
-            lr_pn = bres.get("results", {}).get("lr_qaoa", {}).get("per_n", {})
-            med_rt = {int(n): float(d["median_runtime"]) for n, d in lr_pn.items()}
-            scaling = summarize_benchmark_scaling(bres)
-        elif not reject:
-            if not args.skip_train:
-                prev_accepted_deltas = (trained_dg, trained_db)
-            else:
-                prev_accepted_deltas = (dg, db)
-            prev_med_rt = dict(med_rt)
-            prev_deltas = prev_accepted_deltas
 
         _print_scaling(scaling)
 
@@ -720,12 +710,15 @@ def main() -> None:
             "training_objective": (
                 "legacy-mean-p-train-n"
                 if args.legacy_objective
-                else "v2-slope-of-log-median-inv-p"
+                else "v3-slope-of-mean-log-inv-p"
             ),
             "lr_log2_slope": scaling["lr_qaoa"]["median_runtime_slope_log2"],
             "walksat_log2_slope": scaling["walksat"]["median_flips_slope_log2"],
             "walksatlm_log2_slope": scaling["walksatlm"]["median_flips_slope_log2"],
             "lr_beats_both_scaling": scaling["beats_both_on_scaling"],
+            "eval_rejected": bool(eval_rejected),
+            "used_previous_angles": bool(used_previous_angles),
+            "training_failed": bool(eval_rejected or used_previous_angles),
         })
 
         record = {

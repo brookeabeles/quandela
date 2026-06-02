@@ -117,7 +117,11 @@ if _PATCHED_SPEC is None or _PATCHED_SPEC.loader is None:
 _PATCHED_MOD = importlib.util.module_from_spec(_PATCHED_SPEC)
 _PATCHED_SPEC.loader.exec_module(_PATCHED_MOD)
 
-from phasecraft.lib.sim.bm24_run_io import format_benchmark_title, make_run_stem  # noqa: E402
+from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
+    apply_figure_suptitle,
+    format_benchmark_title,
+    make_run_stem,
+)
 
 generalized_binomial_sum_full_exponent_ksat = _PATCHED_MOD.generalized_binomial_sum_full_exponent_ksat
 generalized_flip_symmetric_expected_success_p1 = _PATCHED_MOD.generalized_flip_symmetric_expected_success_p1
@@ -1541,7 +1545,8 @@ def plot_benchmark_comparison(
     s = res.get("settings", {})
     depth = s.get("depth", "?")
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
-    fig.suptitle(
+    apply_figure_suptitle(
+        fig,
         format_benchmark_title(
             {
                 "k": s.get("k"),
@@ -1553,10 +1558,9 @@ def plot_benchmark_comparison(
                 "depth": depth,
                 "require_sat": s.get("require_sat"),
             },
-            headline="Benchmark",
-        )
-        + f" · equiv flips/shot={equiv:g}",
-        fontsize=10,
+            headline=f"Benchmark · equiv flips/shot={equiv:g}",
+        ),
+        fontsize=9,
     )
 
     ax = axes[0]
@@ -1590,10 +1594,9 @@ def plot_benchmark_comparison(
     ax.legend(loc="best", fontsize=7)
     ax.grid(True, which="both", alpha=0.3)
 
-    fig.tight_layout()
     output_path = Path(output_path).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.35)
     plt.close(fig)
 
     summary = {

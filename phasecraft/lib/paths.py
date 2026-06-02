@@ -39,3 +39,18 @@ def bm24_qaoa_sim_cli_path() -> Path:
 def train_lr_cli_path() -> Path:
     """Stable training CLI entrypoint (compat shim at package root)."""
     return phasecraft_root() / "train_lr_notebook_protocol.py"
+
+
+def lr_train_optimal_angles_legacy_path() -> Path:
+    """Append-only log for legacy median/mean-p @ train_n training."""
+    return bm24_runs_dir() / "lr_train_optimal_angles_legacy.txt"
+
+
+def lr_train_optimal_angles_v2_path() -> Path:
+    """Append-only log for v2/v3 multi-n slope training (CLI default)."""
+    return bm24_runs_dir() / "lr_train_optimal_angles_v2.txt"
+
+
+def lr_train_optimal_angles_compat_path() -> Path:
+    """Symlink to v2 log; use so ``--angle-log .../lr_train_optimal_angles.txt`` stays valid."""
+    return bm24_runs_dir() / "lr_train_optimal_angles.txt"

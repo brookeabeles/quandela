@@ -53,9 +53,13 @@ for _p in (_REPO_ROOT, _PHASECRAFT_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from phasecraft.lib.paths import bm24_qaoa_sim_cli_path, bm24_runs_dir  # noqa: E402
+from phasecraft.lib.paths import (
+    bm24_qaoa_sim_cli_path,
+    bm24_runs_dir,
+    lr_train_optimal_angles_legacy_path,
+)  # noqa: E402
 
-_DEFAULT_ANGLE_LOG = bm24_runs_dir() / "lr_train_optimal_angles_legacy.txt"
+_DEFAULT_ANGLE_LOG = lr_train_optimal_angles_legacy_path()
 
 from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     build_h_diagonal,
@@ -385,7 +389,7 @@ def main() -> None:
         "--angle-log",
         type=str,
         default=str(_DEFAULT_ANGLE_LOG),
-        help="Append optimal angles to this .txt file after each run (default: bm24_runs/lr_train_optimal_angles.txt).",
+        help="Append optimal angles after each run (default: bm24_runs/lr_train_optimal_angles_legacy.txt).",
     )
     p.add_argument(
         "--no-angle-log",
