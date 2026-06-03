@@ -7,7 +7,8 @@
 | `LR_QAOA_benchmark_efficient_legacy_root_copy.ipynb` | Former `phasecraft/LR_QAOA_benchmark_efficient.ipynb` (package root). Archived 2026-06-02. |
 
 **Canonical notebook (use for new runs):**  
-`phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb`
+`phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb`  
+(formerly `LR_QAOA_benchmark_efficient.ipynb`)
 
 ## Deferred hard-delete candidates
 

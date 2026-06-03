@@ -2,7 +2,7 @@
 lr_eval_patch.py
 ================
 Minimal, drop-in patch for the LR-QAOA / BM24 pipeline. Adds exactly four things,
-each addressing a defect identified in the audit of LR_QAOA_benchmark_efficient.ipynb:
+each addressing a defect identified in the audit of LR_QAOA_benchmark.ipynb:
 
   (A) train/eval seed *namespace* separation + a runtime disjointness assertion
   (B) a single-fixed-n robust training objective (winsorized mean / median of ln(1/p))

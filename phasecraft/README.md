@@ -39,7 +39,7 @@ python -m phasecraft.bm24_saddle_audit_p1.audit --help
 make -f phasecraft/experiments/w_saddle/Makefile.w_saddle pipeline
 ```
 
-Notebook: `experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb`
+Notebook: `experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb`
 
 ## Compatibility
 

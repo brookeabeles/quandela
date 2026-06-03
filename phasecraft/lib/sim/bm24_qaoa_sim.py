@@ -3,8 +3,8 @@ bm24_qaoa_sim.py
 ================
 
 A clean, BM24-compatible finite-n QAOA simulator for random k-SAT, designed to
-be *mathematically* compatible with the asymptotic (large-n) observable
-implemented in `generalized_binomial_sum.py`.
+be mathematically compatible with the asymptotic (large-n) observable
+implemented in `generalized_binomial_sum.py`. -> from the BM24 repository
 
 This module deliberately contains NO training / grid-search / external solver
 machinery. It implements exactly:
@@ -12,7 +12,7 @@ machinery. It implements exactly:
   (i)   the BM24 random k-SAT ensemble (Definition 1 of arXiv:2208.06909 /
         PRX Quantum 5, 030348 (2024)),
   (ii)  the BM24 QAOA state of Eq. (13) -- in particular, the factors of 1/2
-        in BOTH the phase separator AND the mixer,
+        in BOTH the phase separator AND the mixer (not present in Leo's old code),
   (iii) the BM24 success observable
             E_{sigma ~ CNF(n,k,r)} [ <psi| Pi_{H[sigma]=0} |psi> ]
         over the UNCONDITIONAL ensemble (UNSAT instances kept with p_succ = 0),
@@ -73,17 +73,9 @@ Validation status (k=2, p=1, r=2.0, beta=gamma=0.4) -- see comments in
   * Equivalently, `generalized_binomial_sum_full_exponent_ksat` returns
     phi_full ~= -0.453 at the test point, while a least-squares fit on
     `exact_finite_n_p1_prop4` over n in [20, 50] gives slope ~= -0.579.
-  * This discrepancy is surfaced explicitly in every report (see
-    "GAPS" section). It should be confirmed/resolved upstream rather than
-    silently patched here. The simulator is the authoritative numerical
-    ground truth.
 
 Run:
   python bm24_qaoa_sim.py
-
-By default, each run also writes files under ``phasecraft/bm24_runs/`` (JSON + TXT).
-Filenames use ``YYYY-MM-DD_HHMM-bench`` or ``...-thy``. Use ``--no-auto-save`` to disable.
-The printed line and JSON ``run_meta`` record the command and angles used.
 """
 
 import argparse
@@ -922,7 +914,7 @@ def compute_theory_exponents(k: int, r: float,
         phi_pref_alone = bm24_prefactor_exponent_ksat_all_subsets(k=k, r=r)
     else:
         phi_pref_alone = bm24_prefactor_exponent_ksat(k=k, r=r, gammas=gammas)
-    iters, z, residual, phi_m, phi_pref, phi_full = (
+    iters, z, residual, phi_m, phi_pref, phi_full, converged = (
         generalized_binomial_sum_full_exponent_ksat(
             q=q, r=r, betas=betas, gammas=gammas,
             num_iter=num_iter, dz_threshold=dz_threshold, damping=damping,
@@ -939,6 +931,7 @@ def compute_theory_exponents(k: int, r: float,
         "phi_full": complex(phi_full),
         "saddle_iterations": int(iters),
         "saddle_residual": float(residual),
+        "saddle_converged": bool(converged),
     }
 
 

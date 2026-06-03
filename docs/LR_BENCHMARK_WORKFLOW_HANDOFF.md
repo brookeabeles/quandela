@@ -12,7 +12,7 @@ Produce the plot **log₂ slope of median(1/p_succ) vs n** as a function of **QA
 - **Lower slope = better** (shot cost grows more slowly with problem size n).
 - LR “wins” on scaling when **lr_log2_slope < walksat_log2_slope** (same for WalkSATlm).
 
-**Primary entry point:** `phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb` (Run All from that notebook directory, or with repo root on `sys.path`).
+**Primary entry point:** `phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb` (Run All from that notebook directory, or with repo root on `sys.path`).
 
 **Archived legacy copy (do not use for new runs):** `phasecraft/experiments/lr_scaling/notebooks/archive/LR_QAOA_benchmark_efficient_legacy_root_copy.ipynb` — former package-root notebook; kept for reference only.
 
@@ -24,7 +24,7 @@ Produce the plot **log₂ slope of median(1/p_succ) vs n** as a function of **QA
 
 | Priority | File | Role |
 |----------|------|------|
-| **Must understand** | `experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb` | Orchestrator: CFG, dataset, classical once, train per depth, eval, plot |
+| **Must understand** | `experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb` | Orchestrator: CFG, dataset, classical once, train per depth, eval, plot |
 | **Archived legacy** | `experiments/lr_scaling/notebooks/archive/LR_QAOA_benchmark_efficient_legacy_root_copy.ipynb` | Former package-root notebook; reference only |
 | **Must understand** | `train_lr_notebook_protocol.py` (~1044 lines, **v2**) | Train `(delta_gamma, delta_beta)` minimizing slope of ln(median 1/p) on proxy n |
 | **Compare / A/B** | `train_lr_notebook_protocol_legacy.py` (~534 lines) | Old trainer: maximize mean p_succ @ train_n; grid + 1× COBYLA every depth |
@@ -73,7 +73,7 @@ flowchart TD
 
 ## 4. Notebook configuration (`CFG`) — all knobs
 
-Edit **first cell** of `experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb`. Example from a recent run:
+Edit **first cell** of `experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb`. Example from a recent run:
 
 ```python
 CFG = {
@@ -320,7 +320,7 @@ Angles per depth are **reusable** from JSON; re-benchmarking skips training but 
 
 ```bash
 cd /path/to/Quandela
-jupyter notebook phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb
+jupyter notebook phasecraft/experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb
 # Run All cells; outputs in phasecraft/bm24_runs/ (or phasecraft/results/bm24_runs/)
 ```
 

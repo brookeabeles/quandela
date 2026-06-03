@@ -1,25 +1,9 @@
 # BM24 / LR-QAOA run artifacts
 
 Outputs from `bm24_qaoa_sim.py`, `sweep_lr_depth_until_win.py`, and
-`experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb`.
+`experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb`.
 
-Depth-scaling JSON/PNG files use a dated run layout (like ``w_saddle_runs/``):
-
-```
-MM-DD/run1/{stem}.json
-MM-DD/run1/{stem}.png
-MM-DD/run2/...
-```
-
-Angle logs, sweep ``.jsonl``, and ``*.log`` files stay at this directory root.
-
-To migrate older flat JSON/PNG files into ``MM-DD/runN/``:
-
-```bash
-python phasecraft/experiments/lr_scaling/organize_bm24_runs.py --migrate-dated-runs
-```
-
-Legacy flat layout (optional): set ``BM24_FLAT_OUTPUT=1`` when running benchmarks.
+Depth-scaling JSON/PNG files live in this directory (flat layout).
 
 To pull files out of legacy `runtime_scaling/` or `success_scaling/` subfolders:
 
@@ -43,7 +27,7 @@ Timestamp = run start (local). Plot titles use wrapped two-line headers.
 | Kind | Source |
 |------|--------|
 | `sweep-scaling` | `sweep_lr_depth_until_win.py` aggregate JSON + PNG |
-| `efficient-scaling` | `experiments/lr_scaling/notebooks/LR_QAOA_benchmark_efficient.ipynb` |
+| `efficient-scaling` | `experiments/lr_scaling/notebooks/LR_QAOA_benchmark.ipynb` |
 | `bench` / `thy` | `bm24_qaoa_sim.py` (root) |
 
 ## Logs (not stamped)
