@@ -18,11 +18,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from phasecraft.bm24_saddle_audit_p1.audit import AUDIT_DIR, _x_to_z
+from phasecraft.bm24_saddle_audit_p1.audit import _x_to_z
 from phasecraft.bm24_saddle_audit_p1.competitor_dominance_diagnostic import (
     DEFAULT_CONTINUATION,
     _load_continuation,
@@ -41,8 +41,9 @@ from phasecraft.w_saddle.workflow import unwrap_im_branch
 DEFAULT_GAMMAS = [-0.3, -0.6, -0.83, -1.0, -1.6, -2.0]
 LOCAL_DELTAS = [0.001, 0.002, 0.005, 0.01, 0.02]
 DEFAULT_DOMINANCE = (
-    AUDIT_DIR
-    / "results/run_seed_branch_g-2pi/competitor_dominance/competitor_dominance_summary.json"
+    REPO_ROOT
+    / "phasecraft/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/competitor_dominance"
+    / "competitor_dominance_summary.json"
 )
 DEFAULT_OUT_DIR = DEFAULT_DOMINANCE.parent
 
@@ -336,25 +337,73 @@ def run_classification(
 
 
 def _plots(per_gamma: list[dict], out_dir: Path) -> None:
-    g = [r["gamma"] for r in per_gamma]
-    alg = [r["max_algebraic_signed_re_gap_vs_seed"] for r in per_gamma]
-    valid = [
-        r["max_branch_valid_signed_re_gap_vs_seed"]
-        if r["max_branch_valid_signed_re_gap_vs_seed"] is not None
-        else float("nan")
-        for r in per_gamma
-    ]
-    n_valid = [r["num_branch_valid_competitors"] for r in per_gamma]
+    g = np.array([float(r["gamma"]) for r in per_gamma])
+    alg = np.array([float(r["max_algebraic_signed_re_gap_vs_seed"]) for r in per_gamma])
+    valid = np.array(
+        [
+            float(r["max_branch_valid_signed_re_gap_vs_seed"])
+            if r["max_branch_valid_signed_re_gap_vs_seed"] is not None
+            else np.nan
+            for r in per_gamma
+        ]
+    )
+    n_valid = [int(r["num_branch_valid_competitors"]) for r in per_gamma]
+    n_disc = [int(r["num_discovered_certified_competitors"]) for r in per_gamma]
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.plot(g, alg, "o-", label="max algebraic (discovered)")
-    ax.plot(g, valid, "s-", label="max branch-valid")
-    ax.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+    fig, ax = plt.subplots(figsize=(9.5, 5.2))
+    ax.plot(
+        g,
+        alg,
+        "o-",
+        color="C0",
+        lw=1.5,
+        ms=7,
+        label="max algebraic gap (all certified discoveries at each γ)",
+    )
+    # Markers only where branch-valid anchors exist — do NOT connect through NaN (avoids
+    # implying zero gap when n_branch_valid=0).
+    has_valid = np.isfinite(valid)
+    if np.any(has_valid):
+        ax.plot(
+            g[has_valid],
+            valid[has_valid],
+            "s",
+            color="C2",
+            ms=9,
+            label="max gap among branch-valid probed anchors only",
+        )
+    ax.axhline(0.0, color="k", lw=0.8, alpha=0.45)
+    for gi, nv, nd, av in zip(g, n_valid, n_disc, alg):
+        ax.annotate(
+            f"{nv}/{nd}",
+            (gi, av),
+            textcoords="offset points",
+            xytext=(0, 8),
+            ha="center",
+            fontsize=7,
+            color="C0",
+        )
     ax.set_xlabel(r"$\gamma$")
     ax.set_ylabel(r"signed $\mathrm{Re}\,\Phi_{\mathrm{comp}} - \mathrm{Re}\,\Phi_{\mathrm{seed}}$")
-    ax.set_title("Algebraic vs branch-valid Re $\\Phi$ gap (not PL dominance)")
-    ax.legend()
+    ax.set_title(
+        "Algebraic vs branch-valid Re $\\Phi$ gap\n"
+        r"(blue: every certified discovery; green: subset passing local $\gamma$-continuation test)",
+        fontsize=9,
+    )
+    ax.text(
+        0.02,
+        0.02,
+        "Not PL dominance. Re $\\Phi$ gap $\\neq$ Conv2 exponent gap. "
+        "Green probes only max-/near-/high-Re anchors, not all competitors.",
+        transform=ax.transAxes,
+        fontsize=7,
+        va="bottom",
+        ha="left",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.35),
+    )
+    ax.legend(fontsize=7, loc="upper right")
     ax.grid(True, alpha=0.3)
+    ax.invert_xaxis()
     fig.tight_layout()
     fig.savefig(out_dir / "gamma_vs_algebraic_and_branch_valid_gap.png", dpi=150, bbox_inches="tight")
     plt.close(fig)

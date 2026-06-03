@@ -1,0 +1,20 @@
+{
+  "plot": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/competitor_dominance/gamma_vs_algebraic_and_branch_valid_gap_v2.png",
+  "anchor_gamma": -0.83,
+  "n_branch_steps": 196,
+  "n_algebraic_keys": 26,
+  "algebraic_source": "competitor_saddles_by_gamma (max certified at each key)",
+  "gamma_track_range": [
+    -2.0,
+    -0.05
+  ],
+  "re_gap_track_at_diagnostic": {
+    "-0.3": -2.55351295663786e-15,
+    "-0.6": -3.3306690738754696e-16,
+    "-0.83": 2.5015688202464643,
+    "-1.0": 2.7755575615628914e-15,
+    "-1.6": 4.440892098500626e-16,
+    "-2.0": -1.3322676295501878e-15
+  },
+  "note": "At \u03b3=-0.3,-0.6 the tracked branch matches seed (gap\u22480) while algebraic max remains large \u2014 dominance is sheet-local, not global."
+}

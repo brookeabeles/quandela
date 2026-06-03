@@ -54,6 +54,67 @@ IM_PHI_WARNING = (
     "Do not infer Stokes events without branch-unwrapped phases."
 )
 
+# γ axis for exponent comparison plots: 0 (left) → −2π (right), ticks in π/4 steps.
+GAMMA_AXIS_LEFT = 0.0
+GAMMA_AXIS_RIGHT = -2.0 * math.pi
+GAMMA_PI_TICK_STEP = 0.25 * math.pi
+
+LABEL_SEED_SADDLE_EXPONENT = (
+    r"Krawczyk-certified seed-saddle exponent ($\mathrm{Re}\,\Phi_M + \mathrm{BM24}$ A41 prefactor)"
+)
+LABEL_EXACT_FINITE_N_EXPONENT = r"Exact finite-n exponent at $n_{\max}$"
+TITLE_GAMMA_VS_EXPONENTS = (
+    r"Seed-saddle exponent vs exact finite-$n$ exponent (BM24 $q{=}3$, $p{=}1$)"
+)
+
+
+def _gamma_pi_tick_label(gamma: float) -> str:
+    if abs(gamma) < 1e-12:
+        return r"$0$"
+    k = -gamma / math.pi
+    for den in (1, 2, 4):
+        num = round(k * den)
+        if num == 0 or abs(k - num / den) >= 1e-6:
+            continue
+        if den == 1:
+            return r"$-\pi$" if num == 1 else rf"$-{num}\pi$"
+        if num == 1:
+            return rf"$-\pi/{den}$"
+        return rf"$-{num}\pi/{den}$"
+    return rf"${gamma:.3g}$"
+
+
+def _style_gamma_axis_reading_zero_to_negative(ax) -> None:
+    """X-axis: γ = 0 on the left, −2π on the right; major ticks at π/4 multiples."""
+    ax.set_xlim(GAMMA_AXIS_LEFT, GAMMA_AXIS_RIGHT)
+    ticks = []
+    g = GAMMA_AXIS_LEFT
+    while g >= GAMMA_AXIS_RIGHT - 1e-12:
+        ticks.append(g)
+        g -= GAMMA_PI_TICK_STEP
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([_gamma_pi_tick_label(t) for t in ticks])
+    ax.set_xlabel(r"$\gamma$")
+
+
+def _save_gamma_vs_exponents_plot(
+    gammas: list[float],
+    seed_saddle_exp: list[float],
+    exact_finite_n_exp: list[float],
+    out_dir: Path,
+) -> None:
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(gammas, seed_saddle_exp, "o-", label=LABEL_SEED_SADDLE_EXPONENT)
+    ax.plot(gammas, exact_finite_n_exp, "s--", label=LABEL_EXACT_FINITE_N_EXPONENT)
+    ax.set_ylabel("exponent (natural log)")
+    ax.set_title(TITLE_GAMMA_VS_EXPONENTS)
+    _style_gamma_axis_reading_zero_to_negative(ax)
+    ax.legend(loc="best", fontsize=9)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_dir / "gamma_vs_exponents.png", dpi=150)
+    plt.close(fig)
+
 
 @dataclass
 class ContinuationRow:
@@ -368,17 +429,7 @@ def plot_continuation(rows: list[ContinuationRow], competitors_by_gamma: dict, o
         ]
         nearest_gap.append(min((abs(x) for x in cert_re), default=float("nan")))
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    ax.plot(gammas, full, "o-", label="Seed branch: Re Φ_M + Conv2 pref")
-    ax.plot(gammas, lam, "s--", label="Exact finite-n λ_abs(n_max)")
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel("exponent (natural log)")
-    ax.set_title("Certified seed branch vs Conv2 exact finite-n")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(out_dir / "gamma_vs_exponents.png", dpi=150)
-    plt.close(fig)
+    _save_gamma_vs_exponents_plot(gammas, full, lam, out_dir)
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(gammas, gap, "o-", color="C2")

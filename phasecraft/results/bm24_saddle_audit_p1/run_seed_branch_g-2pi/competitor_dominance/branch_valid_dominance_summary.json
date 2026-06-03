@@ -24,11 +24,11 @@
       "near_seed_gap": 0.2
     },
     "inputs": {
-      "competitor_dominance_summary": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/competitor_dominance/competitor_dominance_summary.json",
-      "continuation_json": "/Users/b/Quandela/phasecraft/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/seed_branch_continuation.json"
+      "competitor_dominance_summary": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/competitor_dominance/competitor_dominance_summary.json",
+      "continuation_json": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/seed_branch_continuation.json"
     },
     "im_phi_warning": "Im(Phi) uses principal np.log; raw Im Phi can jump by 2*pi along gamma. Do not infer Stokes events without branch-unwrapped phases.",
-    "timestamp": "run_06-01_09-13-36Z"
+    "timestamp": "run_06-03_14-17-16Z"
   },
   "per_gamma": [
     {

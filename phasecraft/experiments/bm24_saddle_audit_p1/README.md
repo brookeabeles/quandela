@@ -70,6 +70,21 @@ Writes `branch_classified_competitors.json`, `branch_valid_dominance_summary.jso
 
 Seed-branch plots from the −2π continuation live in `run_seed_branch_g-2pi/` (not `competitor_dominance/`).
 
+### Competitor scan vs exact finite-n (`run_seed_competitors`)
+
+Find which **discovered certified competitor** best matches the exact finite-n exponent along γ
+(seed branch shown for comparison; reuses prior `competitor_saddles_by_gamma.json` when available):
+
+```bash
+python -m phasecraft.bm24_saddle_audit_p1.run_seed_competitors
+python -m phasecraft.bm24_saddle_audit_p1.run_seed_competitors --quick
+python -m phasecraft.bm24_saddle_audit_p1.run_seed_competitors --plot-only
+```
+
+Writes `phasecraft/results/bm24_saddle_audit_p1/run_seed_competitors/`:
+`gamma_vs_exponents_with_competitors.png`, `gamma_vs_gap_to_exact_competitors.png`,
+`competitor_scan_summary.json`, `best_match_not_seed.json`.
+
 Outputs land in `phasecraft/bm24_saddle_audit_p1/results/<run-name>/`:
 
 Run folder names use readable UTC names `run_MM-DD_HH-MM-SSZ` generated at launch.
