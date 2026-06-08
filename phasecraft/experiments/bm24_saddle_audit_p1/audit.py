@@ -28,7 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from phasecraft.krawczyk_p1_roots import (
+from phasecraft.lib.saddles.krawczyk_p1_roots import (
     SaddleSystem,
     _check_krawczyk_at_uniform_radius,
     discover_roots,
@@ -36,9 +36,9 @@ from phasecraft.krawczyk_p1_roots import (
     krawczyk_test_sampled,
     numerical_jacobian,
 )
-from phasecraft.optimal_angles import optimal_angles
-from phasecraft.picard_lefschetz import compute_phi, detect_stokes_pairs
-from phasecraft.saddle_traits import complex_to_real_vector
+from phasecraft.lib.angles.optimal_angles import optimal_angles
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi, detect_stokes_pairs
+from phasecraft.lib.saddles.saddle_traits import complex_to_real_vector
 
 _PATCHED_PATH = (
     REPO_ROOT

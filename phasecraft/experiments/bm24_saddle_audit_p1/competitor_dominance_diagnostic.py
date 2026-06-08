@@ -30,8 +30,8 @@ from phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified import (
     polish_to_residual,
     step_from_previous_z,
 )
-from phasecraft.krawczyk_p1_roots import SaddleSystem
-from phasecraft.picard_lefschetz import compute_phi
+from phasecraft.lib.saddles.krawczyk_p1_roots import SaddleSystem
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi
 
 DEFAULT_GAMMAS = [-0.3, -0.6, -0.83, -1.0, -1.6, -2.0]
 DEFAULT_CONTINUATION = (

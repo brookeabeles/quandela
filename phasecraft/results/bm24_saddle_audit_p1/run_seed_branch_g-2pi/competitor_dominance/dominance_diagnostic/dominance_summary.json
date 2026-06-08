@@ -1,0 +1,37 @@
+{
+  "convention": "Delta = Re Phi_comp - Re Phi_seed; Delta>0 competitor beats seed on Re",
+  "re_band": [
+    -2.0,
+    1.0
+  ],
+  "n_gamma": 629,
+  "n_gamma_max_delta_positive": 455,
+  "global_max_delta": 2.400069128368391,
+  "dangerous_branches": [
+    {
+      "branch_id": 180,
+      "label": "branch 180 Re~1.368 (~branch 166)",
+      "max_delta": 2.6560706193098476
+    },
+    {
+      "branch_id": 47,
+      "label": "branch 47 Re~-1.890",
+      "max_delta": 2.60270004614598
+    },
+    {
+      "branch_id": 0,
+      "label": "branch 0 Re~0.004",
+      "max_delta": 2.5594545587331634
+    },
+    {
+      "branch_id": 204,
+      "label": "branch 204 Re~1.503",
+      "max_delta": 2.5334092297793216
+    },
+    {
+      "branch_id": 150,
+      "label": "branch 150 Re~1.909",
+      "max_delta": 2.5255319508101737
+    }
+  ]
+}

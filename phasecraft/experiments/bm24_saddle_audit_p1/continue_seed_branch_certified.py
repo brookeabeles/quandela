@@ -40,14 +40,14 @@ from phasecraft.bm24_saddle_audit_p1.audit import (
     _scipy_polish_to_tol,
     _x_to_z,
 )
-from phasecraft.krawczyk_p1_roots import (
+from phasecraft.lib.saddles.krawczyk_p1_roots import (
     SaddleSystem,
     discover_roots,
     krawczyk_certify_with_escalation,
     numerical_jacobian,
 )
 
-from phasecraft.picard_lefschetz import compute_phi
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi
 
 IM_PHI_WARNING = (
     "Im(Phi) uses principal np.log; raw Im Phi can jump by 2*pi along gamma. "

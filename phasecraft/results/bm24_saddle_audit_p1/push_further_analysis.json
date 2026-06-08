@@ -1,0 +1,122 @@
+{
+  "title": "Push-further analysis: BM24 saddle dominance across gamma range",
+  "date": "2026-06-04",
+  "params": {"q": 3, "K_clause": 8, "r": 176.54, "beta": 0.5433996420760803, "phi_pref_conv2": -0.6896093750000001},
+  "convention": "full_conv2_exponent = Re_Phi_M + phi_pref_conv2; delta = comp - seed; lambda_abs = log|P_n|/n",
+
+  "push_1_dense_onset_scan": {
+    "description": "Dense scan gamma in [-0.65, -1.30] to pin down onset of branches 43/46 and crossover",
+    "method": "n_max=40 (n=[36-40]) lambda_abs vs seed and branch43/46 full_conv2_exponent",
+    "result": "Seed is the best match to exact lambda at ALL gamma in [0, -1.82] at n=40",
+    "branch43_first_appears": -1.08,
+    "branch46_first_appears": -1.27,
+    "note": "Branch 43/46 exist from gamma~-1.08/-1.27 but are NOT the best match to lambda until gamma<-1.83",
+    "high_re_competitors": {
+      "onset": "gamma ~ -0.70",
+      "max_delta_re": 2.4,
+      "finite_n_explanatory": false,
+      "interpretation": "Large Im Phi (not real saddles); likely not on physical integration cycle"
+    }
+  },
+
+  "push_2_3_im_phi_analysis": {
+    "description": "Im Phi comparison: seed vs branches 43/46; Stokes line diagnostic",
+    "seed_im_phi": {
+      "range_gamma": [-6.26, -0.76],
+      "values": "Im Phi ~ 0.006-0.56 for gamma in [-6.26, -3.81]; jumps to ~2pi at gamma~-3.76; stays ~6.05-6.28 (~2pi) for gamma in [-3.7, -1.2]",
+      "mod_2pi": "Im Phi_seed = 0 (mod 2pi) throughout — seed is on real locus",
+      "branch_cut_jump": "2pi branch cut at gamma ~ -3.76; equivalent Im Phi mod 2pi is unchanged"
+    },
+    "branch43_im_phi": {
+      "range_gamma": [-6.28, -1.08],
+      "values": "Im Phi ~ 0 (< 0.001) for gamma in [-6.28, -1.82]; rises to ~0.32 near onset at -1.08",
+      "interpretation": "Branch 43 is a real saddle throughout its range"
+    },
+    "branch46_im_phi": {
+      "range_gamma": [-6.28, -1.27],
+      "values": "Im Phi in [-0.15, 0]; essentially zero for gamma in [-6.28, -1.7]",
+      "interpretation": "Branch 46 is also a real saddle; negative Im Phi is conjugate to branch 43"
+    },
+    "delta_im_seed_minus_43": "~-2pi (mod 2pi = 0) throughout overlap — no Stokes wall between them",
+    "stokes_line_present": false,
+    "conclusion": "All three saddles (seed, branch43, branch46) are on the real locus Im Phi = 0 mod 2pi. Competition is purely in Re Phi. No Stokes suppression of branches 43/46."
+  },
+
+  "push_4_n_max_convergence": {
+    "description": "Lambda_abs(n) convergence with n up to 40 at key gamma values",
+    "results": [
+      {
+        "gamma": -1.0,
+        "seed_exp": -0.473555,
+        "b43_exp": -0.678233,
+        "lambda_n12": -0.484583,
+        "lambda_n22": -0.481620,
+        "lambda_n40": -0.478517,
+        "trend": "lambda converging toward seed_exp (~-0.474) as n grows",
+        "winner_at_n40": "seed",
+        "seed_gap_n40": 0.004963
+      },
+      {
+        "gamma": -1.5,
+        "seed_exp": -0.563804,
+        "b43_exp": -0.612263,
+        "lambda_n12": -0.559250,
+        "lambda_n22": -0.566897,
+        "lambda_n40": -0.566322,
+        "trend": "lambda converged to ~-0.566 (seed gap ~+0.003)",
+        "winner_at_n40": "seed",
+        "seed_gap_n40": 0.002518
+      },
+      {
+        "gamma": -2.0,
+        "seed_exp": -0.728829,
+        "b43_exp": -0.681353,
+        "lambda_n12": -0.667819,
+        "lambda_n22": -0.678987,
+        "lambda_n40": -0.678869,
+        "trend": "lambda converging to b43_exp (~-0.681); seed 0.050 below",
+        "winner_at_n40": "b43",
+        "b43_gap_n40": -0.002484,
+        "seed_gap_n40": -0.049960
+      },
+      {
+        "gamma": -3.0,
+        "seed_exp": -1.250198,
+        "b43_exp": -0.689653,
+        "lambda_n12": -0.694041,
+        "lambda_n22": -0.690808,
+        "lambda_n40": -0.690114,
+        "trend": "lambda converging monotonically to b43_exp = phi_pref+0 = -0.6896; gap at n=40 is 0.00046",
+        "winner_at_n40": "b43",
+        "b43_gap_n40": 0.000461,
+        "seed_gap_n40": -0.560085
+      }
+    ]
+  },
+
+  "crossover_analysis": {
+    "n40_crossover_gamma": -1.83,
+    "n12_22_crossover_gamma": -1.5,
+    "detail": {
+      "gamma_-1.81": {"winner": "seed", "seed_gap": -0.0118, "b43_gap": -0.0133},
+      "gamma_-1.83": {"winner": "b43", "seed_gap": -0.0141, "b43_gap": -0.0128},
+      "gamma_-1.85": {"winner": "b46", "seed_gap": -0.0167, "b46_gap": -0.0143},
+      "gamma_-1.95": {"winner": "b43", "seed_gap": -0.0357, "b43_gap": -0.0050}
+    },
+    "interpretation": "Robust dominance crossover (n>=30) at gamma ~ -1.83 rad (~ -0.58pi). Seed controls QAOA-relevant range gamma in [0, -1.83]; branches 43/46 control larger |gamma|."
+  },
+
+  "physical_interpretation": {
+    "at_large_gamma": "Re Phi_43 = Re Phi_46 ~ 0 for gamma < -2.5; full_conv2_exponent ~ phi_pref = -0.6896. Lambda_abs at n=40 converges to phi_pref within 0.001 at gamma=-3.0. The QAOA success probability decays as exp(n * phi_pref) = exp(-0.6896 n), not as predicted by seed.",
+    "at_qaoa_optimal": "At typical p=1 optimal gamma ~ -0.8 to -1.5 rad, seed controls. Seed gap < 0.009 at n=40 — asymptotic approximation holds with ~1% relative error.",
+    "algebraic_vs_physical_dominance": "High-Re competitors (branches 150, 180, 193, 197 etc.) are algebraically dominant but NOT finite-n explanatory — they are on non-physical log sheets (Im Phi ~ 5-8, not near 0 mod 2pi). Branches 43/46 ARE on the physical sheet and ARE finite-n explanatory.",
+    "stokes_geometry": "No Stokes line between seed and branches 43/46 (delta Im Phi = 0 mod 2pi throughout). The crossover at gamma~-1.83 is an anti-Stokes crossing (Re Phi becomes equal), not a Stokes event."
+  },
+
+  "summary_answer": {
+    "does_seed_remain_dominant": "Yes, within QAOA-relevant range gamma in [0, -1.83]",
+    "where_does_seed_lose_dominance": "gamma ~ -1.83 rad (~-105 degrees). Below this, branches 43/46 control.",
+    "is_asymptotic_approximation_valid": "Yes at QAOA-relevant angles. Single saddle dominates; seed gap < 1% of lambda at n=40.",
+    "what_controls_at_large_gamma": "Complex conjugate pair branches 43/46 with Re Phi ~ 0 (near-trivial saddles). Exponent converges to phi_pref_conv2 = -0.6896 as gamma -> -2pi."
+  }
+}

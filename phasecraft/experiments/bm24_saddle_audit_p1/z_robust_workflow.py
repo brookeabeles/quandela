@@ -12,11 +12,10 @@ from __future__ import annotations
 import json
 import math
 import sys
-import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import numpy as np
 
@@ -41,8 +40,10 @@ from phasecraft.w_saddle.workflow import (
     STATUS_COMPETITOR_PL_ACTIVE,
     STATUS_SEED_CERTIFIED_LOCAL,
     STATUS_SEED_DUPLICATE,
+    PL_ACTIVE_NOTE,
     BranchPoint,
     CompetitorBranch,
+    CompetitorBranch as _CompetitorBranch,
     build_compact_table,
     dedupe_certified_by_action,
     detect_refine_gamma_window,
@@ -51,20 +52,16 @@ from phasecraft.w_saddle.workflow import (
     merge_refined_gamma_window,
     merge_same_sheet_branches,
     plot_competitor_analysis,
+    refine_crossing_interval,
     unwrap_im_branch,
     unwrap_phase_diff,
-    _assign_seed_sheet_branch,
-    _branch_label,
-    _w_norm_scale,
+    _dedupe_crossings_by_same_sheet,
 )
 
 DEFAULT_Q = 3
 DEFAULT_K = 8
 DEFAULT_R = 176.54
 DEFAULT_BETA = 0.5433996420760803
-DEFAULT_RUN_DIR = (
-    REPO_ROOT / "phasecraft/experiments/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi"
-)
 
 Z_DISCLAIMER = (
     "BM24 z-saddle branch-resolved competitor diagnostic. Re Phi_M gaps; not PL dominance. "
@@ -92,83 +89,9 @@ def make_gamma_mesh(gamma_start: float, gamma_stop: float, num_points: int) -> n
     return np.linspace(float(gamma_start), float(gamma_stop), int(num_points))
 
 
-def _log(msg: str) -> None:
-    print(msg, flush=True)
-
-
-def _point_from_continuation_row(row: dict[str, Any], *, proof: Optional[dict] = None) -> dict[str, Any]:
-    """Convert ``continue_seed_branch_certified`` JSON row to sweep payload point."""
-    certified = bool(row.get("certified")) and not bool(row.get("failed"))
-    return {
-        "gamma": float(row["gamma"]),
-        "w_star_real": row["z_real"],
-        "w_star_imag": row["z_imag"],
-        "Phi_eff_real": float(row["re_phi_m"]),
-        "Phi_eff_imag": float(row["im_phi_m"]),
-        "Phi_eff_im_lifted": float(row["im_phi_m"]),
-        "Phi_eff_im_unwrapped": float(row["im_phi_m"]),
-        "residual": float(row["residual_inf"]),
-        "residual_F_norm": float(row["residual_inf"]),
-        "delta_lower": 0.0,
-        "contraction_bound": float(row["krawczyk_contraction"]),
-        "krawczyk_contraction_bound": float(row["krawczyk_contraction"]),
-        "krawczyk_certified": certified,
-        "krawczyk_info": proof or {},
-        "box_radius": float(row.get("box_radius", 0.0)),
-        "newton_ok": True,
-        "full_conv2_exponent": float(row["full_conv2_exponent"]),
-    }
-
-
-def load_seed_payload_from_continuation_json(
-    path: Path,
-    *,
-    stride: int = 1,
-    gamma_start: Optional[float] = None,
-    gamma_stop: Optional[float] = None,
-) -> dict[str, Any]:
-    """Reuse dense certified seed branch from an existing audit run."""
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    meta = data.get("metadata") or {}
-    rows = [r for r in data.get("continuation", []) if r.get("certified") and not r.get("failed")]
-    if gamma_start is not None:
-        rows = [r for r in rows if float(r["gamma"]) <= float(gamma_start) + 1e-12]
-    if gamma_stop is not None:
-        rows = [r for r in rows if float(r["gamma"]) >= float(gamma_stop) - 1e-12]
-    rows = sorted(rows, key=lambda r: float(r["gamma"]), reverse=True)
-    if stride > 1:
-        rows = rows[:: int(stride)]
-    points = [_point_from_continuation_row(r) for r in rows]
-    im_raw = [float(p["Phi_eff_imag"]) for p in points]
-    im_u, unwrap_ok = unwrap_im_branch(im_raw)
-    for p, imv in zip(points, im_u):
-        p["Phi_eff_im_unwrapped"] = imv
-    gammas = [float(p["gamma"]) for p in points]
-    return {
-        "r": float(meta.get("r", DEFAULT_R)),
-        "q": int(meta.get("q", DEFAULT_Q)),
-        "K_clause": int(meta.get("K_clause", DEFAULT_K)),
-        "beta": float(meta.get("beta", DEFAULT_BETA)),
-        "chart": "z_saddle",
-        "gamma_mesh": gammas,
-        "num_points_requested": len(gammas),
-        "num_points_completed": len(points),
-        "completed_full_mesh": True,
-        "certificate_type": "z_seed_branch_reused",
-        "reused_from": str(path),
-        "reuse_stride": int(stride),
-        "im_phi_warning": IM_PHI_WARNING,
-        "points": points,
-        "unwrap_continuous": bool(unwrap_ok),
-        "table": build_compact_table(points),
-    }
-
-
 def z_from_record(rec: dict[str, Any]) -> np.ndarray:
     if "z_real" in rec:
         return np.asarray(rec["z_real"], dtype=float) + 1j * np.asarray(rec["z_imag"], dtype=float)
-    if "w_real" in rec:
-        return np.asarray(rec["w_real"], dtype=float) + 1j * np.asarray(rec["w_imag"], dtype=float)
     return np.asarray(rec["w_star_real"], dtype=float) + 1j * np.asarray(rec["w_star_imag"], dtype=float)
 
 
@@ -392,7 +315,7 @@ def _continuation_row_to_point(row: Any, *, certified: bool, proof: dict) -> dic
     }
 
 
-def continue_z_seed_on_mesh(
+def continue_z_seed_branch(
     cfg: ZConfig,
     gammas: np.ndarray,
     *,
@@ -403,77 +326,58 @@ def continue_z_seed_on_mesh(
     min_step: float = 0.0005,
     n_values: Optional[list[int]] = None,
 ) -> dict[str, Any]:
-    """Certified seed branch at each mesh γ (w_saddle-style; not adaptive-only)."""
     n_values = n_values or list(range(12, 23))
-    mesh = [float(g) for g in np.asarray(gammas, dtype=float)]
-    if len(mesh) < 1:
-        raise ValueError("empty gamma mesh")
-    decreasing = mesh[-1] < mesh[0]
-    points: list[dict[str, Any]] = []
-    z_cur: Optional[np.ndarray] = None
-    step_index = 0
+    g_start, g_end = float(gammas[0]), float(gammas[-1])
+    decreasing = g_end < g_start
+    z_cur, row0, _ = initialize_seed_at_gamma(
+        cfg.q,
+        cfg.K_clause,
+        cfg.r,
+        cfg.beta,
+        g_start,
+        n_values=n_values,
+        match_tol=match_tol,
+        min_residual=min_residual,
+        dps=dps,
+        use_iterator=True,
+    )
+    points = [_continuation_row_to_point(row0, certified=True, proof={})]
+    gamma = g_start
+    step = abs(float(gamma_step))
+    step_index = 1
 
-    for j, g_target in enumerate(mesh):
-        if j == 0:
-            z_cur, row0, _ = initialize_seed_at_gamma(
-                cfg.q,
-                cfg.K_clause,
-                cfg.r,
-                cfg.beta,
-                g_target,
-                n_values=n_values,
-                match_tol=match_tol,
-                min_residual=min_residual,
-                dps=dps,
-                use_iterator=True,
-            )
-            points.append(_continuation_row_to_point(row0, certified=True, proof={}))
-            step_index = 1
-            _log(f"  mesh continue [{j + 1}/{len(mesh)}] γ={g_target:.6g} (init)")
+    while True:
+        target = gamma - step if decreasing else gamma + step
+        if decreasing and target < g_end - 1e-12:
+            target = g_end
+        if not decreasing and target > g_end + 1e-12:
+            target = g_end
+        z_next, row = step_from_previous_z(
+            cfg.q,
+            cfg.K_clause,
+            cfg.r,
+            cfg.beta,
+            target,
+            z_cur,
+            step_index=step_index,
+            n_values=n_values,
+            match_tol=match_tol,
+            min_residual=min_residual,
+            dps=dps,
+        )
+        if z_next is None:
+            step *= 0.5
+            if step < min_step:
+                points.append(_continuation_row_to_point(row, certified=False, proof={}))
+                break
             continue
-
-        assert z_cur is not None
-        gamma = float(points[-1]["gamma"])
-        z_work = z_cur
-        inner_step = min(abs(float(gamma_step)), abs(gamma - g_target) * 0.5)
-        reached = False
-        while not reached:
-            trial = gamma - inner_step if decreasing else gamma + inner_step
-            if decreasing:
-                trial = max(g_target, trial)
-            else:
-                trial = min(g_target, trial)
-            z_next, row = step_from_previous_z(
-                cfg.q,
-                cfg.K_clause,
-                cfg.r,
-                cfg.beta,
-                trial,
-                z_work,
-                step_index=step_index,
-                n_values=n_values,
-                match_tol=match_tol,
-                min_residual=min_residual,
-                dps=dps,
-            )
-            if z_next is None:
-                inner_step *= 0.5
-                if inner_step < min_step:
-                    points.append(_continuation_row_to_point(row, certified=False, proof={}))
-                    _log(f"  mesh continue STOP at γ={g_target:.6g} (sub-step failed)")
-                    break
-                continue
-            z_work = z_next
-            gamma = float(trial)
-            step_index += 1
-            inner_step = min(abs(float(gamma_step)), inner_step * 1.25)
-            if abs(gamma - g_target) < 1e-11:
-                points.append(_continuation_row_to_point(row, certified=True, proof={}))
-                z_cur = z_work
-                reached = True
-        if not reached:
+        points.append(_continuation_row_to_point(row, certified=True, proof={}))
+        z_cur = z_next
+        gamma = target
+        step_index += 1
+        step = min(abs(float(gamma_step)), step * 1.25)
+        if abs(gamma - g_end) < 1e-12:
             break
-        _log(f"  mesh continue [{j + 1}/{len(mesh)}] γ={g_target:.6g}")
 
     im_raw = [float(p["Phi_eff_imag"]) for p in points]
     im_u, unwrap_ok = unwrap_im_branch(im_raw)
@@ -486,20 +390,16 @@ def continue_z_seed_on_mesh(
         "K_clause": cfg.K_clause,
         "beta": cfg.beta,
         "chart": "z_saddle",
-        "gamma_mesh": mesh,
-        "num_points_requested": len(mesh),
+        "gamma_mesh": [float(g) for g in gammas],
+        "num_points_requested": len(gammas),
         "num_points_completed": len(points),
-        "completed_full_mesh": len(points) == len(mesh),
-        "certificate_type": "z_seed_branch_mesh_continuation",
+        "completed_full_mesh": len(points) == len(gammas),
+        "certificate_type": "z_seed_branch_continuation",
         "im_phi_warning": IM_PHI_WARNING,
         "points": points,
         "unwrap_continuous": bool(unwrap_ok),
         "table": build_compact_table(points),
     }
-
-
-# Back-compat alias
-continue_z_seed_branch = continue_z_seed_on_mesh
 
 
 def competitor_sweep_on_z_payload(
@@ -511,12 +411,7 @@ def competitor_sweep_on_z_payload(
     cluster_tol: float = 1e-5,
     seed: int = 0,
 ) -> dict[str, Any]:
-    pts = payload.get("points", [])
-    n_sweep = sum(1 for r in pts if r.get("krawczyk_certified", True))
-    _log(f"  competitor sweep: {n_sweep} certified γ points × {competitor_starts} starts")
-    done = 0
-    t0 = time.time()
-    for j, row in enumerate(pts):
+    for j, row in enumerate(payload.get("points", [])):
         if not row.get("krawczyk_certified", True):
             continue
         gamma = float(row["gamma"])
@@ -539,15 +434,6 @@ def competitor_sweep_on_z_payload(
         row["best_competitor_re_phi"] = sweep["best_competitor_re_phi"]
         row["seed_dominates_all"] = sweep["seed_dominates_all"]
         row["closest_competitor"] = sweep["closest_competitor"]
-        done += 1
-        if done == 1 or done % 5 == 0 or done == n_sweep:
-            elapsed = time.time() - t0
-            eta = (elapsed / done) * (n_sweep - done) if done else 0.0
-            _log(
-                f"    sweep {done}/{n_sweep} γ={gamma:.4g} "
-                f"cert_roots={sweep['num_certified_roots']} "
-                f"({elapsed:.0f}s elapsed, ~{eta:.0f}s remaining)"
-            )
     payload["competitor_sweep_completed"] = True
     payload["table"] = build_compact_table(payload["points"])
     return payload
@@ -708,17 +594,14 @@ def track_branches_z(
     *,
     branch_step_tol: float = 0.35,
     use_tangent: bool = True,
-    re_weight: float = 0.15,
-    im_weight: float = 0.10,
 ) -> list[CompetitorBranch]:
-    """Match certified z-roots along gamma (w_saddle track_branches_from_nodes, principal Im)."""
+    """Match certified z-roots along gamma (same logic as w_saddle, principal Im only)."""
     if not gamma_slices:
         return []
-
     branches: list[CompetitorBranch] = []
     next_id = 0
 
-    def start_branch(_node: dict[str, Any]) -> CompetitorBranch:
+    def start_branch() -> CompetitorBranch:
         nonlocal next_id
         br = CompetitorBranch(branch_id=next_id, is_seed_sheet=False)
         next_id += 1
@@ -737,9 +620,6 @@ def track_branches_z(
             status = STATUS_COMPETITOR_PL_ACTIVE
         else:
             status = STATUS_COMPETITOR_CERTIFIED_LOCAL
-        seed_re_iv = sl.get("seed_RePhi_interval") or [sl["seed_Phi_real"], sl["seed_Phi_real"]]
-        comp_re_iv = [node["Phi_eff_real"], node["Phi_eff_real"]]
-        delta_re_iv = [float(seed_re_iv[0] - comp_re_iv[1]), float(seed_re_iv[1] - comp_re_iv[0])]
         return BranchPoint(
             branch_id=br.branch_id,
             gamma=float(node["gamma"]),
@@ -757,8 +637,6 @@ def track_branches_z(
             krawczyk_certified=bool(node["krawczyk_certified"]),
             is_seed_duplicate=bool(node.get("is_seed_duplicate")),
             box_disjoint_from_seed=bool(node.get("box_disjoint_from_seed", True)),
-            RePhi_interval=list(comp_re_iv),
-            DeltaRe_interval_vs_seed=delta_re_iv,
             log_branch_method="principal_log_PhiM_z_chart",
         )
 
@@ -771,62 +649,60 @@ def track_branches_z(
         if use_tangent and len(br.points) >= 2:
             p1, p2 = br.points[-2], br.points[-1]
             z1 = z_from_record({"w_real": p1.w_real, "w_imag": p1.w_imag})
+            z2 = z_end
             dg = float(p1.gamma - p2.gamma)
             if abs(dg) > 1e-14:
                 t = (float(sl["gamma"]) - float(p2.gamma)) / dg
-                z_pred = z_end + t * (z_end - z1)
+                z_pred = z2 + t * (z2 - z1)
             else:
                 z_pred = z_end
         else:
             z_pred = z_end
-        scale = _w_norm_scale(z_end) * max(branch_step_tol, 0.05)
+        scale = max(float(np.max(np.abs(z_end))), 1e-3) * max(branch_step_tol, 0.05)
         d_z = float(np.linalg.norm(z_n - z_pred, ord=np.inf)) / scale
         d_re = abs(float(node["Phi_eff_real"]) - br.points[-1].Phi_eff_real) / max(abs(br.points[-1].Phi_eff_real), 1.0)
-        d_im = abs(
-            float(unwrap_phase_diff(br.points[-1].Phi_eff_imag_unwrapped, float(node["Phi_eff_imag"])))
-        ) / (2.0 * np.pi)
-        return d_z + re_weight * d_re + im_weight * d_im
+        return d_z + 0.15 * d_re
 
-    first = gamma_slices[0]
-    for node in tracking_nodes(first):
-        br = start_branch(node)
-        br.points.append(append_point(br, first, node))
-        branches.append(br)
+    sl0 = gamma_slices[0]
+    seed_br = CompetitorBranch(branch_id=next_id, is_seed_sheet=True, label="seed sheet")
+    next_id += 1
+    for node in sl0["nodes"]:
+        if node.get("is_seed_sheet"):
+            append_point(seed_br, sl0, node)
+    if seed_br.points:
+        branches.append(seed_br)
+
+    open_branches = [start_branch() for _ in tracking_nodes(sl0)]
+    for node in tracking_nodes(sl0):
+        if node.get("is_seed_sheet"):
+            continue
+        costs = [match_cost(br, node, sl0) for br in open_branches]
+        j = int(np.argmin(costs))
+        open_branches[j].points.append(append_point(open_branches[j], sl0, node))
 
     for sl in gamma_slices[1:]:
-        open_branches = [b for b in branches if b.points]
-        endpoints = [
-            (b, z_from_record({"w_real": b.points[-1].w_real, "w_imag": b.points[-1].w_imag}))
-            for b in open_branches
-        ]
-        nodes = tracking_nodes(sl)
-        unused = list(range(len(nodes)))
-        matches: list[tuple[float, int, int]] = []
-        for bi, (br, z_end) in enumerate(endpoints):
-            scale = _w_norm_scale(z_end) * max(branch_step_tol, 0.05)
-            for ni in unused:
-                z_n = z_from_record(nodes[ni])
-                if float(np.linalg.norm(z_n - z_end, ord=np.inf)) <= scale:
-                    matches.append((match_cost(br, nodes[ni], sl), bi, ni))
-        matches.sort(key=lambda t: t[0])
-        used_b: set[int] = set()
-        used_n: set[int] = set()
-        for _cost, bi, ni in matches:
-            if bi in used_b or ni in used_n:
+        pool = open_branches[:]
+        used: set[int] = set()
+        for node in tracking_nodes(sl):
+            if node.get("is_seed_sheet"):
+                append_point(seed_br, sl, node)
                 continue
-            used_b.add(bi)
-            used_n.add(ni)
-            open_branches[bi].points.append(append_point(open_branches[bi], sl, nodes[ni]))
-        for ni in unused:
-            if ni in used_n:
+            if not pool:
+                br = start_branch()
+                br.points.append(append_point(br, sl, node))
+                open_branches.append(br)
                 continue
-            br = start_branch(nodes[ni])
-            br.points.append(append_point(br, sl, nodes[ni]))
-            branches.append(br)
+            costs = [match_cost(br, node, sl) for br in pool]
+            j = int(np.argmin(costs))
+            br = pool[j]
+            br.points.append(append_point(br, sl, node))
+            used.add(j)
+        open_branches = [br for k, br in enumerate(open_branches) if k in used or len(br.points) > 0]
 
-    _assign_seed_sheet_branch(branches)
-    for br in branches:
-        br.label = _branch_label(br)
+    for br in open_branches:
+        if br.points and not br.is_seed_sheet:
+            br.label = f"branch {br.branch_id} Re~{br.points[0].Phi_eff_real:.3g}"
+            branches.append(br)
     return branches
 
 
@@ -836,6 +712,7 @@ def resolve_z_branches(
     *,
     branch_step_tol: float = 0.35,
     merge_same_sheet: bool = True,
+    refine_all_crossings: bool = True,
     dps: int = 80,
 ) -> dict[str, Any]:
     slices = extract_gamma_nodes_z(sweep_payload, seed_payload)
@@ -846,8 +723,34 @@ def resolve_z_branches(
     intervals: list[dict[str, Any]] = []
     for br in branches:
         intervals.extend(find_delta_re_crossing_intervals(br))
-    # Crossing bisection uses WSaddleSystem in w_saddle.workflow; z chart keeps mesh intervals only.
     crossing_certs: list[dict[str, Any]] = []
+    if refine_all_crossings:
+        for iv in intervals:
+            br = next(b for b in branches if b.branch_id == iv["branch_id"])
+            if br.is_seed_sheet:
+                continue
+            pt_hi = min(br.points, key=lambda p: abs(p.gamma - iv["gamma_hi"]))
+            pt_lo = min(br.points, key=lambda p: abs(p.gamma - iv["gamma_lo"]))
+            if not (pt_hi.box_disjoint_from_seed and pt_lo.box_disjoint_from_seed):
+                continue
+            z_hi = z_from_record({"w_real": pt_hi.w_real, "w_imag": pt_hi.w_imag})
+            z_lo = z_from_record({"w_real": pt_lo.w_real, "w_imag": pt_lo.w_imag})
+            try:
+                crossing_certs.append(
+                    refine_crossing_interval(
+                        seed_payload,
+                        iv,
+                        z_hi,
+                        z_lo,
+                        dps=dps,
+                        max_inflate_iters=8,
+                        escalate=True,
+                        target_width=0.008,
+                    )
+                )
+            except Exception:
+                pass
+    crossing_certs = _dedupe_crossings_by_same_sheet(branches, crossing_certs)
 
     def br_dict(br: CompetitorBranch) -> dict[str, Any]:
         return {
@@ -906,8 +809,6 @@ def run_robust_pipeline(
     skip_resolve: bool = False,
     plots: bool = True,
     no_auto_refine: bool = False,
-    reuse_seed_json: Optional[Union[str, Path]] = None,
-    sweep_stride: int = 1,
 ) -> dict[str, Path]:
     cfg = cfg or ZConfig()
     out_dir = Path(out_dir)
@@ -916,42 +817,20 @@ def run_robust_pipeline(
         "seed_json": out_dir / "seed_branch_z.json",
         "sweep_json": out_dir / "competitors_robust_z.json",
         "resolved_json": out_dir / "resolved_robust_z.json",
-        "plot": out_dir / "competitors_robust_analysis_v1_z.png",
+        "plot": out_dir / "competitors_robust_analysis_z.png",
     }
 
-    t_pipeline = time.time()
-
     if not skip_continue:
-        if reuse_seed_json is not None:
-            _log(f"[1/4] Reusing seed continuation: {reuse_seed_json}")
-            seed_payload = load_seed_payload_from_continuation_json(
-                Path(reuse_seed_json),
-                stride=sweep_stride,
-                gamma_start=gamma_start,
-                gamma_stop=gamma_stop,
-            )
-        else:
-            gammas = make_gamma_mesh(gamma_start, gamma_stop, num_points)
-            _log(
-                f"[1/4] Mesh continuation: {len(gammas)} γ from {gamma_start} to {gamma_stop} "
-                f"(~{len(gammas) * 0.5:.0f}s certify + hours for sweep)"
-            )
-            seed_payload = continue_z_seed_on_mesh(cfg, gammas, dps=dps)
+        gammas = make_gamma_mesh(gamma_start, gamma_stop, num_points)
+        seed_payload = continue_z_seed_branch(cfg, gammas, dps=dps)
         seed_payload["metadata"] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "pipeline": "z_robust",
             "cfg": cfg.__dict__,
-            "competitor_starts": competitor_starts,
-            "sweep_stride": sweep_stride,
         }
         paths["seed_json"].write_text(json.dumps(seed_payload, indent=2), encoding="utf-8")
-        _log(
-            f"  wrote {paths['seed_json']} ({seed_payload['num_points_completed']} points, "
-            f"full_mesh={seed_payload.get('completed_full_mesh')})"
-        )
 
     if not skip_sweep:
-        _log(f"[2/4] Multi-start competitor sweep (dps={dps})")
         seed_payload = json.loads(paths["seed_json"].read_text(encoding="utf-8"))
         sweep_payload = dict(seed_payload)
         sweep_payload = competitor_sweep_on_z_payload(
@@ -982,18 +861,14 @@ def run_robust_pipeline(
                 sweep_payload["refined_window"] = {"method": "auto_skipped", "reason": "no_competitor_activity"}
         sweep_payload["competitor_sweep_completed"] = True
         paths["sweep_json"].write_text(json.dumps(sweep_payload, indent=2), encoding="utf-8")
-        _log(f"  wrote {paths['sweep_json']}")
 
     if not skip_resolve:
-        _log("[3/4] Branch resolve + crossing intervals")
         sweep_payload = json.loads(paths["sweep_json"].read_text(encoding="utf-8"))
         seed_payload = json.loads(paths["seed_json"].read_text(encoding="utf-8"))
         resolved = resolve_z_branches(sweep_payload, seed_payload, dps=dps)
         paths["resolved_json"].write_text(json.dumps(resolved, indent=2), encoding="utf-8")
-        _log(f"  wrote {paths['resolved_json']} ({resolved.get('num_branches', 0)} branches)")
 
     if plots and paths["sweep_json"].is_file() and paths["resolved_json"].is_file():
-        _log("[4/4] Plot 2×3 dashboard")
         sweep_payload = json.loads(paths["sweep_json"].read_text(encoding="utf-8"))
         resolved = json.loads(paths["resolved_json"].read_text(encoding="utf-8"))
         plot_competitor_analysis(
@@ -1002,24 +877,6 @@ def run_robust_pipeline(
             resolved_payload=resolved,
             allow_overwrite=True,
         )
-        _log(f"  wrote {paths['plot']}")
-
-    elapsed = time.time() - t_pipeline
-    _log(f"Done in {elapsed:.1f}s")
-    if (
-        not skip_sweep
-        and competitor_starts >= 200
-        and paths["sweep_json"].is_file()
-        and elapsed < 120
-    ):
-        n_pts = len(json.loads(paths["sweep_json"].read_text())["points"])
-        if n_pts >= 20:
-            _log(
-                "WARNING: finished very quickly for a heavy sweep. "
-                "You may be viewing competitors_robust_analysis_z.png from "
-                "plot_z_competitor_robust_dashboard (instant JSON replot), not this pipeline. "
-                f"Check {paths['plot']} and {paths['sweep_json']}."
-            )
     return paths
 
 
@@ -1043,37 +900,12 @@ def main() -> None:
     p.add_argument("--skip-sweep", action="store_true")
     p.add_argument("--skip-resolve", action="store_true")
     p.add_argument("--no-auto-refine", action="store_true")
-    p.add_argument(
-        "--reuse-seed-json",
-        type=str,
-        default="",
-        help="Skip continuation; load certified rows from seed_branch_continuation.json",
-    )
-    p.add_argument(
-        "--sweep-stride",
-        type=int,
-        default=1,
-        help="When reusing seed JSON, keep every Nth certified γ (reduces sweep cost)",
-    )
     args = p.parse_args()
-
-    _log(
-        "z_robust_workflow (multi-start sweep + resolve) — NOT plot_z_competitor_robust_dashboard"
-    )
 
     cfg = ZConfig(r=args.r, beta=args.beta)
     num_points = 20 if args.quick else args.num_points
     competitor_starts = 80 if args.quick else args.competitor_starts
     refine_num = 30 if args.quick else args.refine_num_points
-
-    reuse = args.reuse_seed_json.strip() or None
-    if reuse is None and not args.skip_continue:
-        default_seed = DEFAULT_RUN_DIR / "seed_branch_continuation.json"
-        if default_seed.is_file() and num_points >= 50:
-            _log(
-                f"Tip: dense seed branch exists at {default_seed}. "
-                "Use --reuse-seed-json with --sweep-stride 5 to avoid re-continuing."
-            )
 
     paths = run_robust_pipeline(
         Path(args.out_dir),
@@ -1090,8 +922,6 @@ def main() -> None:
         skip_resolve=args.skip_resolve,
         plots=args.plots,
         no_auto_refine=args.no_auto_refine or args.quick,
-        reuse_seed_json=reuse,
-        sweep_stride=max(1, int(args.sweep_stride)),
     )
     print(json.dumps({k: str(v) for k, v in paths.items()}, indent=2))
 

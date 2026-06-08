@@ -1,0 +1,638 @@
+"""
+Readable Re(Phi_M) vs gamma plots from z_robust_full (resolved + sweep JSON).
+
+Focus: tracked sheets (seed + top disjoint competitor branches), not 251-line spaghetti.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any, Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified import (
+    GAMMA_AXIS_LEFT,
+    GAMMA_AXIS_RIGHT,
+    _style_gamma_axis_reading_zero_to_negative,
+)
+
+DEFAULT_DIR = (
+    REPO_ROOT
+    / "phasecraft/experiments/bm24_saddle_audit_p1/results/run_seed_branch_g-2pi/competitor_dominance/z_robust_full"
+)
+
+# BM24 seed-branch Re Phi_M stays roughly here; sweep also certifies distant log sheets.
+DEFAULT_RE_PHYS_LO = -2.0
+DEFAULT_RE_PHYS_HI = 1.0
+BRANCH_MATCH_STEP_TOL = 0.35
+GAMMA_MATCH_TOL = 0.006
+
+STATUS_LOCAL = "competitor_certified_local"
+STATUS_PL = "competitor_pl_active"
+STATUS_DUP = "seed_duplicate"
+STATUS_SEED = "seed_certified_local"
+
+
+def _load(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _re_in_physical_band(re: float, *, re_lo: float, re_hi: float) -> bool:
+    return re_lo <= float(re) <= re_hi
+
+
+def _sweep_competitor_records(sw: dict[str, Any]) -> list[dict[str, Any]]:
+    """Competitors only (seed sheet excluded), falling back to non-seed roots."""
+    comps = list(sw.get("competitors") or [])
+    if comps:
+        return comps
+    return [r for r in sw.get("certified_roots") or [] if not r.get("is_seed_branch")]
+
+
+def _z_from_sweep_rec(rec: dict[str, Any]) -> np.ndarray:
+    if "z_real" in rec:
+        return np.asarray(rec["z_real"], dtype=float) + 1j * np.asarray(rec["z_imag"], dtype=float)
+    return np.asarray(rec["w_real"], dtype=float) + 1j * np.asarray(rec["w_imag"], dtype=float)
+
+
+def _branch_points_by_gamma(
+    resolved: dict[str, Any],
+) -> dict[float, list[tuple[int, np.ndarray, float, bool]]]:
+    """Map γ → list of (branch_id, z, Re Φ_M, is_seed_sheet) from resolve step."""
+    by_g: dict[float, list[tuple[int, np.ndarray, float, bool]]] = {}
+    for br in resolved.get("branches", []):
+        bid = int(br["branch_id"])
+        is_seed = bool(br.get("is_seed_sheet"))
+        for p in br.get("points", []):
+            g = round(float(p["gamma"]), 6)
+            z = np.asarray(p["w_real"], dtype=float) + 1j * np.asarray(p["w_imag"], dtype=float)
+            by_g.setdefault(g, []).append((bid, z, float(p["Phi_eff_real"]), is_seed))
+    return by_g
+
+
+def _match_sweep_to_branch(
+    gamma: float,
+    z: np.ndarray,
+    by_gamma: dict[float, list[tuple[int, np.ndarray, float, bool]]],
+    *,
+    step_tol: float = BRANCH_MATCH_STEP_TOL,
+) -> Optional[int]:
+    """Match sweep root to resolved track (same rule as track_branches_z proximity)."""
+    candidates: list[tuple[int, np.ndarray, float, bool]] = []
+    for g_key, entries in by_gamma.items():
+        if abs(g_key - gamma) <= GAMMA_MATCH_TOL:
+            candidates.extend(entries)
+    if not candidates:
+        return None
+    z = np.asarray(z, dtype=complex)
+    best_id: Optional[int] = None
+    best_d = float("inf")
+    for bid, z_b, _re_b, _is_seed in candidates:
+        d = float(np.linalg.norm(z - z_b, ord=np.inf))
+        scale = max(float(np.max(np.abs(z))), float(np.max(np.abs(z_b))), 1e-3) * max(step_tol, 0.05)
+        if d <= scale and d < best_d:
+            best_d = d
+            best_id = bid
+    return best_id
+
+
+def _filter_sweep_records(
+    records: list[dict[str, Any]],
+    *,
+    re_lo: float,
+    re_hi: float,
+) -> tuple[list[dict[str, Any]], int]:
+    kept = [r for r in records if _re_in_physical_band(r["Phi_eff_real"], re_lo=re_lo, re_hi=re_hi)]
+    return kept, len(records) - len(kept)
+
+
+def _valid_sheet_points(
+    branch: dict[str, Any],
+    *,
+    re_lo: float = DEFAULT_RE_PHYS_LO,
+    re_hi: float = DEFAULT_RE_PHYS_HI,
+) -> list[dict[str, Any]]:
+    """Points on a sheet that are Krawczyk-disjoint from seed (real competitors)."""
+    if branch.get("is_seed_sheet"):
+        pts = list(branch.get("points", []))
+    else:
+        pts = [
+            p
+            for p in branch.get("points", [])
+            if p.get("box_disjoint_from_seed")
+            and p.get("status") not in (STATUS_DUP, STATUS_SEED)
+        ]
+    return [p for p in pts if _re_in_physical_band(p["Phi_eff_real"], re_lo=re_lo, re_hi=re_hi)]
+
+
+def _branch_score(branch: dict[str, Any]) -> tuple[float, int, float]:
+    pts = _valid_sheet_points(branch)
+    if not pts:
+        return (-1e9, 0, 0.0)
+    re_vals = [float(p["Phi_eff_real"]) for p in pts]
+    return (max(re_vals), len(pts), float(np.mean(re_vals)))
+
+
+def select_branches(
+    resolved: dict[str, Any],
+    *,
+    top_n: int = 10,
+    min_valid_pts: int = 10,
+) -> list[dict[str, Any]]:
+    branches = resolved.get("branches", [])
+    seed = [b for b in branches if b.get("is_seed_sheet")]
+    if not seed:
+        raise ValueError("no seed sheet in resolved_robust_z.json")
+    seed_br = seed[0]
+
+    ranked: list[tuple[float, int, dict[str, Any]]] = []
+    for b in branches:
+        if b.get("is_seed_sheet"):
+            continue
+        pts = _valid_sheet_points(b)
+        if len(pts) < min_valid_pts:
+            continue
+        re_max, n, _ = _branch_score(b)
+        ranked.append((re_max, n, b))
+    ranked.sort(key=lambda t: (t[0], t[1]), reverse=True)
+
+    out = [seed_br]
+    seen: set[int] = {int(seed_br["branch_id"])}
+    for _re, _n, b in ranked:
+        bid = int(b["branch_id"])
+        if bid in seen:
+            continue
+        out.append(b)
+        seen.add(bid)
+        if len(out) > top_n:
+            break
+    return out
+
+
+def _series_from_points(
+    points: list[dict[str, Any]],
+    *,
+    key: str = "Phi_eff_real",
+) -> tuple[np.ndarray, np.ndarray]:
+    pts = sorted(points, key=lambda p: float(p["gamma"]), reverse=True)
+    g = np.array([float(p["gamma"]) for p in pts], dtype=float)
+    y = np.array([float(p[key]) for p in pts], dtype=float)
+    return g, y
+
+
+def plot_tracked_re_sheets(
+    resolved: dict[str, Any],
+    out_path: Path,
+    *,
+    top_n: int = 10,
+    gamma_lo: float = GAMMA_AXIS_RIGHT,
+    gamma_hi: float = GAMMA_AXIS_LEFT,
+    dpi: int = 160,
+) -> Path:
+    picked = select_branches(resolved, top_n=top_n)
+    fig, axes = plt.subplots(2, 1, figsize=(12, 9), sharex=True)
+
+    ax_re, ax_gap = axes
+    cmap = plt.cm.tab10(np.linspace(0, 1, max(len(picked), 1)))
+
+    for i, br in enumerate(picked):
+        pts = _valid_sheet_points(br)
+        if len(pts) < 2:
+            continue
+        g, re = _series_from_points(pts, key="Phi_eff_real")
+        mask = (g <= gamma_hi + 1e-9) & (g >= gamma_lo - 1e-9)
+        g, re = g[mask], re[mask]
+        if br.get("is_seed_sheet"):
+            ax_re.plot(g, re, color="black", lw=2.8, zorder=10, label="seed sheet")
+            ax_gap.plot(g, np.zeros_like(g), color="black", lw=2.8, zorder=10, label="seed (ΔRe=0)")
+        else:
+            lbl = br.get("label", f"branch {br['branch_id']}")
+            ax_re.plot(g, re, color=cmap[i], lw=1.8, label=lbl)
+            dg, d_re = _series_from_points(pts, key="DeltaRe_vs_seed")
+            dg, d_re = dg[mask], d_re[mask]
+            ax_gap.plot(dg, d_re, color=cmap[i], lw=1.8, alpha=0.9)
+
+    ax_re.axhline(0.0, color="gray", lw=0.6, alpha=0.4)
+    ax_re.set_ylim(DEFAULT_RE_PHYS_LO - 0.15, DEFAULT_RE_PHYS_HI + 0.15)
+    ax_re.set_ylabel(r"Re $\Phi_M$ (certified, per sheet)")
+    ax_re.set_title(
+        f"Tracked sheets: seed + top {min(top_n, len(picked) - 1)} disjoint competitor branches "
+        f"(from {resolved.get('num_branches', '?')} total tracks)"
+    )
+    ax_re.legend(loc="upper left", bbox_to_anchor=(1.02, 1), fontsize=8, framealpha=0.95)
+    ax_re.grid(True, alpha=0.25)
+
+    ax_gap.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+    ax_gap.set_ylabel(r"$\Delta$Re vs seed  ($\mathrm{Re}\,\Phi_{\mathrm{seed}} - \mathrm{Re}\,\Phi_{\mathrm{sheet}}$)")
+    ax_gap.set_title("Dominance gap along each sheet (positive = seed larger on Re axis)")
+    ax_gap.legend(loc="upper left", bbox_to_anchor=(1.02, 1), fontsize=7, framealpha=0.95)
+    ax_gap.grid(True, alpha=0.25)
+
+    _style_gamma_axis_reading_zero_to_negative(ax_gap)
+    fig.suptitle(
+        "BM24 z-robust branch resolve — sheet-local Re tracking (disjoint boxes only for competitors)",
+        fontsize=11,
+        y=1.01,
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def plot_re_zoom_wall(
+    resolved: dict[str, Any],
+    out_path: Path,
+    *,
+    top_n: int = 8,
+    gamma_hi: float = -0.5,
+    gamma_lo: float = -2.5,
+    dpi: int = 160,
+) -> Path:
+    """Zoom where high-Re competitor sheets separate from seed."""
+    picked = select_branches(resolved, top_n=top_n)
+    fig, ax = plt.subplots(figsize=(11, 6))
+    cmap = plt.cm.tab10(np.linspace(0, 1, max(len(picked), 1)))
+
+    for i, br in enumerate(picked):
+        pts = _valid_sheet_points(br)
+        g, re = _series_from_points(pts, key="Phi_eff_real")
+        mask = (g <= gamma_hi + 1e-9) & (g >= gamma_lo - 1e-9)
+        g, re = g[mask], re[mask]
+        if len(g) < 2:
+            continue
+        if br.get("is_seed_sheet"):
+            ax.plot(g, re, "k-", lw=3, label="seed sheet", zorder=10)
+        else:
+            ax.plot(g, re, color=cmap[i], lw=2, marker="o", ms=3, label=br.get("label", ""))
+
+    ax.set_xlim(gamma_hi, gamma_lo)
+    ax.set_ylabel(r"Re $\Phi_M$")
+    ax.set_xlabel(r"$\gamma$")
+    ax.set_title(rf"Wall region zoom: $\gamma \in [{gamma_lo:.2f}, {gamma_hi:.2f}]$")
+    ax.legend(loc="best", fontsize=8)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def plot_sweep_re_envelope(
+    sweep: dict[str, Any],
+    out_path: Path,
+    *,
+    re_lo: float = DEFAULT_RE_PHYS_LO,
+    re_hi: float = DEFAULT_RE_PHYS_HI,
+    dpi: int = 160,
+) -> Path:
+    """Per γ: seed Re + max competitor Re in physical Re band only."""
+    gammas: list[float] = []
+    seed_re: list[float] = []
+    max_re: list[float] = []
+    best_comp_re: list[float] = []
+    n_hidden: list[int] = []
+
+    for row in sorted(sweep.get("points", []), key=lambda r: float(r["gamma"]), reverse=True):
+        if not row.get("krawczyk_certified", True):
+            continue
+        sw = row.get("competitor_sweep") or {}
+        comps_raw = _sweep_competitor_records(sw)
+        comps, n_h = _filter_sweep_records(comps_raw, re_lo=re_lo, re_hi=re_hi)
+        if not comps_raw:
+            continue
+        g = float(row["gamma"])
+        s_re = float(row["Phi_eff_real"])
+        re_comp = [float(r["Phi_eff_real"]) for r in comps]
+        gammas.append(g)
+        seed_re.append(s_re)
+        max_re.append(max(re_comp) if re_comp else float("nan"))
+        best_comp_re.append(max(re_comp) if re_comp else float("nan"))
+        n_hidden.append(n_h)
+
+    g = np.array(gammas)
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(g, seed_re, "k-", lw=2.5, label="continued seed (row)")
+    ax.plot(g, max_re, "r.-", ms=5, lw=1.2, label=f"max competitor Re in [{re_lo}, {re_hi}]")
+    ax.fill_between(g, seed_re, max_re, alpha=0.15, color="tomato", label="Re gap band @ γ")
+    ax.axhline(0.0, color="gray", lw=0.5)
+    ax.set_ylim(re_lo - 0.15, re_hi + 0.15)
+    ax.set_ylabel(r"Re $\Phi_M$")
+    ax.set_title(
+        f"Per-γ sweep: seed vs competitors with {re_lo} ≤ Re Φ_M ≤ {re_hi} "
+        f"(hid {sum(n_hidden)} distant-sheet roots)"
+    )
+    ax.legend(loc="upper left", fontsize=8)
+    ax.grid(True, alpha=0.25)
+    _style_gamma_axis_reading_zero_to_negative(ax)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def plot_sweep_re_scatter(
+    sweep: dict[str, Any],
+    out_path: Path,
+    *,
+    re_lo: float = DEFAULT_RE_PHYS_LO,
+    re_hi: float = DEFAULT_RE_PHYS_HI,
+    max_roots_per_gamma: int = 20,
+    dpi: int = 140,
+) -> Path:
+    """Scatter competitor Re in the physical BM24 band (excludes distant log sheets)."""
+    xs: list[float] = []
+    ys: list[float] = []
+    colors: list[float] = []
+    n_hidden_total = 0
+    n_shown = 0
+
+    for row in sweep.get("points", []):
+        if not row.get("krawczyk_certified", True):
+            continue
+        g = float(row["gamma"])
+        sw = row.get("competitor_sweep") or {}
+        comps_raw = _sweep_competitor_records(sw)
+        comps, n_h = _filter_sweep_records(comps_raw, re_lo=re_lo, re_hi=re_hi)
+        n_hidden_total += n_h
+        if len(comps) > max_roots_per_gamma:
+            comps = sorted(comps, key=lambda r: -float(r["Phi_eff_real"]))[:max_roots_per_gamma]
+        seed_re = float(row["Phi_eff_real"])
+        for r in comps:
+            re = float(r["Phi_eff_real"])
+            xs.append(g)
+            ys.append(re)
+            colors.append(re - seed_re)
+            n_shown += 1
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sc = ax.scatter(xs, ys, c=colors, cmap="RdYlBu_r", s=22, alpha=0.85, vmin=-0.8, vmax=0.8)
+    plt.colorbar(sc, ax=ax, label=r"Re(comp) $-$ Re(seed)")
+    sg = [float(r["gamma"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+    sr = [float(r["Phi_eff_real"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+    order = np.argsort(sg)[::-1]
+    sg = np.array(sg)[order]
+    sr = np.array(sr)[order]
+    ax.plot(sg, sr, "k-", lw=2.8, zorder=5, label="seed continuation")
+    ax.set_ylim(re_lo - 0.1, re_hi + 0.1)
+    ax.set_ylabel(r"Re $\Phi_M$ (competitors in band)")
+    ax.set_title(
+        f"Competitor sweep: {re_lo} ≤ Re Φ_M ≤ {re_hi}  "
+        f"({n_shown} shown, {n_hidden_total} distant-sheet roots omitted)"
+    )
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.2)
+    _style_gamma_axis_reading_zero_to_negative(ax)
+    fig.text(
+        0.01,
+        0.01,
+        "Out-of-band certified roots (other log sheets) are excluded; they dominated the old plot.",
+        fontsize=8,
+        color="0.35",
+    )
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def plot_sweep_re_scatter_by_branch_id(
+    sweep: dict[str, Any],
+    resolved: dict[str, Any],
+    out_path: Path,
+    *,
+    re_lo: float = DEFAULT_RE_PHYS_LO,
+    re_hi: float = DEFAULT_RE_PHYS_HI,
+    legend_top_n: int = 12,
+    dpi: int = 140,
+) -> Path:
+    """Scatter competitors colored by resolved branch_id; faint polylines show tracks."""
+    by_gamma = _branch_points_by_gamma(resolved)
+    branches_by_id = {int(b["branch_id"]): b for b in resolved.get("branches", [])}
+
+    xs: list[float] = []
+    ys: list[float] = []
+    bids: list[int] = []
+    n_hidden = 0
+    match_counts: dict[int, int] = {}
+
+    for row in sweep.get("points", []):
+        if not row.get("krawczyk_certified", True):
+            continue
+        g = float(row["gamma"])
+        sw = row.get("competitor_sweep") or {}
+        comps_raw = _sweep_competitor_records(sw)
+        comps, n_h = _filter_sweep_records(comps_raw, re_lo=re_lo, re_hi=re_hi)
+        n_hidden += n_h
+        for r in comps:
+            z = _z_from_sweep_rec(r)
+            bid = _match_sweep_to_branch(g, z, by_gamma)
+            xs.append(g)
+            ys.append(float(r["Phi_eff_real"]))
+            if bid is None:
+                bids.append(-1)
+            else:
+                bids.append(bid)
+                match_counts[bid] = match_counts.get(bid, 0) + 1
+
+    ranked_ids = [bid for bid, _ in sorted(match_counts.items(), key=lambda t: -t[1])]
+    seed_id = next(
+        (int(b["branch_id"]) for b in resolved.get("branches", []) if b.get("is_seed_sheet")),
+        None,
+    )
+    palette_ids: list[int] = []
+    if seed_id is not None and seed_id in match_counts:
+        palette_ids.append(seed_id)
+    for bid in ranked_ids:
+        if bid not in palette_ids:
+            palette_ids.append(bid)
+        if len(palette_ids) >= legend_top_n:
+            break
+
+    cmap = plt.cm.tab20(np.linspace(0, 1, max(len(palette_ids), 1)))
+    id_to_color: dict[int, tuple[float, float, float, float]] = {
+        bid: cmap[i] for i, bid in enumerate(palette_ids)
+    }
+    unassigned_color = (0.75, 0.75, 0.75, 0.35)
+
+    fig, ax = plt.subplots(figsize=(13, 6.5))
+
+    for bid in palette_ids:
+        br = branches_by_id.get(bid)
+        if not br:
+            continue
+        pts = sorted(br.get("points", []), key=lambda p: float(p["gamma"]), reverse=True)
+        g_line = [float(p["gamma"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
+        re_line = [float(p["Phi_eff_real"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
+        if len(g_line) < 2:
+            continue
+        lbl = br.get("label", f"branch {bid}")
+        lw = 2.5 if br.get("is_seed_sheet") else 1.4
+        ax.plot(
+            g_line,
+            re_line,
+            "-",
+            color=id_to_color[bid],
+            lw=lw,
+            alpha=0.85 if br.get("is_seed_sheet") else 0.55,
+            zorder=4,
+            label=lbl,
+        )
+
+    for g, y, bid in zip(xs, ys, bids):
+        if bid < 0:
+            ax.scatter(g, y, c=[unassigned_color], s=14, edgecolors="none", zorder=2)
+        else:
+            col = id_to_color.get(bid, (0.5, 0.5, 0.5, 0.6))
+            ax.scatter(g, y, c=[col], s=26, edgecolors="k", linewidths=0.2, zorder=5)
+
+    sg = [float(r["gamma"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+    sr = [float(r["Phi_eff_real"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+    order = np.argsort(sg)[::-1]
+    ax.plot(np.array(sg)[order], np.array(sr)[order], "k--", lw=1.2, alpha=0.5, zorder=3, label="seed row (sweep)")
+
+    n_matched = sum(1 for b in bids if b >= 0)
+    n_unassigned = sum(1 for b in bids if b < 0)
+    ax.set_ylim(re_lo - 0.1, re_hi + 0.1)
+    ax.set_ylabel(r"Re $\Phi_M$")
+    ax.set_title(
+        f"Sweep competitors colored by resolved branch_id  "
+        f"({n_matched} matched, {n_unassigned} unassigned, {n_hidden} out-of-band hidden)"
+    )
+    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), fontsize=7, framealpha=0.95)
+    ax.grid(True, alpha=0.2)
+    _style_gamma_axis_reading_zero_to_negative(ax)
+    fig.text(
+        0.01,
+        0.01,
+        "Lines = resolved tracks; dots = sweep hits matched by z (branch_step_tol=0.35). Gray = no track match.",
+        fontsize=8,
+        color="0.35",
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def plot_sweep_outliers_per_gamma(
+    sweep: dict[str, Any],
+    out_path: Path,
+    *,
+    re_lo: float = DEFAULT_RE_PHYS_LO,
+    re_hi: float = DEFAULT_RE_PHYS_HI,
+    dpi: int = 140,
+) -> Path:
+    """How many certified competitors fall outside the physical Re band at each γ."""
+    gammas: list[float] = []
+    n_out: list[int] = []
+    n_in: list[int] = []
+
+    for row in sorted(sweep.get("points", []), key=lambda r: float(r["gamma"]), reverse=True):
+        if not row.get("krawczyk_certified", True):
+            continue
+        sw = row.get("competitor_sweep") or {}
+        comps = _sweep_competitor_records(sw)
+        if not comps:
+            continue
+        _, n_h = _filter_sweep_records(comps, re_lo=re_lo, re_hi=re_hi)
+        gammas.append(float(row["gamma"]))
+        n_out.append(n_h)
+        n_in.append(len(comps) - n_h)
+
+    fig, ax = plt.subplots(figsize=(12, 3.5))
+    ax.bar(gammas, n_in, width=0.008, color="steelblue", alpha=0.7, label=f"in [{re_lo},{re_hi}]")
+    ax.bar(gammas, n_out, width=0.008, bottom=n_in, color="salmon", alpha=0.7, label="out of band")
+    ax.set_ylabel("# certified competitors")
+    ax.set_title("Distant log-sheet competitors per γ (stacked counts)")
+    ax.legend(loc="upper left", fontsize=8)
+    _style_gamma_axis_reading_zero_to_negative(ax)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
+def write_summary(resolved: dict[str, Any], out_path: Path, *, top_n: int = 12) -> None:
+    picked = select_branches(resolved, top_n=top_n)
+    rows = []
+    for b in picked:
+        pts = _valid_sheet_points(b)
+        if not pts:
+            continue
+        g = [float(p["gamma"]) for p in pts]
+        re = [float(p["Phi_eff_real"]) for p in pts]
+        rows.append(
+            {
+                "branch_id": b["branch_id"],
+                "label": b.get("label"),
+                "is_seed_sheet": bool(b.get("is_seed_sheet")),
+                "n": len(pts),
+                "gamma_min": min(g),
+                "gamma_max": max(g),
+                "re_min": min(re),
+                "re_max": max(re),
+                "re_end": re[0] if g[0] >= g[-1] else re[-1],
+            }
+        )
+    out_path.write_text(json.dumps({"top_branches": rows}, indent=2), encoding="utf-8")
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description="Readable Re(Phi_M) sheet plots from z_robust_full")
+    p.add_argument("--dir", type=str, default=str(DEFAULT_DIR))
+    p.add_argument("--top-n", type=int, default=10)
+    p.add_argument("--dpi", type=int, default=160)
+    p.add_argument("--re-lo", type=float, default=DEFAULT_RE_PHYS_LO)
+    p.add_argument("--re-hi", type=float, default=DEFAULT_RE_PHYS_HI)
+    args = p.parse_args()
+
+    d = Path(args.dir)
+    resolved_path = d / "resolved_robust_z.json"
+    sweep_path = d / "competitors_robust_z.json"
+    if not resolved_path.is_file():
+        raise SystemExit(f"missing {resolved_path}")
+
+    resolved = _load(resolved_path)
+    write_summary(resolved, d / "re_phi_top_sheets_summary.json", top_n=args.top_n)
+
+    outs = [
+        plot_tracked_re_sheets(
+            resolved, d / "re_phi_tracked_sheets.png", top_n=args.top_n, dpi=args.dpi
+        ),
+        plot_re_zoom_wall(resolved, d / "re_phi_wall_zoom.png", top_n=8, dpi=args.dpi),
+    ]
+    if sweep_path.is_file():
+        sweep = _load(sweep_path)
+        re_kw = {"re_lo": args.re_lo, "re_hi": args.re_hi, "dpi": args.dpi}
+        outs.extend(
+            [
+                plot_sweep_re_envelope(sweep, d / "re_phi_sweep_envelope.png", **re_kw),
+                plot_sweep_re_scatter(sweep, d / "re_phi_sweep_scatter.png", **re_kw),
+                plot_sweep_re_scatter_by_branch_id(
+                    sweep,
+                    resolved,
+                    d / "re_phi_sweep_scatter_by_branch.png",
+                    **re_kw,
+                ),
+                plot_sweep_outliers_per_gamma(sweep, d / "re_phi_sweep_outliers.png", **re_kw),
+            ]
+        )
+
+    for o in outs:
+        print(f"Wrote {o}")
+
+
+if __name__ == "__main__":
+    main()

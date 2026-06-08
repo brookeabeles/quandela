@@ -34,8 +34,8 @@ from phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified import (
     step_from_previous_z,
 )
 from phasecraft.bm24_saddle_audit_p1.audit import AUDIT_DIR, _x_to_z
-from phasecraft.krawczyk_p1_roots import SaddleSystem
-from phasecraft.picard_lefschetz import compute_phi
+from phasecraft.lib.saddles.krawczyk_p1_roots import SaddleSystem
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi
 from phasecraft.w_saddle.workflow import unwrap_im_branch
 
 DEFAULT_MAX_RE_JSON = (

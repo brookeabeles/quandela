@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import phasecraft.krawczyk_p1_roots as base
+import phasecraft.lib.saddles.krawczyk_p1_roots as base
 
 _PATCHED_PATH = (
     Path(__file__).resolve().parent.parent.parent

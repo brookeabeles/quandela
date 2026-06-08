@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from phasecraft.certificate_language import (
+from phasecraft.lib.certificates.certificate_language import (
     ALLOWED_GAMMA_CONVENTIONS,
     CERTIFICATE_TYPE_BRANCH_RESOLVED,
     CERTIFICATE_TYPE_DISCRETE,

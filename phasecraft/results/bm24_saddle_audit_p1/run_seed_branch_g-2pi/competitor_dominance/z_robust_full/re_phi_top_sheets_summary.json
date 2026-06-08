@@ -1,0 +1,125 @@
+{
+  "top_branches": [
+    {
+      "branch_id": 24,
+      "label": "branch 24 (seed sheet)",
+      "is_seed_sheet": true,
+      "n": 274,
+      "gamma_min": -6.259999999999911,
+      "gamma_max": -0.7600000000000005,
+      "re_min": -0.902653000697148,
+      "re_max": 0.2341005452236118,
+      "re_end": -0.1012693442690038
+    },
+    {
+      "branch_id": 180,
+      "label": "branch 180 Re~1.368 (~branch 166)",
+      "is_seed_sheet": false,
+      "n": 14,
+      "gamma_min": -6.079999999999915,
+      "gamma_max": -3.9099999999999606,
+      "re_min": -1.0416148493121717,
+      "re_max": 0.9395966530711028,
+      "re_end": 0.9395966530711028
+    },
+    {
+      "branch_id": 47,
+      "label": "branch 47 Re~-1.890",
+      "is_seed_sheet": false,
+      "n": 149,
+      "gamma_min": -4.529999999999948,
+      "gamma_max": -0.46000000000000024,
+      "re_min": -1.9781525201349908,
+      "re_max": 0.8862260799072352,
+      "re_end": -1.889720239355958
+    },
+    {
+      "branch_id": 0,
+      "label": "branch 0 Re~0.004",
+      "is_seed_sheet": false,
+      "n": 147,
+      "gamma_min": -3.989999999999959,
+      "gamma_max": -0.02,
+      "re_min": -1.7931203345293234,
+      "re_max": 0.8429805924944187,
+      "re_end": 0.00879407995215481
+    },
+    {
+      "branch_id": 204,
+      "label": "branch 204 Re~1.503",
+      "is_seed_sheet": false,
+      "n": 90,
+      "gamma_min": -6.283185307179586,
+      "gamma_max": -3.0799999999999783,
+      "re_min": -1.9703471173308493,
+      "re_max": 0.8169352635405769,
+      "re_end": 0.8169352635405769
+    },
+    {
+      "branch_id": 150,
+      "label": "branch 150 Re~1.909",
+      "is_seed_sheet": false,
+      "n": 42,
+      "gamma_min": -5.989999999999917,
+      "gamma_max": -3.3099999999999734,
+      "re_min": -0.33643383552816797,
+      "re_max": 0.809057984571429,
+      "re_end": 0.7304210266189308
+    },
+    {
+      "branch_id": 197,
+      "label": "branch 197 Re~1.658",
+      "is_seed_sheet": false,
+      "n": 129,
+      "gamma_min": -6.229999999999912,
+      "gamma_max": -3.6899999999999653,
+      "re_min": -1.0427649139342101,
+      "re_max": 0.7539667246766122,
+      "re_end": 0.7539667246766122
+    },
+    {
+      "branch_id": 7,
+      "label": "branch 7 Re~-1.324",
+      "is_seed_sheet": false,
+      "n": 67,
+      "gamma_min": -3.2999999999999736,
+      "gamma_max": -0.21000000000000005,
+      "re_min": -1.9845592794613403,
+      "re_max": 0.7525773967406284,
+      "re_end": -1.3237366576372622
+    },
+    {
+      "branch_id": 210,
+      "label": "branch 210 Re~0.718",
+      "is_seed_sheet": false,
+      "n": 13,
+      "gamma_min": -5.919999999999918,
+      "gamma_max": -3.6899999999999653,
+      "re_min": -1.9916020760097908,
+      "re_max": 0.7177382123368643,
+      "re_end": 0.7177382123368643
+    },
+    {
+      "branch_id": 193,
+      "label": "branch 193 Re~0.673",
+      "is_seed_sheet": false,
+      "n": 35,
+      "gamma_min": -6.259999999999911,
+      "gamma_max": -3.619999999999967,
+      "re_min": -1.0577803683896896,
+      "re_max": 0.6726178619956644,
+      "re_end": 0.6726178619956644
+    },
+    {
+      "branch_id": 188,
+      "label": "branch 188 Re~0.654 (~branch 109)",
+      "is_seed_sheet": false,
+      "n": 13,
+      "gamma_min": -4.249999999999954,
+      "gamma_max": -3.5399999999999685,
+      "re_min": -1.9050242600431524,
+      "re_max": 0.654263651658539,
+      "re_end": 0.654263651658539
+    }
+  ]
+}

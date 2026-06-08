@@ -1,0 +1,10 @@
+{
+  "branch_id": 43,
+  "n_points": 220,
+  "im_principal_abs_median": 1.0351070293734708e-15,
+  "im_principal_abs_max": 5.119131663712937,
+  "frac_im_principal_abs_lt_0.1": 0.9545454545454546,
+  "frac_im_principal_abs_lt_0.5": 0.990909090909091,
+  "im_reunwrap_ok": false,
+  "unwrap_note": "Small |Im| would favor cos(n Im) ~ 1 at large n; O(1) Im suppresses via oscillatory cos factor."
+}

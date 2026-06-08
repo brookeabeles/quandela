@@ -40,7 +40,7 @@ from phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified import (
     selected_competitor_gammas,
     _style_gamma_axis_reading_zero_to_negative,
 )
-from phasecraft.picard_lefschetz import compute_phi
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi
 
 DEFAULT_RESULTS_ROOT = PHASECRAFT_ROOT / "results" / "bm24_saddle_audit_p1"
 DEFAULT_SEED_BRANCH = DEFAULT_RESULTS_ROOT / "run_seed_branch_g-2pi"

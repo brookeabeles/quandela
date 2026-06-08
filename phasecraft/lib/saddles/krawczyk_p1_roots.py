@@ -45,7 +45,7 @@ B = _PATCHED_MOD.B
 parent_function_alpha_sum_sos = _PATCHED_MOD.parent_function_alpha_sum_sos
 parent_function_s_sum_sos = _PATCHED_MOD.parent_function_s_sum_sos
 
-from phasecraft.optimal_angles import optimal_angles
+from phasecraft.lib.angles.optimal_angles import optimal_angles
 
 
 @dataclass

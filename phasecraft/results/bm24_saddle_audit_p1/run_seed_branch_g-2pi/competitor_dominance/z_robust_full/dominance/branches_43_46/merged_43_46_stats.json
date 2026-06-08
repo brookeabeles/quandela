@@ -1,0 +1,99 @@
+{
+  "branch_ids": [
+    43,
+    46
+  ],
+  "n_pairs": 170,
+  "n43": 220,
+  "n46": 231,
+  "z_dist_inf": {
+    "median": 11.303683995614016,
+    "p95": 14.857643471010128,
+    "max": 28.1804709542351
+  },
+  "delta_re": {
+    "max_abs": 0.22870615402785574,
+    "median": 1.794527476663002e-09
+  },
+  "delta_im": {
+    "max_abs": 5.1191316637129365
+  },
+  "w_close_fraction": 0.0,
+  "re_close_fraction": 1.0,
+  "im_opposite_fraction": 0.9882352941176471,
+  "continuity_z_step": {
+    "branch_43": {
+      "median": 0.06963502283184365,
+      "max": 23.377888548671745,
+      "p95": 0.4788346215349147
+    },
+    "branch_46": {
+      "median": 0.0664072837143398,
+      "max": 0.8217637391673875,
+      "p95": 0.21421347071149885
+    }
+  },
+  "same_analytic_z_sheet": false,
+  "same_re_action_sheet": true,
+  "recommend_merge_z_sheet": false,
+  "recommend_merge_re_envelope_only": true,
+  "verdict": "Different z-roots, nearly degenerate Re action \u2014 merge only for Re envelope / finite-n plot",
+  "pairs_sample": [
+    {
+      "gamma": -1.260000000000001,
+      "gamma_46": -1.270000000000001,
+      "z_dist_inf": 7.583887525423425,
+      "z_close": false,
+      "d_re": -0.0008412660932513027,
+      "d_im": -0.314287827343954,
+      "im_opposite_pair": true,
+      "max_comp_abs_diff": 7.583887525423425
+    },
+    {
+      "gamma": -1.5700000000000012,
+      "gamma_46": -1.5600000000000012,
+      "z_dist_inf": 6.120342169226763,
+      "z_close": false,
+      "d_re": 0.0014284992530124718,
+      "d_im": -0.08936800940756906,
+      "im_opposite_pair": true,
+      "max_comp_abs_diff": 6.120342169226764
+    },
+    {
+      "gamma": -1.7200000000000013,
+      "gamma_46": -1.7100000000000013,
+      "z_dist_inf": 4.889117010980938,
+      "z_close": false,
+      "d_re": 0.0017455169223423717,
+      "d_im": -0.023216885611105464,
+      "im_opposite_pair": true,
+      "max_comp_abs_diff": 4.889117010980938
+    },
+    {
+      "gamma": -1.7300000000000013,
+      "gamma_46": -1.7400000000000013,
+      "z_dist_inf": 4.651426020449845,
+      "z_close": false,
+      "d_re": -0.0017905495860162102,
+      "d_im": -0.016961713338425666,
+      "im_opposite_pair": true,
+      "max_comp_abs_diff": 4.651426020449844
+    },
+    {
+      "gamma": -1.7600000000000013,
+      "gamma_46": -1.7700000000000014,
+      "z_dist_inf": 4.219979340522236,
+      "z_close": false,
+      "d_re": -0.0018609269111649063,
+      "d_im": -0.008947343588754375,
+      "im_opposite_pair": true,
+      "max_comp_abs_diff": 4.219979340522236
+    }
+  ],
+  "model_stats": {
+    "rmse_seed": 1.174865228750075,
+    "mae_seed": 0.9995396589223386,
+    "rmse_merged_43_46": 0.018573319065826713,
+    "mae_merged_43_46": 0.004677153513084391
+  }
+}
