@@ -1,6 +1,21 @@
 """
-train_lr_notebook_protocol.py
-==============================
+train_lr_notebook_protocol_legacy.py  (single-n median-p objective — superseded)
+==================================================================================
+
+.. deprecated::
+    Use ``train_lr_fixed_n.py`` instead.  The clean replacement for this file is:
+
+        train_angles_fixed_n("median_runtime_fixed_n", train_n, depth, instances, ...)
+
+    which minimises median(1/(p_succ+eps)) at a single fixed train_n using the
+    same BM24 simulator conventions.  Note: this legacy file maximised *median*
+    p_succ; the OG archived notebook used *mean* p_succ — use
+    "bm24_mean_p_fixed_n" in ``train_lr_fixed_n`` to reproduce that behaviour.
+
+    This file is kept as a reference but is not used by the notebook.
+
+Original module docstring
+-------------------------
 
 Re-implements the **LR-QAOA training protocol** from
 ``Final  LR QAOA vs QAOA vs walksat (1).ipynb`` (grid over ``(dg, db)`` +

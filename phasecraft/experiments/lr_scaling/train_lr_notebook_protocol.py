@@ -1,6 +1,23 @@
 """
-train_lr_notebook_protocol.py  (v3 training objective)
-======================================================
+train_lr_notebook_protocol.py  — ARCHIVED
+==========================================
+
+.. deprecated::
+    This file is fully superseded and no longer imported by the notebook.
+    All notebook imports now come from ``train_lr_fixed_n.py``, which provides:
+
+        train_angles_fixed_n(...)             — training function
+        eval_median_runtime_reject(...)       — eval regression guard
+        run_train_eval_with_retries(...)      — train+eval loop with retries
+        DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR
+        DEFAULT_EVAL_TRAIN_RETRIES
+        SUPPORTED_TRAINING_MODES
+
+    Do not import from this file in new code.
+    Retained for reference only.
+
+Original module docstring
+-------------------------
 
 LR-QAOA training pipeline that trains ``(delta_gamma, delta_beta)`` by
 minimizing the slope of **mean over instances of log(1/p_succ)** vs ``n``.
