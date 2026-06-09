@@ -12,8 +12,13 @@ median(1/p_succ) vs n across n_min..n_max (same metric as the notebook).
 
 Usage (from repo root or lr_scaling dir):
     python experiments/lr_scaling/compare_objectives_fixed_n.py
-    python experiments/lr_scaling/compare_objectives_fixed_n.py \
-        --depths 2,5,10,20 --train-size 50 --test-size 100
+    python experiments/lr_scaling/compare_objectives_fixed_n.py \\
+        --train-n 14 --train-size 30 --test-size 50 --n-min 14 --n-max 17 \\
+        --depths 2,5,10,15
+
+Outputs (default): ``bm24_runs/MM-DD/runN/{stem}.json`` and ``.png`` where
+``stem`` is like ``06-09_1723-train14-tr30-te50-n14-17`` (time + key params).
+Replot: ``--from-json path/to/run.json``
 """
 
 from __future__ import annotations
@@ -38,6 +43,12 @@ for _p in (_REPO, _PHASECRAFT, _LR_SCALING):
         sys.path.insert(0, str(_p))
 
 from phasecraft.lib.paths import bm24_runs_dir  # noqa: E402
+from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
+    apply_matplotlib_title,
+    format_benchmark_title,
+    make_run_stem,
+    resolve_bm24_run_output_paths,
+)
 from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     build_h_diagonal,
     generate_random_clause,
@@ -55,6 +66,14 @@ from train_lr_fixed_n import (  # noqa: E402
 )
 
 LN2 = float(np.log(2.0))
+
+
+def make_objective_comparison_kind(cfg: dict) -> str:
+    """Kind tag for run stem: encodes train/eval sizes and n range."""
+    return (
+        f"train{int(cfg['train_n'])}-tr{int(cfg['train_size'])}"
+        f"-te{int(cfg['test_size'])}-n{int(cfg['n_min'])}-{int(cfg['n_max'])}"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -128,6 +147,80 @@ def fit_log2_slope(n_values: List[int], y_values: List[float]) -> float:
         return float("nan")
     slope_nat = linregress(n_arr[mask], np.log(y_arr[mask])).slope
     return float(slope_nat / LN2)
+
+
+def plot_objective_comparison(
+    *,
+    trace_mean: List[dict],
+    trace_median: List[dict],
+    n_values: List[int],
+    depths: List[int],
+    cfg: dict,
+    walksat_log2_slope: float,
+    output_path: Path,
+) -> None:
+    """Single slope-vs-depth panel (no secondary delta or scaling gauge)."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    for trace, label, style in [
+        (trace_mean, "bm24_mean_p_fixed_n", "o-"),
+        (trace_median, "median_runtime_fixed_n", "s--"),
+    ]:
+        ps = [r["depth"] for r in trace]
+        ys = [r["lr_log2_slope"] for r in trace]
+        ax.plot(ps, ys, style, label=label, linewidth=2, markersize=7)
+        for r in trace:
+            if r.get("used_previous_angles") or r.get("eval_rejected"):
+                ax.plot(
+                    r["depth"],
+                    r["lr_log2_slope"],
+                    "x",
+                    color=ax.lines[-1].get_color(),
+                    markersize=11,
+                    markeredgewidth=2,
+                    linestyle="none",
+                )
+    if np.isfinite(walksat_log2_slope):
+        ax.axhline(
+            walksat_log2_slope,
+            color="C2",
+            linestyle=":",
+            linewidth=1.5,
+            label=f"WalkSAT ({walksat_log2_slope:.3f})",
+        )
+    ax.set_xlabel("QAOA depth p")
+    ax.set_ylabel(r"Eval: $\log_2$ slope of median(1/p_succ) vs n")
+    title = format_benchmark_title(
+        cfg,
+        headline="LR objective A/B · mean_p vs median_rt @ train_n",
+        depths=depths,
+    )
+    apply_matplotlib_title(ax, f"{title}\n× = prior angles used", fig=fig)
+    ax.legend(loc="upper right", fontsize=8)
+    ax.grid(True, alpha=0.3)
+    ax.set_xticks(depths)
+
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def replot_from_json(json_path: Path, output_path: Path | None = None) -> Path:
+    with open(json_path, encoding="utf-8") as f:
+        payload = json.load(f)
+    cfg = payload["config"]
+    n_values = [int(n) for n in payload["n_values"]]
+    depths = [int(d) for d in payload["depths"]]
+    out = output_path or json_path.with_suffix(".png")
+    plot_objective_comparison(
+        trace_mean=payload["trace_bm24_mean_p_fixed_n"],
+        trace_median=payload["trace_median_runtime_fixed_n"],
+        n_values=n_values,
+        depths=depths,
+        cfg=cfg,
+        walksat_log2_slope=float(payload.get("walksat_log2_slope", float("nan"))),
+        output_path=out,
+    )
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -342,7 +435,30 @@ def main() -> None:
     ap.add_argument("--eval-train-retries", type=int, default=3)
     ap.add_argument("--output-dir", type=Path, default=None)
     ap.add_argument("--output-stem", default=None)
+    ap.add_argument(
+        "--from-json",
+        type=Path,
+        default=None,
+        help="Replot PNG from a saved JSON (no re-run).",
+    )
     args = ap.parse_args()
+
+    if args.from_json is not None:
+        json_path = Path(args.from_json).expanduser().resolve()
+        if args.output_dir is not None:
+            out_dir = Path(args.output_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            stem = args.output_stem or json_path.stem
+            png_path = out_dir / f"{stem}.png"
+        else:
+            png_path = (
+                json_path.parent / f"{args.output_stem}.png"
+                if args.output_stem
+                else json_path.with_suffix(".png")
+            )
+        replot_from_json(json_path, png_path)
+        print(f"Wrote {png_path}")
+        return
 
     depths = [int(x) for x in args.depths.split(",") if x.strip()]
     n_values = list(range(args.n_min, args.n_max + 1))
@@ -368,14 +484,15 @@ def main() -> None:
         "max_flips": 100_000,
     }
 
-    out_dir = args.output_dir or (bm24_runs_dir() / "objective_comparison")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = time.strftime("%m-%d_%H-%M-%S")
-    stem = args.output_stem or f"obj-compare-{timestamp}"
-    json_path = out_dir / f"{stem}.json"
-    png_path = out_dir / f"{stem}.png"
+    out_dir = args.output_dir or bm24_runs_dir()
+    run_stem = args.output_stem or make_run_stem(make_objective_comparison_kind(cfg))
+    run_paths = resolve_bm24_run_output_paths(out_dir, run_stem)
+    json_path = run_paths["json"]
+    png_path = run_paths["png"]
+    run_dir = run_paths["run_dir"]
 
-    print(f"Output: {out_dir}")
+    print(f"Output: {run_dir}")
+    print(f"Stem:   {run_stem}")
     print(f"Config: k={args.k} r={args.r} seed={args.seed} train_n={args.train_n} "
           f"train_size={args.train_size} n=[{args.n_min},{args.n_max}] "
           f"test_size={args.test_size}")
@@ -423,9 +540,11 @@ def main() -> None:
     # Fit from a short walksat run; if numba unavailable, leave as NaN.
     ws_slope = float("nan")
 
-    # --- Save JSON ---
+    # --- Save JSON (re-mkdir: output tree may disappear on long runs) ---
+    run_dir.mkdir(parents=True, exist_ok=True)
     payload = {
-        "stem": stem,
+        "stem": run_stem,
+        "run_dir": str(run_dir),
         "config": {k: (str(v) if isinstance(v, Path) else v) for k, v in cfg.items()},
         "depths": depths,
         "n_values": n_values,
@@ -438,53 +557,18 @@ def main() -> None:
         json.dump(payload, f, indent=2)
     print(f"\nWrote {json_path}")
 
-    # --- Plot ---
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-    # Left: log2 slope vs depth
-    ax = axes[0]
-    for trace, label, style in [
-        (trace_mean, "bm24_mean_p_fixed_n\n(maximize mean p_succ)", "o-"),
-        (trace_median, "median_runtime_fixed_n\n(minimize median 1/p)", "s--"),
-    ]:
-        ps = [r["depth"] for r in trace]
-        ys = [r["lr_log2_slope"] for r in trace]
-        ax.plot(ps, ys, style, label=label, linewidth=2, markersize=7)
-        for r in trace:
-            if r.get("used_previous_angles") or r.get("eval_rejected"):
-                ax.plot(r["depth"], r["lr_log2_slope"], "x",
-                        color=ax.lines[-1].get_color(), markersize=11, markeredgewidth=2,
-                        linestyle="none")
-    ax.set_xlabel("QAOA depth p")
-    ax.set_ylabel(r"Eval: $\log_2$ slope of median(1/p_succ) vs n")
-    ax.set_title(
-        f"Training objective comparison\n"
-        f"k={args.k} seed={args.seed} train_n={args.train_n} "
-        f"train_size={args.train_size} test_size={args.test_size} "
-        f"n∈[{args.n_min},{args.n_max}]\n"
-        "× = prior angles used"
-    )
-    ax.legend(loc="upper right", fontsize=8)
-    ax.grid(True, alpha=0.3)
-
-    # Right: Δ slope (median - mean) per depth
-    ax2 = axes[1]
-    shared_depths = [r["depth"] for r in trace_mean
-                     if any(r2["depth"] == r["depth"] for r2 in trace_median)]
     mean_by_d = {r["depth"]: r["lr_log2_slope"] for r in trace_mean}
     med_by_d = {r["depth"]: r["lr_log2_slope"] for r in trace_median}
-    deltas = [med_by_d[d] - mean_by_d[d] for d in shared_depths]
-    colors = ["C3" if d > 0 else "C2" for d in deltas]
-    ax2.bar(shared_depths, deltas, color=colors, alpha=0.7, width=0.7)
-    ax2.axhline(0, color="k", linewidth=0.8)
-    ax2.set_xlabel("QAOA depth p")
-    ax2.set_ylabel("Δ log₂ slope (median_train − mean_train)")
-    ax2.set_title("Difference: positive = mean_train wins\n(negative = median_train wins)")
-    ax2.grid(True, alpha=0.3, axis="y")
 
-    fig.tight_layout()
-    fig.savefig(png_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    plot_objective_comparison(
+        trace_mean=trace_mean,
+        trace_median=trace_median,
+        n_values=n_values,
+        depths=depths,
+        cfg=cfg,
+        walksat_log2_slope=ws_slope,
+        output_path=png_path,
+    )
     print(f"Wrote {png_path}")
 
     # --- Text summary ---

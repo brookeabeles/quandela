@@ -1488,7 +1488,10 @@ def plot_benchmark_comparison(
     equiv_flips_per_shot: float = 1.0,
 ) -> dict:
     """
-    Save a two-panel PNG comparing LR-QAOA vs WalkSAT / WalkSATlm.
+    Save a single-panel PNG of LR-QAOA success probability vs problem size n.
+
+    WalkSAT / WalkSATlm costs are still used internally for the win-at-n summary;
+    scaling slopes are included in the returned dict but not plotted.
 
     "LR beats classical at n" uses a tunable cost model (not a theorem):
         qaoa_cost(n) = median_runtime(n) * equiv_flips_per_shot
@@ -1536,9 +1539,13 @@ def plot_benchmark_comparison(
         lm_flips = None
         lr_beats_lm = None
 
+    import matplotlib.ticker as mticker
+
     s = res.get("settings", {})
     depth = s.get("depth", "?")
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+    scaling = summarize_benchmark_scaling(res)
+
+    fig, ax = plt.subplots(figsize=(6.8, 4.5))
     apply_figure_suptitle(
         fig,
         format_benchmark_title(
@@ -1557,36 +1564,41 @@ def plot_benchmark_comparison(
         fontsize=9,
     )
 
-    ax = axes[0]
-    ax.semilogy(ns, mean_succ, "o-", label="mean p_succ")
-    ax.semilogy(ns, med_succ, "s--", label="median p_succ")
-    ax.set_xlabel("n")
+    ax.semilogy(ns, mean_succ, "o-", label="mean $p_{\\mathrm{succ}}$")
+    ax.semilogy(ns, med_succ, "s--", label="median $p_{\\mathrm{succ}}$")
+    ax.set_xlabel("problem size $n$")
     ax.set_ylabel("success probability")
-    ax.set_title("LR-QAOA success (same dataset)")
-    ax.legend(loc="best", fontsize=8)
-    ax.grid(True, which="both", alpha=0.3)
+    ax.set_title("LR QAOA success probability")
+    ax.set_xticks(ns)
+    ax.set_xticklabels([str(n) for n in ns])
 
-    scaling = summarize_benchmark_scaling(res)
-
-    ax = axes[1]
-    ax.semilogy(ns, med_rt, "o-", color="C0", label="LR median 1/p")
-    ax.semilogy(ns, ws_flips, "s-", color="C1", label="WalkSAT median flips")
-    if lm_flips is not None:
-        ax.semilogy(ns, lm_flips, "^--", color="C2", label="WalkSATlm median flips")
-    ax.set_xlabel("n")
-    ax.set_ylabel("cost (flips or 1/p)")
-    lr_b2 = scaling["lr_qaoa"]["median_runtime_slope_log2"]
-    ws_b2 = scaling["walksat"]["median_flips_slope_log2"]
-    ax.set_title(
-        f"Scaling costs (log2 slope: LR={lr_b2:.3f}, WS={ws_b2:.3f})"
-        + (
-            f", LM={scaling['walksatlm']['median_flips_slope_log2']:.3f}"
-            if lm_flips is not None
-            else ""
+    all_succ = mean_succ + med_succ
+    lo, hi = float(min(all_succ)), float(max(all_succ))
+    y_candidates = [
+        0.005, 0.007, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05,
+        0.06, 0.07, 0.08, 0.09, 0.10, 0.12, 0.15, 0.20,
+    ]
+    y_margin_lo = lo * 0.8
+    y_margin_hi = hi * 1.25
+    yticks = [t for t in y_candidates if y_margin_lo <= t <= y_margin_hi]
+    if len(yticks) < 3:
+        exp_lo = int(np.floor(np.log10(lo)))
+        exp_hi = int(np.ceil(np.log10(hi)))
+        yticks = [10.0 ** e for e in range(exp_lo, exp_hi + 1)]
+    ax.set_yticks(yticks)
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(
+            lambda y, _pos: f"{y:.3f}".rstrip("0").rstrip(".")
+            if y >= 0.01
+            else f"{y:.0e}"
         )
     )
-    ax.legend(loc="best", fontsize=7)
-    ax.grid(True, which="both", alpha=0.3)
+    ax.set_ylim(bottom=y_margin_lo, top=y_margin_hi)
+
+    ax.legend(loc="best", fontsize=9)
+    ax.grid(True, which="major", alpha=0.35)
+    ax.grid(True, which="minor", alpha=0.15)
+    ax.yaxis.set_minor_locator(mticker.LogLocator(base=10, subs=np.arange(2, 10)))
 
     output_path = Path(output_path).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
