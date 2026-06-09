@@ -8,6 +8,7 @@ env/
 
 # Data / outputs
 figures/
+results/
 plots/
 logs/
 *.log

@@ -460,6 +460,7 @@ def main() -> None:
     ax.set_title(
         f"Training objective comparison\n"
         f"k={args.k} seed={args.seed} train_n={args.train_n} "
+        f"train_size={args.train_size} test_size={args.test_size} "
         f"n∈[{args.n_min},{args.n_max}]\n"
         "× = prior angles used"
     )
