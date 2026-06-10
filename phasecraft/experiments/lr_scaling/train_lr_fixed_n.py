@@ -1,15 +1,19 @@
 """
 train_lr_fixed_n.py
 ===================
-Two clean fixed-n LR-QAOA training modes:
+Three clean fixed-n LR-QAOA training modes:
 
-  "bm24_mean_p_fixed_n"    — maximize mean(p_succ) at train_n.
-                             BM24 baseline / faithful reproduction.
-                             Objective: minimize -mean_{sigma}(p_succ(sigma; beta, gamma))
+  "bm24_mean_p_fixed_n"       — maximize mean(p_succ) at train_n.
+                                BM24 baseline / faithful reproduction.
+                                Objective: minimize -mean_{sigma}(p_succ(sigma; beta, gamma))
 
-  "median_runtime_fixed_n" — minimize median(1/(p_succ + eps)) at train_n.
-                             Robust runtime objective at a single fixed n.
-                             Objective: minimize median_{sigma}(1 / (p_succ(sigma) + eps))
+  "median_runtime_fixed_n"    — minimize median(1/(p_succ + eps)) at train_n.
+                                Robust runtime objective at a single fixed n.
+                                Objective: minimize median_{sigma}(1 / (p_succ(sigma) + eps))
+
+  "mean_log_runtime_fixed_n"  — minimize mean(ln(1/(p_succ + eps))) at train_n.
+                                Smoother than median runtime; less spike-sensitive.
+                                Objective: minimize mean_{sigma}(ln(1 / (p_succ(sigma) + eps)))
 
 Training rule: ONE fixed n only. Evaluation of scaling slope across n is done
 externally (in the notebook / benchmark code) and must run AFTER training.
@@ -81,7 +85,11 @@ except Exception:  # pragma: no cover
 # Constants                                                                    #
 # --------------------------------------------------------------------------- #
 
-SUPPORTED_TRAINING_MODES = frozenset({"bm24_mean_p_fixed_n", "median_runtime_fixed_n"})
+SUPPORTED_TRAINING_MODES = frozenset({
+    "bm24_mean_p_fixed_n",
+    "median_runtime_fixed_n",
+    "mean_log_runtime_fixed_n",
+})
 
 DEFAULT_DG_BOUNDS: Tuple[float, float] = _DG
 DEFAULT_DB_BOUNDS: Tuple[float, float] = _DB
@@ -95,6 +103,14 @@ DEFAULT_EVAL_TRAIN_RETRIES: int = 3
 _OBJECTIVE_LABELS = {
     "bm24_mean_p_fixed_n": "maximize mean(p_succ) at fixed train_n",
     "median_runtime_fixed_n": "minimize median(1/(p_succ+eps)) at fixed train_n",
+    "mean_log_runtime_fixed_n": "minimize mean(ln(1/(p_succ+eps))) at fixed train_n",
+}
+
+# Per-mode COBYLA RNG stream offsets (compare script / retries).
+MODE_RNG_OFFSET: Dict[str, int] = {
+    "bm24_mean_p_fixed_n": 0,
+    "median_runtime_fixed_n": 99_999,
+    "mean_log_runtime_fixed_n": 199_998,
 }
 
 
@@ -150,8 +166,8 @@ def _compute_objective(
     "bm24_mean_p_fixed_n":    returns -mean(p_succ) over instances.
                                Maximizing mean p_succ <=> minimizing this.
 
-    "median_runtime_fixed_n": returns median(1/(p_succ+eps)) over instances.
-                               Minimizing expected flips ~ minimizing this.
+    "median_runtime_fixed_n":    returns median(1/(p_succ+eps)) over instances.
+    "mean_log_runtime_fixed_n":  returns mean(ln(1/(p_succ+eps))) over instances.
     """
     if not instances:
         return float("nan")
@@ -161,13 +177,20 @@ def _compute_objective(
             psi = run_qaoa(h, betas, gammas, int(n))
             total += float(per_instance_success_probability(psi, h))
         return -(total / len(instances))
-    elif training_mode == "median_runtime_fixed_n":
+    if training_mode == "median_runtime_fixed_n":
         costs = np.empty(len(instances), dtype=np.float64)
         for i, h in enumerate(instances):
             psi = run_qaoa(h, betas, gammas, int(n))
             p = float(per_instance_success_probability(psi, h))
             costs[i] = 1.0 / max(p, float(eps))
         return float(np.median(costs))
+    if training_mode == "mean_log_runtime_fixed_n":
+        total = 0.0
+        for h in instances:
+            psi = run_qaoa(h, betas, gammas, int(n))
+            p = float(per_instance_success_probability(psi, h))
+            total += float(np.log(1.0 / max(p, float(eps))))
+        return total / len(instances)
     else:
         raise ValueError(
             f"Unknown training_mode {training_mode!r}. "
@@ -278,8 +301,9 @@ def train_angles_fixed_n(
     Train LR-QAOA (delta_gamma, delta_beta) at a single fixed train_n.
 
     training_mode must be one of SUPPORTED_TRAINING_MODES:
-      "bm24_mean_p_fixed_n"    — maximize mean p_succ (BM24 baseline).
-      "median_runtime_fixed_n" — minimize median(1/(p_succ+eps)).
+      "bm24_mean_p_fixed_n"       — maximize mean p_succ (BM24 baseline).
+      "median_runtime_fixed_n"    — minimize median(1/(p_succ+eps)).
+      "mean_log_runtime_fixed_n"  — minimize mean(ln(1/(p_succ+eps))).
 
     Optimizer: optional 11x11 grid scan + multi-restart COBYLA with
     anti-regression and collapse guards.
@@ -643,8 +667,9 @@ def verify_objectives(n: int = 4, depth: int = 1, seed: int = 42) -> None:
     Checks:
     1. bm24_mean_p_fixed_n objective == -mean(p_succ) over instances.
     2. median_runtime_fixed_n objective == median(1/(p_succ+eps)) over instances.
-    3. train_angles_fixed_n always sets uses_multi_n_training=False.
-    4. train_angles_fixed_n always sets eval_slope_only=True.
+    3. mean_log_runtime_fixed_n objective == mean(ln(1/(p_succ+eps))) over instances.
+    4. train_angles_fixed_n always sets uses_multi_n_training=False.
+    5. train_angles_fixed_n always sets eval_slope_only=True.
     """
     rng = np.random.default_rng(seed)
     k, r = 2, 2.0
@@ -673,7 +698,16 @@ def verify_objectives(n: int = 4, depth: int = 1, seed: int = 42) -> None:
         f"median_runtime_fixed_n: got {obj_med:.12g}, expected {expected_med:.12g}"
     )
 
-    # Check 3 & 4: diag flags
+    # Check 3: mean_log_runtime_fixed_n = ln(1/(p+eps))  (single instance)
+    obj_mlog = _compute_objective(
+        "mean_log_runtime_fixed_n", instances, n, betas, gammas, eps=eps,
+    )
+    expected_mlog = float(np.log(1.0 / max(p, eps)))
+    assert abs(obj_mlog - expected_mlog) < 1e-10, (
+        f"mean_log_runtime_fixed_n: got {obj_mlog:.12g}, expected {expected_mlog:.12g}"
+    )
+
+    # Check 4 & 5: diag flags
     _, diag = train_angles_fixed_n(
         "bm24_mean_p_fixed_n", n, depth, instances,
         skip_grid=True, cobyla_restarts=1, cobyla_maxiter=5, verbose=False,
@@ -685,7 +719,7 @@ def verify_objectives(n: int = 4, depth: int = 1, seed: int = 42) -> None:
         f"eval_slope_only should be True, got {diag['eval_slope_only']}"
     )
 
-    print("verify_objectives: all 4 checks passed.")
+    print("verify_objectives: all 5 checks passed.")
 
 
 if __name__ == "__main__":

@@ -4,10 +4,11 @@ compare_objectives_fixed_n.py
 ==============================
 A/B comparison of the two training modes in train_lr_fixed_n.py:
 
-  "bm24_mean_p_fixed_n"    — maximize mean(p_succ)            [BM24 baseline]
-  "median_runtime_fixed_n" — minimize median(1/(p_succ+eps))  [robust runtime]
+  "bm24_mean_p_fixed_n"       — maximize mean(p_succ)               [BM24 baseline]
+  "median_runtime_fixed_n"    — minimize median(1/(p_succ+eps))     [robust runtime]
+  "mean_log_runtime_fixed_n"  — minimize mean(ln(1/(p_succ+eps)))    [smoother runtime]
 
-Both modes train at a single fixed train_n; evaluation is the log2 slope of
+All modes train at a single fixed train_n; evaluation is the log2 slope of
 median(1/p_succ) vs n across n_min..n_max (same metric as the notebook).
 
 Usage (from repo root or lr_scaling dir):
@@ -59,6 +60,8 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
 from train_lr_fixed_n import (  # noqa: E402
     DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
     DEFAULT_EVAL_TRAIN_RETRIES,
+    MODE_RNG_OFFSET,
+    SUPPORTED_TRAINING_MODES,
     eval_median_runtime_reject,
     generate_training_instances,
     run_train_eval_with_retries,
@@ -66,6 +69,30 @@ from train_lr_fixed_n import (  # noqa: E402
 )
 
 LN2 = float(np.log(2.0))
+
+DEFAULT_COMPARE_MODES = ("bm24_mean_p_fixed_n", "median_runtime_fixed_n")
+
+_MODE_PLOT_STYLE: Dict[str, Tuple[str, str]] = {
+    "bm24_mean_p_fixed_n": ("o-", "mean_p"),
+    "median_runtime_fixed_n": ("s--", "median_rt"),
+    "mean_log_runtime_fixed_n": ("^-.", "mean_log_rt"),
+}
+
+
+def trace_json_key(training_mode: str) -> str:
+    return f"trace_{training_mode}"
+
+
+def parse_training_modes(spec: str) -> Tuple[str, ...]:
+    modes = tuple(m.strip() for m in spec.split(",") if m.strip())
+    if not modes:
+        raise ValueError("--modes must list at least one training mode")
+    bad = [m for m in modes if m not in SUPPORTED_TRAINING_MODES]
+    if bad:
+        raise ValueError(
+            f"Unknown training mode(s) {bad}; supported: {sorted(SUPPORTED_TRAINING_MODES)}"
+        )
+    return modes
 
 
 def make_objective_comparison_kind(cfg: dict) -> str:
@@ -151,8 +178,7 @@ def fit_log2_slope(n_values: List[int], y_values: List[float]) -> float:
 
 def plot_objective_comparison(
     *,
-    trace_mean: List[dict],
-    trace_median: List[dict],
+    traces_by_mode: Dict[str, List[dict]],
     n_values: List[int],
     depths: List[int],
     cfg: dict,
@@ -162,13 +188,11 @@ def plot_objective_comparison(
     """Single slope-vs-depth panel (no secondary delta or scaling gauge)."""
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    for trace, label, style in [
-        (trace_mean, "bm24_mean_p_fixed_n", "o-"),
-        (trace_median, "median_runtime_fixed_n", "s--"),
-    ]:
+    for mode, trace in traces_by_mode.items():
+        style, short = _MODE_PLOT_STYLE.get(mode, ("-", mode))
         ps = [r["depth"] for r in trace]
         ys = [r["lr_log2_slope"] for r in trace]
-        ax.plot(ps, ys, style, label=label, linewidth=2, markersize=7)
+        ax.plot(ps, ys, style, label=short, linewidth=2, markersize=7)
         for r in trace:
             if r.get("used_previous_angles") or r.get("eval_rejected"):
                 ax.plot(
@@ -190,9 +214,12 @@ def plot_objective_comparison(
         )
     ax.set_xlabel("QAOA depth p")
     ax.set_ylabel(r"Eval: $\log_2$ slope of median(1/p_succ) vs n")
+    modes_label = " vs ".join(
+        _MODE_PLOT_STYLE.get(m, (None, m))[1] for m in traces_by_mode
+    )
     title = format_benchmark_title(
         cfg,
-        headline="LR objective A/B · mean_p vs median_rt @ train_n",
+        headline=f"LR objective compare · {modes_label} @ train_n",
         depths=depths,
     )
     apply_matplotlib_title(ax, f"{title}\n× = prior angles used", fig=fig)
@@ -204,6 +231,20 @@ def plot_objective_comparison(
     plt.close(fig)
 
 
+def traces_from_payload(payload: dict) -> Dict[str, List[dict]]:
+    """Load per-mode traces from a comparison JSON (legacy or current keys)."""
+    if "traces_by_mode" in payload:
+        return {str(k): list(v) for k, v in payload["traces_by_mode"].items()}
+    out: Dict[str, List[dict]] = {}
+    for mode in SUPPORTED_TRAINING_MODES:
+        key = trace_json_key(mode)
+        if key in payload:
+            out[mode] = list(payload[key])
+    if not out:
+        raise KeyError("JSON has no trace_bm24_mean_p_fixed_n / traces_by_mode block")
+    return out
+
+
 def replot_from_json(json_path: Path, output_path: Path | None = None) -> Path:
     with open(json_path, encoding="utf-8") as f:
         payload = json.load(f)
@@ -212,8 +253,7 @@ def replot_from_json(json_path: Path, output_path: Path | None = None) -> Path:
     depths = [int(d) for d in payload["depths"]]
     out = output_path or json_path.with_suffix(".png")
     plot_objective_comparison(
-        trace_mean=payload["trace_bm24_mean_p_fixed_n"],
-        trace_median=payload["trace_median_runtime_fixed_n"],
+        traces_by_mode=traces_from_payload(payload),
         n_values=n_values,
         depths=depths,
         cfg=cfg,
@@ -338,7 +378,7 @@ def run_arm(
             perturb = float(cfg["cobyla_perturb_scale"]) * (1.25 ** int(retry_index))
             rng = np.random.default_rng(
                 int(cfg["seed"]) + 1000 + depth + 10_000 * int(retry_index)
-                + (99999 if training_mode == "median_runtime_fixed_n" else 0)
+                + int(MODE_RNG_OFFSET.get(training_mode, 0))
             )
             _, diag = train_angles_fixed_n(
                 training_mode=training_mode,
@@ -433,6 +473,12 @@ def main() -> None:
     ap.add_argument("--skip-grid", action="store_true")
     ap.add_argument("--lr-beta-schedule", default="decreasing")
     ap.add_argument("--eval-train-retries", type=int, default=3)
+    ap.add_argument(
+        "--modes",
+        default=",".join(DEFAULT_COMPARE_MODES),
+        help="Comma-separated training modes to compare "
+             f"(supported: {', '.join(sorted(SUPPORTED_TRAINING_MODES))}).",
+    )
     ap.add_argument("--output-dir", type=Path, default=None)
     ap.add_argument("--output-stem", default=None)
     ap.add_argument(
@@ -462,6 +508,7 @@ def main() -> None:
 
     depths = [int(x) for x in args.depths.split(",") if x.strip()]
     n_values = list(range(args.n_min, args.n_max + 1))
+    training_modes = parse_training_modes(args.modes)
 
     cfg = {
         "k": args.k,
@@ -480,6 +527,7 @@ def main() -> None:
         "skip_grid_if_warm_start": True,
         "lr_beta_schedule": args.lr_beta_schedule,
         "eval_train_retries": args.eval_train_retries,
+        "training_modes": list(training_modes),
         "walksat_p_noise": 0.5,
         "max_flips": 100_000,
     }
@@ -497,6 +545,7 @@ def main() -> None:
           f"train_size={args.train_size} n=[{args.n_min},{args.n_max}] "
           f"test_size={args.test_size}")
     print(f"Depths: {depths}")
+    print(f"Modes:  {list(training_modes)}")
 
     # --- Build shared evaluation dataset once ---
     print(f"\nBuilding eval dataset (n={args.n_min}..{args.n_max}, test_size={args.test_size})...")
@@ -516,24 +565,18 @@ def main() -> None:
     )
     print(f"  {len(training_instances)} instances at n={args.train_n} in {time.time()-t_tr:.1f}s")
 
-    # --- Run both arms ---
+    # --- Run each training-mode arm ---
     t_total = time.time()
-    trace_mean = run_arm(
-        training_mode="bm24_mean_p_fixed_n",
-        depths=depths,
-        training_instances=training_instances,
-        dataset=dataset,
-        n_values=n_values,
-        cfg=cfg,
-    )
-    trace_median = run_arm(
-        training_mode="median_runtime_fixed_n",
-        depths=depths,
-        training_instances=training_instances,
-        dataset=dataset,
-        n_values=n_values,
-        cfg=cfg,
-    )
+    traces_by_mode: Dict[str, List[dict]] = {}
+    for mode in training_modes:
+        traces_by_mode[mode] = run_arm(
+            training_mode=mode,
+            depths=depths,
+            training_instances=training_instances,
+            dataset=dataset,
+            n_values=n_values,
+            cfg=cfg,
+        )
     total_elapsed = time.time() - t_total
 
     # --- WalkSAT log2 slope (cheap estimate from the BM24 formula for these n) ---
@@ -549,20 +592,21 @@ def main() -> None:
         "depths": depths,
         "n_values": n_values,
         "walksat_log2_slope": ws_slope,
-        "trace_bm24_mean_p_fixed_n": trace_mean,
-        "trace_median_runtime_fixed_n": trace_median,
+        "traces_by_mode": traces_by_mode,
+        **{trace_json_key(mode): trace for mode, trace in traces_by_mode.items()},
         "total_elapsed_s": total_elapsed,
     }
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     print(f"\nWrote {json_path}")
 
-    mean_by_d = {r["depth"]: r["lr_log2_slope"] for r in trace_mean}
-    med_by_d = {r["depth"]: r["lr_log2_slope"] for r in trace_median}
+    slope_by_mode = {
+        mode: {r["depth"]: r["lr_log2_slope"] for r in trace}
+        for mode, trace in traces_by_mode.items()
+    }
 
     plot_objective_comparison(
-        trace_mean=trace_mean,
-        trace_median=trace_median,
+        traces_by_mode=traces_by_mode,
         n_values=n_values,
         depths=depths,
         cfg=cfg,
@@ -577,13 +621,15 @@ def main() -> None:
     print(f"  k={args.k}  r={args.r}  seed={args.seed}  train_n={args.train_n}")
     print(f"  n∈[{args.n_min},{args.n_max}]  train_size={args.train_size}  test_size={args.test_size}")
     print(f"{'='*72}")
-    print(f"{'p':>4}  {'mean_p_fixed_n':>16}  {'median_rt_fixed_n':>18}  {'Δ(med-mean)':>13}  winner")
+    short_headers = [_MODE_PLOT_STYLE.get(m, (None, m))[1] for m in training_modes]
+    col_w = max(14, max(len(h) for h in short_headers) + 2)
+    header = f"{'p':>4}" + "".join(f"{h:>{col_w}}" for h in short_headers)
+    print(header)
     for d in depths:
-        ms = mean_by_d.get(d, float("nan"))
-        mds = med_by_d.get(d, float("nan"))
-        diff = mds - ms
-        winner = "mean" if diff > 0 else ("median" if diff < 0 else "tie")
-        print(f"{d:4d}  {ms:16.4f}  {mds:18.4f}  {diff:+13.4f}  {winner}")
+        row = f"{d:4d}"
+        for mode in training_modes:
+            row += f"{slope_by_mode[mode].get(d, float('nan')):{col_w}.4f}"
+        print(row)
     print(f"\nTotal elapsed: {total_elapsed:.0f}s")
     print(f"Wrote: {json_path}")
     print(f"Plot:  {png_path}")

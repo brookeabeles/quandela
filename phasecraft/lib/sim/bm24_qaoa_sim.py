@@ -111,6 +111,7 @@ _PATCHED_SPEC.loader.exec_module(_PATCHED_MOD)
 
 from phasecraft.lib.sim.bm24_run_io import (  # noqa: E402
     apply_figure_suptitle,
+    apply_matplotlib_title,
     format_benchmark_title,
     make_run_stem,
     resolve_bm24_run_output_paths,
@@ -1542,67 +1543,63 @@ def plot_benchmark_comparison(
     import matplotlib.ticker as mticker
 
     s = res.get("settings", {})
-    depth = s.get("depth", "?")
     scaling = summarize_benchmark_scaling(res)
 
-    fig, ax = plt.subplots(figsize=(6.8, 4.5))
-    apply_figure_suptitle(
-        fig,
-        format_benchmark_title(
-            {
-                "k": s.get("k"),
-                "r": s.get("r"),
-                "n_min": s.get("n_min"),
-                "n_max": s.get("n_max"),
-                "test_size": s.get("test_size"),
-                "seed": s.get("base_seed"),
-                "depth": depth,
-                "require_sat": s.get("require_sat"),
-            },
-            headline=f"Benchmark · equiv flips/shot={equiv:g}",
-        ),
-        fontsize=9,
-    )
+    plt.rcParams.update({
+        "font.family": "sans-serif",
+        "font.size": 10,
+        "axes.labelsize": 11,
+        "axes.titlesize": 11,
+        "legend.fontsize": 9,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+    })
 
-    ax.semilogy(ns, mean_succ, "o-", label="mean $p_{\\mathrm{succ}}$")
-    ax.semilogy(ns, med_succ, "s--", label="median $p_{\\mathrm{succ}}$")
-    ax.set_xlabel("problem size $n$")
-    ax.set_ylabel("success probability")
-    ax.set_title("LR QAOA success probability")
+    fig, ax = plt.subplots(figsize=(6.4, 4.5))
+    ax.semilogy(
+        ns, mean_succ, "o-", color="#2166ac", linewidth=1.8,
+        markersize=6, markerfacecolor="white", markeredgewidth=1.5,
+        label=r"$\frac{1}{M}\sum_i p_{\mathrm{succ}}(\sigma_i)$",
+    )
+    ax.semilogy(
+        ns, med_succ, "s--", color="#b2182b", linewidth=1.8,
+        markersize=5.5, markerfacecolor="white", markeredgewidth=1.5,
+        label=r"$\mathrm{med}_i\, p_{\mathrm{succ}}(\sigma_i)$",
+    )
+    ax.set_xlabel(r"Problem size $n$")
+    ax.set_ylabel(r"Success probability $p_{\mathrm{succ}}$")
+    apply_matplotlib_title(
+        ax,
+        _format_success_probability_title(s, res),
+        fig=fig,
+        fontsize=10,
+        pad=10.0,
+        top=0.78,
+    )
     ax.set_xticks(ns)
     ax.set_xticklabels([str(n) for n in ns])
 
     all_succ = mean_succ + med_succ
     lo, hi = float(min(all_succ)), float(max(all_succ))
-    y_candidates = [
-        0.005, 0.007, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05,
-        0.06, 0.07, 0.08, 0.09, 0.10, 0.12, 0.15, 0.20,
-    ]
     y_margin_lo = lo * 0.8
-    y_margin_hi = hi * 1.25
-    yticks = [t for t in y_candidates if y_margin_lo <= t <= y_margin_hi]
-    if len(yticks) < 3:
-        exp_lo = int(np.floor(np.log10(lo)))
-        exp_hi = int(np.ceil(np.log10(hi)))
-        yticks = [10.0 ** e for e in range(exp_lo, exp_hi + 1)]
+    y_margin_hi = hi * 1.15
+    yticks = _select_nice_log_yticks(y_margin_lo, y_margin_hi)
+    ax.set_yscale("log")
     ax.set_yticks(yticks)
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(
-            lambda y, _pos: f"{y:.3f}".rstrip("0").rstrip(".")
-            if y >= 0.01
-            else f"{y:.0e}"
-        )
-    )
-    ax.set_ylim(bottom=y_margin_lo, top=y_margin_hi)
+    ax.yaxis.set_minor_locator(mticker.NullLocator())
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(_format_probability_axis_tick))
+    ax.set_ylim(bottom=min(yticks[0], y_margin_lo), top=max(yticks[-1], y_margin_hi))
 
-    ax.legend(loc="best", fontsize=9)
-    ax.grid(True, which="major", alpha=0.35)
-    ax.grid(True, which="minor", alpha=0.15)
-    ax.yaxis.set_minor_locator(mticker.LogLocator(base=10, subs=np.arange(2, 10)))
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(True, which="major", axis="y", alpha=0.25, linewidth=0.8)
+    ax.grid(True, which="major", axis="x", alpha=0.15, linewidth=0.6)
+    ax.legend(loc="upper right", frameon=False)
+    ax.tick_params(direction="out", length=4, width=0.8)
 
     output_path = Path(output_path).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.35)
+    fig.savefig(output_path, dpi=200, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
 
     summary = {
@@ -1618,6 +1615,195 @@ def plot_benchmark_comparison(
         summary["walksatlm_beats_lr_at_n"] = [n for n, ok in zip(ns, lr_beats_lm) if not ok]
 
     return summary
+
+
+_NICE_LOG_YTICKS = (0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20, 0.30)
+
+
+def _select_nice_log_yticks(y_lo: float, y_hi: float, *, max_ticks: int = 5) -> list[float]:
+    """Pick a small set of readable decimal ticks on a log-scaled probability axis."""
+    ticks = [t for t in _NICE_LOG_YTICKS if y_lo <= t <= y_hi]
+    if len(ticks) < 3:
+        exp_lo = int(np.floor(np.log10(max(y_lo, 1e-12))))
+        exp_hi = int(np.ceil(np.log10(y_hi)))
+        ticks = [10.0 ** e for e in range(exp_lo, exp_hi + 1)]
+    if len(ticks) > max_ticks:
+        idx = np.linspace(0, len(ticks) - 1, max_ticks, dtype=int)
+        ticks = [ticks[int(i)] for i in idx]
+    return ticks
+
+
+def _format_probability_axis_tick(y: float, _pos: int) -> str:
+    if y >= 0.1:
+        return f"{y:.2f}".rstrip("0").rstrip(".")
+    if y >= 0.01:
+        return f"{y:.2f}"
+    return f"{y:.0e}"
+
+
+def _format_benchmark_param_line(settings: dict) -> str:
+    """Second title line: ensemble, schedule, and LR angle metadata."""
+    s = settings or {}
+    param_parts: list[str] = []
+    k, r = s.get("k"), s.get("r")
+    if k is not None and r is not None:
+        param_parts.append(f"k={k}, r={r:g}")
+    n_min, n_max = s.get("n_min"), s.get("n_max")
+    if n_min is not None and n_max is not None:
+        param_parts.append(f"n∈[{n_min},{n_max}]")
+    test_size = s.get("test_size")
+    if test_size is not None:
+        param_parts.append(f"inst={test_size}")
+    seed = s.get("seed", s.get("base_seed"))
+    if seed is not None:
+        param_parts.append(f"seed={seed}")
+    if s.get("require_sat") is True:
+        param_parts.append("SAT-only")
+
+    depth = s.get("depth")
+    if depth is not None:
+        param_parts.append(f"p={int(depth)}")
+
+    schedule = s.get("lr_beta_schedule")
+    if schedule:
+        param_parts.append(f"{schedule} β/γ")
+
+    ws_noise = s.get("walksat_noise")
+    lm_noise = s.get("walksatlm_noise")
+    if ws_noise is not None:
+        param_parts.append(f"WS noise={ws_noise:g}")
+    if lm_noise is not None:
+        param_parts.append(f"WSlm noise={lm_noise:g}")
+
+    db = s.get("lr_delta_beta")
+    dg = s.get("lr_delta_gamma")
+    if db is not None and dg is not None:
+        param_parts.append(f"δβ={db:+.4f}, δγ={dg:+.4f}")
+
+    betas = s.get("lr_qaoa_betas_bm24") or []
+    gammas = s.get("lr_qaoa_gammas_bm24") or []
+    if betas and gammas:
+        param_parts.append(
+            f"β: {float(betas[0]):.3f}…{float(betas[-1]):.3f} · "
+            f"γ: {float(gammas[0]):.3f}…{float(gammas[-1]):.3f}"
+        )
+
+    return " · ".join(param_parts)
+
+
+def _format_success_probability_title(settings: dict, res: dict) -> str:
+    """Compact title: what this plot shows vs what training optimized."""
+    del res
+    s = settings or {}
+    param_parts: list[str] = []
+    k, r = s.get("k"), s.get("r")
+    if k is not None and r is not None:
+        param_parts.append(f"$k={k}$, $r={r:g}$")
+    n_min, n_max = s.get("n_min"), s.get("n_max")
+    if n_min is not None and n_max is not None:
+        param_parts.append(f"$n={n_min}$–${n_max}$")
+    depth = s.get("depth")
+    if depth is not None:
+        param_parts.append(f"$p={int(depth)}$")
+    db = s.get("lr_delta_beta")
+    dg = s.get("lr_delta_gamma")
+    if db is not None:
+        param_parts.append(rf"$\delta_\beta={db:+.3f}$")
+    if dg is not None:
+        param_parts.append(rf"$\delta_\gamma={dg:+.3f}$")
+    params = "  ·  ".join(param_parts)
+    return (
+        r"Plot (eval): mean & median $p_{\mathrm{succ}}(n)$ on held-out instances"
+        "\n"
+        r"Train (objective): minimize slope of $\ln(\mathrm{med}_i\, 1/p_{\mathrm{succ}})$ vs $n$"
+        f"\n{params}"
+    )
+
+
+def _format_scaling_costs_title(settings: dict, scaling: dict) -> str:
+    """Multi-line title for the benchmark scaling-cost panel."""
+    sc = scaling or {}
+    lr_b2 = sc.get("lr_qaoa", {}).get("median_runtime_slope_log2", float("nan"))
+    ws_b2 = sc.get("walksat", {}).get("median_flips_slope_log2", float("nan"))
+    lm_b2 = sc.get("walksatlm", {}).get("median_flips_slope_log2", float("nan"))
+
+    headline = (
+        f"Scaling costs · log₂ slope: LR={lr_b2:.3f}, WS={ws_b2:.3f}, LM={lm_b2:.3f}"
+    )
+    return f"{headline}\n{_format_benchmark_param_line(settings)}"
+
+
+def plot_benchmark_scaling_costs(
+    res: dict,
+    output_path: Path,
+) -> dict:
+    """
+    Save a single-panel PNG of LR median(1/p) vs WalkSAT / WalkSATlm median flips.
+
+    Returns a small summary dict (scaling slopes, path).
+    """
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        raise ImportError(
+            "plot_benchmark_scaling_costs requires matplotlib. "
+            "Install with: pip install matplotlib"
+        ) from e
+
+    results = res.get("results", {})
+    if "lr_qaoa" not in results:
+        raise ValueError("benchmark results must include 'lr_qaoa' for plotting")
+    if "walksat" not in results:
+        raise ValueError("benchmark results must include 'walksat' for plotting")
+
+    lr_pn = results["lr_qaoa"]["per_n"]
+    ws_pn = results["walksat"]["per_n"]
+    ns = _per_n_sorted(lr_pn)
+    med_rt = [float(_per_n_get(lr_pn, n)["median_runtime"]) for n in ns]
+    ws_flips = [float(_per_n_get(ws_pn, n)["median_flips"]) for n in ns]
+
+    has_lm = "walksatlm" in results
+    if has_lm:
+        lm_pn = results["walksatlm"]["per_n"]
+        lm_flips = [float(_per_n_get(lm_pn, n)["median_flips"]) for n in ns]
+    else:
+        lm_flips = None
+
+    scaling = summarize_benchmark_scaling(res)
+    s = res.get("settings", {})
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.8))
+    ax.semilogy(ns, med_rt, "o-", color="C0", label="LR median 1/p")
+    ax.semilogy(ns, ws_flips, "s-", color="C1", label="WalkSAT median flips")
+    if lm_flips is not None:
+        ax.semilogy(ns, lm_flips, "^--", color="C2", label="WalkSATlm median flips")
+    ax.set_xlabel("problem size $n$")
+    ax.set_ylabel("cost (flips or 1/p)")
+    ax.set_xticks(ns)
+    ax.set_xticklabels([str(n) for n in ns])
+    apply_matplotlib_title(
+        ax,
+        _format_scaling_costs_title(s, scaling),
+        fig=fig,
+        fontsize=8.5,
+        pad=10.0,
+        top=0.78,
+    )
+    ax.legend(loc="best", fontsize=9)
+    ax.grid(True, which="both", alpha=0.3)
+
+    output_path = Path(output_path).expanduser().resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.35)
+    plt.close(fig)
+
+    return {
+        "plot_path": str(output_path),
+        "n_values": ns,
+        "scaling": scaling,
+    }
 
 
 def _print_plot_summary(summary: dict) -> None:
@@ -1860,6 +2046,11 @@ def main():
         help="Only plot a saved benchmark JSON (no simulation).",
     )
     parser.add_argument(
+        "--plot-scaling-costs",
+        action="store_true",
+        help="With --plot-from-json or --plot-benchmark: save scaling-cost panel only.",
+    )
+    parser.add_argument(
         "--plot-path",
         type=str,
         default=None,
@@ -1886,13 +2077,21 @@ def main():
     if args.plot_from_json:
         with open(args.plot_from_json, encoding="utf-8") as f:
             plot_res = json.load(f)
-        plot_path = Path(args.plot_path) if args.plot_path else (
-            Path(args.plot_from_json).with_suffix(".png")
-        )
-        ps = plot_benchmark_comparison(
-            plot_res, plot_path, equiv_flips_per_shot=args.plot_equiv_flips_per_shot
-        )
-        _print_plot_summary(ps)
+        json_stem = Path(args.plot_from_json).stem
+        if args.plot_path:
+            plot_path = Path(args.plot_path).expanduser().resolve()
+        elif args.plot_scaling_costs:
+            plot_path = Path(args.plot_from_json).with_name(f"{json_stem}-scaling.png")
+        else:
+            plot_path = Path(args.plot_from_json).with_suffix(".png")
+        if args.plot_scaling_costs:
+            ps = plot_benchmark_scaling_costs(plot_res, plot_path)
+            print(f"\nSaved scaling-cost plot to:\n  {ps['plot_path']}")
+        else:
+            ps = plot_benchmark_comparison(
+                plot_res, plot_path, equiv_flips_per_shot=args.plot_equiv_flips_per_shot
+            )
+            _print_plot_summary(ps)
         return
 
     # Always print the exact command first (including betas/gammas flags as passed).
@@ -1944,19 +2143,25 @@ def main():
             f.write("\n")
         print(f"\nSaved run to:\n  {json_path}\n  {txt_path}", flush=True)
 
-    if args.benchmark and args.plot_benchmark:
+    if args.benchmark and (args.plot_benchmark or args.plot_scaling_costs):
         if args.plot_path:
             plot_path = Path(args.plot_path).expanduser().resolve()
+        elif args.plot_scaling_costs and not args.no_auto_save:
+            plot_path = run_paths["run_dir"] / f"{stem}-scaling.png"
         elif not args.no_auto_save:
             plot_path = run_paths["png"]
         else:
             plot_path = Path(BM24_DEFAULT_OUTPUT_DIR).expanduser().resolve() / (
                 f"{make_run_stem('bench')}.png"
             )
-        ps = plot_benchmark_comparison(
-            res, plot_path, equiv_flips_per_shot=args.plot_equiv_flips_per_shot
-        )
-        _print_plot_summary(ps)
+        if args.plot_scaling_costs:
+            ps = plot_benchmark_scaling_costs(res, plot_path)
+            print(f"\nSaved scaling-cost plot to:\n  {ps['plot_path']}")
+        else:
+            ps = plot_benchmark_comparison(
+                res, plot_path, equiv_flips_per_shot=args.plot_equiv_flips_per_shot
+            )
+            _print_plot_summary(ps)
         if isinstance(res, dict) and not args.no_auto_save:
             res["plot_summary"] = ps
             with open(json_path, "w", encoding="utf-8") as f:

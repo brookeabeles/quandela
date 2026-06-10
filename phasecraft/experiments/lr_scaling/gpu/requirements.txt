@@ -1,0 +1,11 @@
+# Core (likely already installed with phasecraft)
+numpy>=1.26
+scipy>=1.11
+matplotlib>=3.8
+numba>=0.59
+tqdm>=4.66
+
+# Optional GPU acceleration (pick the wheel matching your CUDA version)
+# Ubuntu GPU VM example (CUDA 12.x):
+#   pip install cupy-cuda12x
+cupy-cuda12x>=13.0; platform_system == "Linux"
