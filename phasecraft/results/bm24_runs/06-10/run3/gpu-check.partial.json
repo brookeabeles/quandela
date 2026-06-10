@@ -1,0 +1,95 @@
+{
+  "run_stem": "gpu-check",
+  "config": {
+    "k": 8,
+    "r": 176.54,
+    "seed": 27,
+    "depths": [
+      2
+    ],
+    "lr_beta_schedule": "decreasing",
+    "training_mode": "bm24_mean_p_fixed_n",
+    "train_n": 14,
+    "train_size": 16,
+    "n_min": 14,
+    "n_max": 15,
+    "test_size": 10,
+    "skip_grid": false,
+    "skip_grid_if_warm_start": false,
+    "depth_warm_start": true,
+    "dg_bounds": null,
+    "db_bounds": null,
+    "anti_regression": true,
+    "collapse_guard": true,
+    "check_eval_regression": true,
+    "fallback_to_previous_angles": true,
+    "exploratory": false,
+    "cobyla_maxiter": 20,
+    "cobyla_restarts": 2,
+    "cobyla_perturb_scale": 0.2,
+    "grid_top_k": 5,
+    "walksat_p_noise": 0.5,
+    "walksatlm_p_noise": 0.15,
+    "walksatlm_w1": 6,
+    "walksatlm_w2": 5,
+    "max_flips": 100000,
+    "eval_axis": "runtime",
+    "eval_aggregation": "median",
+    "annotate_first_win": false,
+    "eval_train_retries": 3,
+    "eval_runtime_regression_factor": 10.0,
+    "output_dir": "/home/qdmin/quandela/phasecraft/results/bm24_runs",
+    "run_stem": "gpu-check",
+    "auto_resume": false,
+    "recover_from": null,
+    "gpu_batch_size": 32,
+    "force_cpu": false
+  },
+  "trace": [
+    {
+      "depth": 2,
+      "delta_gamma": -1.7857721633555126,
+      "delta_beta": 1.3012007513090567,
+      "trained_delta_gamma": -1.7857721633555126,
+      "trained_delta_beta": 1.3012007513090567,
+      "training_mode": "bm24_mean_p_fixed_n",
+      "training_objective": "maximize mean(p_succ) at fixed train_n",
+      "train_rejected": false,
+      "train_reject_reason": "",
+      "collapse_guard_applied": false,
+      "eval_rejected": false,
+      "eval_reject_reason": null,
+      "eval_train_attempts": 1,
+      "used_previous_angles": false,
+      "training_failed": false,
+      "best_train_objective": -0.0022353895963357334,
+      "best_avg_train_p_succ": 0.0022353895963357334,
+      "lr_log2_slope": 0.6849393934565644,
+      "walksat_log2_slope": -0.2623077903357406,
+      "walksatlm_log2_slope": -0.05940818916276052,
+      "median_runtime_per_n": {
+        "14": 653.1741477847927,
+        "15": 1050.0652582637674
+      },
+      "lr_beats_walksat_scaling": false,
+      "lr_beats_walksatlm_scaling": false,
+      "elapsed_s": 1.2470660209655762,
+      "device": "CUDA (cuda) via CuPy"
+    }
+  ],
+  "setup": {
+    "classical": {
+      "walksat": {
+        "14": 198.5,
+        "15": 165.5
+      },
+      "walksatlm": {
+        "14": 409.0,
+        "15": 392.5
+      }
+    },
+    "ws_slope": -0.2623077903357406,
+    "lm_slope": -0.05940818916276052,
+    "device": "CUDA (cuda) via CuPy"
+  }
+}
