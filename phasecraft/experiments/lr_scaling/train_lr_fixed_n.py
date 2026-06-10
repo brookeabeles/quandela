@@ -293,6 +293,8 @@ def train_angles_fixed_n(
     grid_top_k: int = 5,
     skip_grid: bool = False,
     skip_grid_if_warm_start: bool = True,
+    anti_regression: bool = True,
+    collapse_guard: bool = True,
     eps: float = DEFAULT_EPS,
     rng: Optional[np.random.Generator] = None,
     verbose: bool = True,
@@ -447,7 +449,7 @@ def train_angles_fixed_n(
 
     # ---- Anti-regression: never worse than warm-start ---- #
     anti_regression_applied = False
-    if warm and warm_x is not None and warm_obj is not None:
+    if anti_regression and warm and warm_x is not None and warm_obj is not None:
         if best_obj_val > warm_obj + 1e-12 * max(1.0, abs(warm_obj)):
             anti_regression_applied = True
             best_x = warm_x.copy()
@@ -478,7 +480,7 @@ def train_angles_fixed_n(
         train_reject_reason = f"mean_p={final_mean_p:.4e} < {MIN_TRAIN_MEAN_P:g}"
 
     collapse_guard_applied = False
-    if train_rejected:
+    if collapse_guard and train_rejected:
         fallback_x: Optional[np.ndarray] = None
         if (
             warm_x is not None
@@ -504,6 +506,11 @@ def train_angles_fixed_n(
                 f"  > Collapse guard triggered ({train_reject_reason}); "
                 "no acceptable warm start available"
             )
+    elif train_rejected and verbose:
+        print(
+            f"  > Train reject flagged ({train_reject_reason}); "
+            "collapse guard disabled — keeping COBYLA result"
+        )
 
     params_concat = np.concatenate([gammas_opt, betas_opt])
 
@@ -594,6 +601,8 @@ def run_train_eval_with_retries(
     n_max: int,
     max_retries: int = DEFAULT_EVAL_TRAIN_RETRIES,
     regression_factor: float = DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
+    check_eval_regression: bool = True,
+    fallback_to_previous_angles: bool = True,
     verbose: bool = True,
 ) -> dict:
     """
@@ -616,9 +625,12 @@ def run_train_eval_with_retries(
         dg, db, diag = train_at_depth(int(attempt))
         last_diag = diag
         med_rt = evaluate_at_angles(float(dg), float(db))
-        reject, reject_reason = eval_median_runtime_reject(
-            med_rt, prev_med_rt, int(n_min), int(n_max), factor=float(regression_factor),
-        )
+        if check_eval_regression:
+            reject, reject_reason = eval_median_runtime_reject(
+                med_rt, prev_med_rt, int(n_min), int(n_max), factor=float(regression_factor),
+            )
+        else:
+            reject, reject_reason = False, ""
         if not reject:
             return {
                 "dg": float(dg), "db": float(db), "diag": diag, "med_rt": med_rt,
@@ -630,7 +642,7 @@ def run_train_eval_with_retries(
             print(f"  REJECT eval regression: {reject_reason}")
 
     used_previous = False
-    if prev_accepted_deltas is not None:
+    if fallback_to_previous_angles and prev_accepted_deltas is not None:
         dg, db = float(prev_accepted_deltas[0]), float(prev_accepted_deltas[1])
         med_rt = evaluate_at_angles(dg, db)
         used_previous = True

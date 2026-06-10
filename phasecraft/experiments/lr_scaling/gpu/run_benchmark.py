@@ -61,6 +61,33 @@ def _parse_int_list(text: str) -> list[int]:
     return [int(x.strip()) for x in text.split(",") if x.strip()]
 
 
+def _parse_float_pair(text: str) -> tuple[float, float]:
+    parts = [p.strip() for p in str(text).split(",") if p.strip()]
+    if len(parts) != 2:
+        raise ValueError(f"expected lo,hi pair, got {text!r}")
+    return float(parts[0]), float(parts[1])
+
+
+def apply_exploratory_preset(args: argparse.Namespace) -> None:
+    """Robust per-depth angle search: full grid, no protocol shortcuts."""
+    args.skip_grid = False
+    args.skip_grid_if_warm_start = False
+    args.depth_warm_start = False
+    args.anti_regression = False
+    args.collapse_guard = False
+    args.eval_train_retries = 0
+    args.check_eval_regression = False
+    args.fallback_to_previous_angles = False
+    if args.dg_bounds is None:
+        args.dg_bounds = "-2,2"
+    if args.db_bounds is None:
+        args.db_bounds = "0.1,4"
+    if args.cobyla_restarts < 8:
+        args.cobyla_restarts = 8
+    if args.grid_top_k < 11:
+        args.grid_top_k = 11
+
+
 def generate_benchmark_dataset_cached(
     n_values: list[int],
     k: int,
@@ -133,6 +160,16 @@ def evaluate_lr_qaoa_depth(
 
 
 def build_cfg_from_args(args: argparse.Namespace) -> dict:
+    dg_bounds = (
+        _parse_float_pair(args.dg_bounds)
+        if args.dg_bounds is not None
+        else None
+    )
+    db_bounds = (
+        _parse_float_pair(args.db_bounds)
+        if args.db_bounds is not None
+        else None
+    )
     return {
         "k": args.k,
         "r": args.r,
@@ -147,6 +184,14 @@ def build_cfg_from_args(args: argparse.Namespace) -> dict:
         "test_size": args.test_size,
         "skip_grid": args.skip_grid,
         "skip_grid_if_warm_start": args.skip_grid_if_warm_start,
+        "depth_warm_start": bool(args.depth_warm_start),
+        "dg_bounds": dg_bounds,
+        "db_bounds": db_bounds,
+        "anti_regression": bool(args.anti_regression),
+        "collapse_guard": bool(args.collapse_guard),
+        "check_eval_regression": bool(args.check_eval_regression),
+        "fallback_to_previous_angles": bool(args.fallback_to_previous_angles),
+        "exploratory": bool(getattr(args, "exploratory", False)),
         "cobyla_maxiter": args.cobyla_maxiter,
         "cobyla_restarts": args.cobyla_restarts,
         "cobyla_perturb_scale": args.cobyla_perturb_scale,
@@ -258,6 +303,14 @@ def run_pipeline(cfg: dict) -> Path:
     eval_rt_factor = float(
         cfg.get("eval_runtime_regression_factor", DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR)
     )
+    train_kwargs: dict = {}
+    if cfg.get("dg_bounds") is not None:
+        train_kwargs["dg_bounds"] = tuple(cfg["dg_bounds"])
+    if cfg.get("db_bounds") is not None:
+        train_kwargs["db_bounds"] = tuple(cfg["db_bounds"])
+    train_kwargs["anti_regression"] = bool(cfg.get("anti_regression", True))
+    train_kwargs["collapse_guard"] = bool(cfg.get("collapse_guard", True))
+    depth_warm_start = bool(cfg.get("depth_warm_start", True))
 
     for depth in remaining:
         depth = int(depth)
@@ -265,11 +318,13 @@ def run_pipeline(cfg: dict) -> Path:
         print(f"\n{'=' * 60}\nDepth p = {depth}\n{'=' * 60}")
 
         def _train_at_depth(retry_index: int):
-            warm = (
-                tuple(prev_accepted_deltas)
-                if retry_index > 0 and prev_accepted_deltas is not None
-                else (tuple(prev_deltas) if prev_deltas is not None else None)
-            )
+            warm = None
+            if depth_warm_start:
+                warm = (
+                    tuple(prev_accepted_deltas)
+                    if retry_index > 0 and prev_accepted_deltas is not None
+                    else (tuple(prev_deltas) if prev_deltas is not None else None)
+                )
             perturb = float(cfg["cobyla_perturb_scale"]) * (1.25 ** int(retry_index))
             train_rng = np.random.default_rng(
                 int(cfg["seed"]) + 1000 + depth + 10_000 * int(retry_index)
@@ -288,6 +343,7 @@ def run_pipeline(cfg: dict) -> Path:
                 cobyla_perturb_scale=perturb,
                 grid_top_k=int(cfg["grid_top_k"]),
                 rng=train_rng,
+                **train_kwargs,
             )
             dg_l = float(diag_local["best_deltas"][0])
             db_l = float(diag_local["best_deltas"][1])
@@ -317,6 +373,8 @@ def run_pipeline(cfg: dict) -> Path:
             n_max=int(cfg["n_max"]),
             max_retries=int(cfg.get("eval_train_retries", DEFAULT_EVAL_TRAIN_RETRIES)),
             regression_factor=eval_rt_factor,
+            check_eval_regression=bool(cfg.get("check_eval_regression", True)),
+            fallback_to_previous_angles=bool(cfg.get("fallback_to_previous_angles", True)),
         )
         dg, db = te_result["dg"], te_result["db"]
         diag = te_result["diag"]
@@ -419,6 +477,52 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--test-size", type=int, default=200)
     p.add_argument("--skip-grid", action="store_true")
     p.add_argument("--skip-grid-if-warm-start", action="store_true", default=False)
+    p.add_argument(
+        "--exploratory",
+        action="store_true",
+        help="Robust angle search: full grid every depth, dg in [-2,2], no warm-start "
+        "chain, no anti-regression/collapse/eval fallbacks (see apply_exploratory_preset).",
+    )
+    p.add_argument(
+        "--depth-warm-start",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Warm-start each depth from previous depth angles (default: on).",
+    )
+    p.add_argument(
+        "--dg-bounds",
+        default=None,
+        help="Grid/COBYLA box for delta_gamma as lo,hi (default: config.py, or -2,2 with --exploratory).",
+    )
+    p.add_argument(
+        "--db-bounds",
+        default=None,
+        help="Grid/COBYLA box for delta_beta as lo,hi (default: config.py, or 0.1,4 with --exploratory).",
+    )
+    p.add_argument(
+        "--anti-regression",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Revert to warm-start if COBYLA is worse than warm-start (default: on).",
+    )
+    p.add_argument(
+        "--collapse-guard",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Revert to warm-start on dg>0 or tiny mean_p (default: on).",
+    )
+    p.add_argument(
+        "--check-eval-regression",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Reject angles when eval median runtime regresses vs previous depth.",
+    )
+    p.add_argument(
+        "--fallback-to-previous-angles",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="After eval retries, keep previous depth angles instead of last train.",
+    )
     p.add_argument("--cobyla-maxiter", type=int, default=160)
     p.add_argument("--cobyla-restarts", type=int, default=8)
     p.add_argument("--cobyla-perturb-scale", type=float, default=0.2)
@@ -457,11 +561,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.exploratory:
+        apply_exploratory_preset(args)
     if args.run_stem is None:
         from phasecraft.lib.sim.bm24_run_io import make_run_stem
 
-        args.run_stem = make_run_stem("gpu-scaling")
+        tag = "gpu-explore" if args.exploratory else "gpu-scaling"
+        args.run_stem = make_run_stem(tag)
     cfg = build_cfg_from_args(args)
+    if cfg.get("exploratory"):
+        print(
+            "Exploratory preset: grid every depth, dg=[-2,2], no depth warm-start, "
+            "no trainer/eval fallbacks"
+        )
     try:
         run_pipeline(cfg)
     except KeyboardInterrupt:

@@ -8,6 +8,7 @@ BM24 / LR-QAOA simulation, saddle certification, and experiment pipelines.
 phasecraft/
   lib/           # importable library code
   experiments/   # runnable study scripts & notebooks
+  docs/          # research/thesis navigation notes
   results/       # generated artifacts (JSON, PNG, logs)
   shims/         # legacy CLI implementations
   *.py           # thin compatibility re-exports at package root
@@ -21,6 +22,7 @@ phasecraft/
 | `lib/certificates/` | Proof / certificate wording |
 | `lib/sim/` | `bm24_qaoa_sim.py`, `bm24_run_io.py` |
 | `lib/paths.py` | Canonical paths (`bm24_runs_dir()`, `patched_gbs_path()`, …) |
+| `docs/organization.md` | Working map for BM24 research, result curation, and thesis evidence |
 | `experiments/lr_scaling/` | LR trainer, sweep, notebooks |
 | `experiments/w_saddle/` | w-coordinate Krawczyk pipeline |
 | `experiments/bm24_saddle_audit_p1/` | p=1 saddle audit |
