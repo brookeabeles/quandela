@@ -263,6 +263,87 @@ def replot_from_json(json_path: Path, output_path: Path | None = None) -> Path:
     return out
 
 
+def _median_runtime_lookup(row: dict, n: int) -> float:
+    med = row.get("median_runtime_per_n") or {}
+    if str(n) in med:
+        return float(med[str(n)])
+    if n in med:
+        return float(med[n])
+    raise KeyError(f"median_runtime_per_n missing n={n}")
+
+
+def extend_eval_from_json(
+    json_path: Path,
+    extra_n_values: List[int],
+    *,
+    output_json: Path | None = None,
+    output_png: Path | None = None,
+) -> tuple[Path, Path]:
+    """Re-evaluate saved angles at additional n (no retraining)."""
+    json_path = Path(json_path).expanduser().resolve()
+    with open(json_path, encoding="utf-8") as f:
+        payload = json.load(f)
+
+    cfg = payload["config"]
+    existing_n = {int(n) for n in payload["n_values"]}
+    new_n = sorted({int(n) for n in extra_n_values} - existing_n)
+    if not new_n:
+        print(f"No new n to add (already have {sorted(existing_n)})")
+        out_json = output_json or json_path
+        out_png = replot_from_json(out_json, output_png)
+        return out_json, out_png
+
+    print(f"Extending eval at n={new_n} (seed={cfg['seed']}, test_size={cfg['test_size']})...")
+    dataset = generate_eval_dataset(
+        new_n,
+        int(cfg["k"]),
+        float(cfg["r"]),
+        int(cfg["test_size"]),
+        int(cfg["seed"]),
+    )
+
+    beta_schedule = str(cfg.get("lr_beta_schedule", "decreasing"))
+    traces_by_mode = traces_from_payload(payload)
+    for mode, trace in traces_by_mode.items():
+        print(f"  mode={mode}")
+        for row in trace:
+            depth = int(row["depth"])
+            betas, gammas = make_lr_angles(
+                float(row["delta_gamma"]),
+                float(row["delta_beta"]),
+                depth,
+                beta_schedule=beta_schedule,
+                angle_convention="bm24",
+            )
+            med_new = evaluate_qaoa(dataset, new_n, betas, gammas)
+            merged = {str(n): float(v) for n, v in (row.get("median_runtime_per_n") or {}).items()}
+            merged.update({str(n): float(v) for n, v in med_new.items()})
+            row["median_runtime_per_n"] = merged
+            n_all = sorted(int(k) for k in merged)
+            row["lr_log2_slope"] = fit_log2_slope(
+                n_all, [_median_runtime_lookup(row, n) for n in n_all]
+            )
+            print(f"    p={depth:3d}  lr_log2_slope={row['lr_log2_slope']:.4f}")
+
+    n_values = sorted(existing_n | set(new_n))
+    payload["n_values"] = n_values
+    payload["config"]["n_min"] = min(n_values)
+    payload["config"]["n_max"] = max(n_values)
+    if "traces_by_mode" in payload:
+        payload["traces_by_mode"] = traces_by_mode
+    for mode, trace in traces_by_mode.items():
+        payload[trace_json_key(mode)] = trace
+
+    out_json = output_json or json_path
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Wrote {out_json}")
+
+    out_png = replot_from_json(out_json, output_png)
+    print(f"Wrote {out_png}")
+    return out_json, out_png
+
+
 # --------------------------------------------------------------------------- #
 # Classical baselines (WalkSAT via numba — inline for self-containedness)      #
 # --------------------------------------------------------------------------- #
@@ -487,7 +568,33 @@ def main() -> None:
         default=None,
         help="Replot PNG from a saved JSON (no re-run).",
     )
+    ap.add_argument(
+        "--extend-eval-n",
+        default=None,
+        help="Comma-separated extra n to evaluate from --from-json (no retraining).",
+    )
     args = ap.parse_args()
+
+    if args.extend_eval_n is not None:
+        if args.from_json is None:
+            ap.error("--extend-eval-n requires --from-json")
+        extra_n = [int(x) for x in args.extend_eval_n.split(",") if x.strip()]
+        json_path = Path(args.from_json).expanduser().resolve()
+        if args.output_dir is not None:
+            out_dir = Path(args.output_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            stem = args.output_stem or json_path.stem
+            out_json = out_dir / f"{stem}.json"
+            out_png = out_dir / f"{stem}.png"
+        else:
+            out_json = json_path
+            out_png = (
+                json_path.parent / f"{args.output_stem}.png"
+                if args.output_stem
+                else json_path.with_suffix(".png")
+            )
+        extend_eval_from_json(json_path, extra_n, output_json=out_json, output_png=out_png)
+        return
 
     if args.from_json is not None:
         json_path = Path(args.from_json).expanduser().resolve()
