@@ -708,6 +708,20 @@ def krawczyk_certify_reduced_escalate(sys, w_center, dps_start=60, max_levels=4,
 # =====================================================================
 # 7. Root discovery (reduced system) + lift to full
 # =====================================================================
+def solve_w_from_init(sys: WSaddleSystem, w_init: np.ndarray, tol: float = 1e-12) -> tuple:
+    """Newton-polish reduced system F_tilde(w)=0 from warm start w_init.
+
+    Returns (w_star, converged, residual_inf).
+    """
+    x0 = np.concatenate([np.asarray(w_init, dtype=complex).real, np.asarray(w_init, dtype=complex).imag])
+    sol = root(sys.F_real, x0, method="hybr", tol=tol)
+    if not sol.success or not np.isfinite(sol.x).all():
+        return np.asarray(w_init, dtype=complex), False, float(np.inf)
+    w = sol.x[:4] + 1j * sol.x[4:]
+    res = float(np.linalg.norm(sys.F_complex(w), ord=np.inf))
+    return w, bool(res < 1e-8), res
+
+
 def discover_w_roots(sys: WSaddleSystem, num_starts=200, seed=0, tol=1e-12):
     rng = np.random.default_rng(seed)
     roots: List[np.ndarray] = []
