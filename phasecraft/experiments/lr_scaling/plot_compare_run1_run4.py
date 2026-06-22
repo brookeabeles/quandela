@@ -168,7 +168,48 @@ def series_from_run1(
     return out
 
 
-def plot_compare(
+def plot_legacy_corrected(
+    run1_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    run4_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    *,
+    out_path: Path,
+) -> None:
+    """Original 3-line plot (run1 both windows + run4 n=14-18 only)."""
+    depths = sorted(
+        set(run1_series["mean_p"].get((12, 18), {}))
+        & set(run4_series["mean_p"].get((14, 18), {}))
+    )
+    series = [
+        (12, (12, 18), run1_series, dict(color="#8ebad9", ls=":", marker="o", lw=2),
+         "train_n=12 (n=12–18)"),
+        (12, (14, 18), run1_series, dict(color="#DD8452", ls="-", marker="o", lw=2),
+         "train_n=12 (n=14–18 corrected)"),
+        (16, (14, 18), run4_series, dict(color="#55A868", ls="--", marker="s", lw=2),
+         "train_n=16 (n=14–18)"),
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
+    for ax, mode in zip(axes, ("mean_p", "median_rt")):
+        for _tn, win, src, st, label in series:
+            ys = [src[mode].get(win, {}).get(d, float("nan")) for d in depths]
+            ax.plot(depths, ys, label=label, **st)
+        ax.set_title(mode)
+        ax.set_xlabel("QAOA depth p")
+        ax.set_xticks(depths)
+        ax.grid(True, alpha=0.3)
+    axes[0].set_ylabel("Eval: log₂ slope of median(1/p_succ) vs n")
+    axes[0].legend(fontsize=8, loc="upper right")
+    fig.suptitle(
+        "run1 vs run4 — run1 re-evaluated on common n=14–18 window",
+        fontsize=11,
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+
+
+def plot_all_windows(
     run1_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
     run4_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
     *,
@@ -239,7 +280,12 @@ def main() -> None:
         default=Path("results/bm24_runs/06-09/run4/train16-tr100-te200-n14-18.json"),
     )
     p.add_argument(
-        "--output",
+        "--all-windows-output",
+        type=Path,
+        default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-all-windows.png"),
+    )
+    p.add_argument(
+        "--legacy-output",
         type=Path,
         default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-corrected.png"),
     )
@@ -249,11 +295,25 @@ def main() -> None:
         type=Path,
         default=Path("results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18-per_n-all.json"),
     )
+    p.add_argument(
+        "--skip-rebench",
+        action="store_true",
+        help="Plot only from existing JSON/cache (no QAOA re-eval).",
+    )
     args = p.parse_args()
 
     run1_path = (_PHASECRAFT / args.run1).resolve() if not args.run1.is_absolute() else args.run1
     run4_path = (_PHASECRAFT / args.run4).resolve() if not args.run4.is_absolute() else args.run4
-    out_path = (_PHASECRAFT / args.output).resolve() if not args.output.is_absolute() else args.output
+    all_windows_out = (
+        (_PHASECRAFT / args.all_windows_output).resolve()
+        if not args.all_windows_output.is_absolute()
+        else args.all_windows_output
+    )
+    legacy_out = (
+        (_PHASECRAFT / args.legacy_output).resolve()
+        if not args.legacy_output.is_absolute()
+        else args.legacy_output
+    )
     cache_path = (
         (_PHASECRAFT / args.rebench_cache).resolve()
         if not args.rebench_cache.is_absolute()
@@ -263,17 +323,23 @@ def main() -> None:
     run1_payload = json.loads(run1_path.read_text(encoding="utf-8"))
     run4_payload = json.loads(run4_path.read_text(encoding="utf-8"))
 
-    print(f"Re-benchmarking run1 (cache: {cache_path.name})...")
-    rebench = rebenchmark_run1(run1_path, cache_path=cache_path, test_size=args.test_size)
+    if args.skip_rebench and cache_path.is_file():
+        rebench = json.loads(cache_path.read_text(encoding="utf-8"))
+    else:
+        print(f"Re-benchmarking run1 (cache: {cache_path.name})...", flush=True)
+        rebench = rebenchmark_run1(run1_path, cache_path=cache_path, test_size=args.test_size)
 
     run1_series = series_from_run1(run1_payload, rebench)
     run4_series = series_from_run4(run4_payload)
 
-    plot_compare(run1_series, run4_series, out_path=out_path)
-
-    mirror = _PHASECRAFT / "bm24_runs" / "06-09" / out_path.name
-    if mirror.resolve() != out_path.resolve():
-        plot_compare(run1_series, run4_series, out_path=mirror)
+    for out_path, plot_fn in (
+        (all_windows_out, plot_all_windows),
+        (legacy_out, plot_legacy_corrected),
+    ):
+        plot_fn(run1_series, run4_series, out_path=out_path)
+        mirror = _PHASECRAFT / "bm24_runs" / "06-09" / out_path.name
+        if mirror.resolve() != out_path.resolve():
+            plot_fn(run1_series, run4_series, out_path=mirror)
 
 
 if __name__ == "__main__":
