@@ -745,6 +745,42 @@ def discover_w_roots(sys: WSaddleSystem, num_starts=200, seed=0, tol=1e-12):
     return roots
 
 
+def solve_uw_from_w(sys_full: FullUWSaddleSystem, w: np.ndarray, tol: float = 1e-13) -> tuple:
+    """Lift a reduced-system w root to full (u,w) space and Newton-polish.
+
+    Returns (x_star, converged, residual_inf) where x_star = (u_0..u_3, w_0..w_3).
+    """
+    x0 = sys_full.uw_from_w(np.asarray(w, dtype=complex))
+    xr = np.concatenate([x0.real, x0.imag])
+    sol = root(sys_full.F_real, xr, method="hybr", tol=tol)
+    if not sol.success or not np.isfinite(sol.x).all():
+        return x0, False, float(np.inf)
+    x = sol.x[:8] + 1j * sol.x[8:]
+    res = float(np.linalg.norm(sys_full.F_complex(x), ord=np.inf))
+    return x, bool(res < 1e-8), res
+
+
+def krawczyk_certify_full_escalate(
+    sys: FullUWSaddleSystem,
+    x_center: np.ndarray,
+    dps_start: int = 60,
+    max_levels: int = 4,
+    max_inflate_iters: int = 6,
+) -> tuple:
+    """Escalating-precision full (u,w) system Krawczyk certification."""
+    dps = int(dps_start)
+    last: dict = {}
+    for _ in range(max_levels):
+        ok, info = krawczyk_certify_full(sys, x_center, dps=dps, max_inflate_iters=max_inflate_iters)
+        if ok:
+            return True, info
+        last = info
+        dps = int(np.ceil(dps * 1.5))
+    out = dict(last)
+    out["dps_attempted"] = dps
+    return False, out
+
+
 # =====================================================================
 # 8. Self-test  (q=1 regression + q=3 + full/reduced cross-check)
 # =====================================================================

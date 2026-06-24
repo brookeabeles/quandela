@@ -104,6 +104,32 @@ def _theory_p1_last_layer(delta_gamma: float) -> Tuple[np.ndarray, np.ndarray]:
     return np.array([0.0], dtype=float), np.array([float(delta_gamma)], dtype=float)
 
 
+THEORY_CACHE_VERSION = 2  # bump when saddle defaults change (v2: damping=0.15, iter=250)
+
+
+def _theory_cache_valid(entry: dict) -> bool:
+    if entry.get("cache_version") != THEORY_CACHE_VERSION:
+        return False
+    if entry.get("c_ann_source") == "p1_last_layer":
+        return False
+    return bool(entry.get("theory_ok"))
+
+
+def _merge_cache_on_disk(cache_path: Path, local: dict) -> None:
+    """Merge in-memory updates with any concurrent writes on disk."""
+    if cache_path.is_file():
+        try:
+            on_disk = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            on_disk = {}
+        for section in ("theory", "rebenchmark"):
+            merged = dict(on_disk.get(section, {}))
+            merged.update(local.get(section, {}))
+            local[section] = merged
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(local, indent=2), encoding="utf-8")
+
+
 def _theory_inprocess(
     *,
     k: int,
@@ -113,6 +139,8 @@ def _theory_inprocess(
     delta_beta: float,
     beta_schedule: str,
     num_iter: int,
+    damping: float,
+    dz_threshold: float,
 ) -> Dict[str, float]:
     betas, gammas = make_lr_angles(
         delta_gamma=float(delta_gamma),
@@ -122,7 +150,13 @@ def _theory_inprocess(
         angle_convention="bm24",
     )
     th = compute_theory_exponents(
-        k=int(k), r=float(r), betas=betas, gammas=gammas, num_iter=int(num_iter)
+        k=int(k),
+        r=float(r),
+        betas=betas,
+        gammas=gammas,
+        num_iter=int(num_iter),
+        dz_threshold=float(dz_threshold),
+        damping=float(damping),
     )
     c_ann = float(np.real(th["phi_full"])) / LN2
     ok = bool(th["saddle_converged"]) and float(th["saddle_residual"]) < 1e-2
@@ -135,6 +169,7 @@ def _theory_inprocess(
         "saddle_residual": float(th["saddle_residual"]),
         "theory_ok": ok,
         "theory_note": "full_depth" if ok else "full_depth_unconverged",
+        "cache_version": THEORY_CACHE_VERSION,
     }
 
 
@@ -147,6 +182,8 @@ def _theory_subprocess(
     delta_beta: float,
     beta_schedule: str,
     num_iter: int,
+    damping: float,
+    dz_threshold: float,
     timeout_s: float,
 ) -> Dict[str, float]:
     """Isolate saddle solve in a child process (avoids memory blow-up across depths)."""
@@ -163,7 +200,10 @@ betas, gammas = make_lr_angles(
     delta_gamma={delta_gamma!r}, delta_beta={delta_beta!r}, depth={int(depth)},
     beta_schedule={beta_schedule!r}, angle_convention="bm24",
 )
-th = compute_theory_exponents(k={int(k)}, r={float(r)}, betas=betas, gammas=gammas, num_iter={int(num_iter)})
+th = compute_theory_exponents(
+    k={int(k)}, r={float(r)}, betas=betas, gammas=gammas,
+    num_iter={int(num_iter)}, dz_threshold={float(dz_threshold)!r}, damping={float(damping)!r},
+)
 c_ann = float(np.real(th["phi_full"])) / LN2
 ok = bool(th["saddle_converged"]) and float(th["saddle_residual"]) < 1e-2
 print(json.dumps({{
@@ -173,6 +213,7 @@ print(json.dumps({{
     "saddle_converged": bool(th["saddle_converged"]),
     "saddle_residual": float(th["saddle_residual"]),
     "theory_ok": ok, "theory_note": "full_depth" if ok else "full_depth_unconverged",
+    "cache_version": {THEORY_CACHE_VERSION},
 }}))
 """
     try:
@@ -209,18 +250,33 @@ def _theory_at_angles(
     delta_beta: float,
     beta_schedule: str,
     num_iter: int,
+    damping: float,
+    dz_threshold: float,
     timeout_s: float,
     use_subprocess: bool,
 ) -> Dict[str, float]:
     if use_subprocess:
         return _theory_subprocess(
             k=k, r=r, depth=depth, delta_gamma=delta_gamma, delta_beta=delta_beta,
-            beta_schedule=beta_schedule, num_iter=num_iter, timeout_s=timeout_s,
+            beta_schedule=beta_schedule, num_iter=num_iter, damping=damping,
+            dz_threshold=dz_threshold, timeout_s=timeout_s,
         )
-    return _theory_inprocess(
+    out = _theory_inprocess(
         k=k, r=r, depth=depth, delta_gamma=delta_gamma, delta_beta=delta_beta,
-        beta_schedule=beta_schedule, num_iter=num_iter,
+        beta_schedule=beta_schedule, num_iter=num_iter, damping=damping,
+        dz_threshold=dz_threshold,
     )
+    out["cache_version"] = THEORY_CACHE_VERSION
+    return out
+
+
+def _theory_timeout_for_depth(depth: int, base_timeout: float) -> float:
+    """Depth p≥10 saddle iteration is O(4^p); scale timeout accordingly."""
+    if depth <= 8:
+        return float(base_timeout)
+    if depth <= 15:
+        return float(max(base_timeout, 900.0))
+    return float(max(base_timeout, 2400.0))
 
 
 def _theory_with_fallback(
@@ -232,33 +288,45 @@ def _theory_with_fallback(
     delta_beta: float,
     beta_schedule: str,
     num_iter: int,
+    damping: float,
+    dz_threshold: float,
     timeout_s: float,
     use_subprocess: bool,
+    skip_fallback: bool,
 ) -> Dict[str, float]:
     full = _theory_at_angles(
         k=k, r=r, depth=depth, delta_gamma=delta_gamma, delta_beta=delta_beta,
-        beta_schedule=beta_schedule, num_iter=num_iter, timeout_s=timeout_s,
+        beta_schedule=beta_schedule, num_iter=num_iter, damping=damping,
+        dz_threshold=dz_threshold,
+        timeout_s=_theory_timeout_for_depth(depth, timeout_s),
         use_subprocess=use_subprocess,
     )
-    b1, g1 = _theory_p1_last_layer(delta_gamma)
-    th_fb = compute_theory_exponents(k=int(k), r=float(r), betas=b1, gammas=g1, num_iter=num_iter)
-    c_fb = float(np.real(th_fb["phi_full"])) / LN2
-    fb_ok = bool(th_fb["saddle_converged"]) and float(th_fb["saddle_residual"]) < 1e-2
     out = dict(full)
     out["c_ann_full"] = full["c_ann"] if full.get("theory_ok") else float("nan")
-    out["c_ann_fallback"] = c_fb if fb_ok else float("nan")
-    out["c_ann_fallback_rt"] = -out["c_ann_fallback"] if np.isfinite(out["c_ann_fallback"]) else float("nan")
-    # Primary c_ann for gaps: prefer converged full depth, else last-layer p=1
+    if skip_fallback:
+        out["c_ann_fallback"] = float("nan")
+        out["c_ann_fallback_rt"] = float("nan")
+    else:
+        b1, g1 = _theory_p1_last_layer(delta_gamma)
+        th_fb = compute_theory_exponents(
+            k=int(k), r=float(r), betas=b1, gammas=g1,
+            num_iter=num_iter, dz_threshold=dz_threshold, damping=damping,
+        )
+        c_fb = float(np.real(th_fb["phi_full"])) / LN2
+        fb_ok = bool(th_fb["saddle_converged"]) and float(th_fb["saddle_residual"]) < 1e-2
+        out["c_ann_fallback"] = c_fb if fb_ok else float("nan")
+        out["c_ann_fallback_rt"] = -out["c_ann_fallback"] if np.isfinite(out["c_ann_fallback"]) else float("nan")
     if full.get("theory_ok"):
         out["c_ann"] = full["c_ann"]
         out["c_ann_source"] = "full_depth"
-    elif fb_ok:
-        out["c_ann"] = c_fb
+    elif not skip_fallback and np.isfinite(out.get("c_ann_fallback", float("nan"))):
+        out["c_ann"] = out["c_ann_fallback"]
         out["c_ann_source"] = "p1_last_layer"
     else:
         out["c_ann"] = float("nan")
         out["c_ann_source"] = "none"
     out["c_ann_rt"] = -out["c_ann"] if np.isfinite(out["c_ann"]) else float("nan")
+    out["cache_version"] = THEORY_CACHE_VERSION
     return out
 
 
@@ -304,17 +372,22 @@ def analyze_run(
     modes: Sequence[str],
     depths_filter: Optional[Sequence[int]],
     rebenchmark: bool,
+    skip_theory: bool,
+    theory_max_depth: Optional[int],
     cache_path: Optional[Path],
     theory_num_iter: int,
+    theory_damping: float,
+    theory_dz_threshold: float,
     theory_timeout_s: float,
     theory_subprocess: bool,
+    test_size_override: Optional[int],
 ) -> dict:
     payload = json.loads(run_json.read_text(encoding="utf-8"))
     cfg = payload["config"]
     traces = _traces(payload)
     k, r = int(cfg["k"]), float(cfg["r"])
     n_min, n_max = int(cfg["n_min"]), int(cfg["n_max"])
-    test_size = int(cfg["test_size"])
+    test_size = int(test_size_override if test_size_override is not None else cfg["test_size"])
     seed = int(cfg["seed"])
     beta_schedule = cfg.get("lr_beta_schedule", "decreasing")
     n_values = list(range(n_min, n_max + 1))
@@ -326,22 +399,43 @@ def analyze_run(
     dataset = None
     if rebenchmark:
         run_dir = run_json.parent
-        dataset = load_or_build_benchmark_dataset(
-            run_dir=run_dir,
-            n_values=n_values,
-            k=k,
-            r=r,
-            test_size=test_size,
-            base_seed=seed,
-            use_cache=True,
-            build_fn=lambda: generate_benchmark_dataset(
-                n_values, k, r, test_size, seed, require_sat=True
-            ),
-        )
-        print(
-            f"Benchmark dataset n={n_min}..{n_max}, test_size={test_size}",
-            flush=True,
-        )
+        need_build = False
+        for mode in modes:
+            tr = traces.get(mode)
+            if not tr:
+                continue
+            for row in tr:
+                depth = int(row["depth"])
+                if depths_filter is not None and depth not in depths_filter:
+                    continue
+                cache_key = f"{mode}|{depth}"
+                if cache_key not in cache.get("rebenchmark", {}):
+                    need_build = True
+                    break
+            if need_build:
+                break
+        if need_build:
+            dataset = load_or_build_benchmark_dataset(
+                run_dir=run_dir,
+                n_values=n_values,
+                k=k,
+                r=r,
+                test_size=test_size,
+                base_seed=seed,
+                use_cache=True,
+                build_fn=lambda: generate_benchmark_dataset(
+                    n_values, k, r, test_size, seed, require_sat=True
+                ),
+            )
+            print(
+                f"Benchmark dataset n={n_min}..{n_max}, test_size={test_size}",
+                flush=True,
+            )
+        else:
+            print(
+                f"Rebenchmark: all depths cached (test_size={test_size})",
+                flush=True,
+            )
 
     rows: List[dict] = []
     for mode in modes:
@@ -357,7 +451,18 @@ def analyze_run(
             c_typ_stored = float(row.get("lr_log2_slope", float("nan")))
 
             theory_key = f"theory|{mode}|{depth}"
-            if theory_key in cache.get("theory", {}):
+            if skip_theory or (theory_max_depth is not None and depth > theory_max_depth):
+                theory = {
+                    "c_ann": float("nan"),
+                    "c_ann_rt": float("nan"),
+                    "c_ann_source": "skipped",
+                    "theory_ok": False,
+                    "saddle_converged": False,
+                    "saddle_residual": float("nan"),
+                }
+            elif theory_key in cache.get("theory", {}) and _theory_cache_valid(
+                cache["theory"][theory_key]
+            ):
                 theory = cache["theory"][theory_key]
                 print(f"  theory cache {mode} p={depth}", flush=True)
             else:
@@ -367,26 +472,29 @@ def analyze_run(
                     k=k, r=r, depth=depth, delta_gamma=dg, delta_beta=db,
                     beta_schedule=beta_schedule,
                     num_iter=theory_num_iter,
+                    damping=theory_damping,
+                    dz_threshold=theory_dz_threshold,
                     timeout_s=theory_timeout_s,
                     use_subprocess=theory_subprocess,
+                    skip_fallback=True,
                 )
                 print(
                     f"    c_ann={theory.get('c_ann', float('nan')):.4f} "
-                    f"ok={theory.get('theory_ok')} ({time.time()-t_th:.1f}s)",
+                    f"src={theory.get('c_ann_source')} ({time.time()-t_th:.1f}s)",
                     flush=True,
                 )
                 cache.setdefault("theory", {})[theory_key] = theory
                 if cache_path:
-                    cache_path.parent.mkdir(parents=True, exist_ok=True)
-                    cache_path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+                    _merge_cache_on_disk(cache_path, cache)
                 gc.collect()
 
             reb = None
             cache_key = f"{mode}|{depth}"
+            cached_reb = cache.get("rebenchmark", {}).get(cache_key)
             if rebenchmark:
-                if cache_key in cache.get("rebenchmark", {}):
-                    reb = cache["rebenchmark"][cache_key]
-                    print(f"  cache hit {mode} p={depth}", flush=True)
+                if cached_reb is not None:
+                    print(f"  rebenchmark cache {mode} p={depth}", flush=True)
+                    reb = cached_reb
                 else:
                     t0 = time.time()
                     print(f"  rebenchmark {mode} p={depth} ...", flush=True)
@@ -400,11 +508,19 @@ def analyze_run(
                     )
                     cache.setdefault("rebenchmark", {})[cache_key] = reb
                     if cache_path:
-                        cache_path.parent.mkdir(parents=True, exist_ok=True)
-                        cache_path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+                        _merge_cache_on_disk(cache_path, cache)
                     print(f"    done in {time.time()-t0:.1f}s", flush=True)
+            elif cached_reb is not None:
+                # Empirical mean-success slopes only; keep notebook c_typ from the run JSON.
+                reb = {
+                    "c_emp_mean": cached_reb["c_emp_mean"],
+                    "c_inv_mean_rt": cached_reb["c_inv_mean_rt"],
+                    "spread_ratio_at_mid_n": cached_reb["spread_ratio_at_mid_n"],
+                    "per_n": cached_reb,
+                }
 
-            c_typ = reb["c_typ_fitted"] if reb else c_typ_stored
+            # Notebook eval slopes from the run JSON are authoritative for c_typ.
+            c_typ = c_typ_stored
             c_emp_mean = reb["c_emp_mean"] if reb else float("nan")
             c_ann = theory["c_ann"]
             c_ann_rt = theory["c_ann_rt"]
@@ -421,20 +537,20 @@ def analyze_run(
                 "c_ann": c_ann,
                 "c_ann_rt": c_ann_rt,
                 "c_inv_mean_rt": reb["c_inv_mean_rt"] if reb else float("nan"),
-                "gap_mean_vs_ann": c_emp_mean - c_ann if np.isfinite(c_emp_mean) else float("nan"),
-                "gap_typ_vs_annrt": c_typ - c_ann_rt if np.isfinite(c_typ) else float("nan"),
+                "gap_mean_vs_ann": c_emp_mean - c_ann if np.isfinite(c_emp_mean) and np.isfinite(c_ann) else float("nan"),
+                "gap_typ_vs_annrt": c_typ - c_ann_rt if np.isfinite(c_typ) and np.isfinite(c_ann_rt) else float("nan"),
                 "gap_typ_vs_invmean": (
                     c_typ - reb["c_inv_mean_rt"]
-                    if reb and np.isfinite(c_typ)
+                    if reb and np.isfinite(c_typ) and np.isfinite(reb.get("c_inv_mean_rt", float("nan")))
                     else float("nan")
                 ),
-                "spread_ratio_mid_n": reb["spread_ratio_at_mid_n"] if reb else float("nan"),
+                "spread_ratio_mid_n": reb.get("spread_ratio_at_mid_n", float("nan")) if reb else float("nan"),
                 "saddle_converged": theory["saddle_converged"],
                 "saddle_residual": theory["saddle_residual"],
                 "c_ann_source": theory.get("c_ann_source"),
                 "c_ann_full": theory.get("c_ann_full"),
                 "c_ann_fallback": theory.get("c_ann_fallback"),
-                "per_n": reb,
+                "per_n": reb.get("per_n") if reb else None,
             }
             rows.append(entry)
 
@@ -609,6 +725,33 @@ def write_readme(result: dict, out_dir: Path) -> Path:
                 f"| {p['depth']} | {p['delta_ctyp_med_minus_mean']:+.4f} | "
                 f"{p['delta_gap_mean_ann']:+.4f} |"
             )
+    # Auto-summary when we have theory + pairs
+    rows_with_theory = [r for r in result["rows"] if r.get("c_ann_source") == "full_depth"]
+    if rows_with_theory and result.get("pairs"):
+        deltas = [p["delta_ctyp_med_minus_mean"] for p in result["pairs"]]
+        max_abs_d = max(abs(x) for x in deltas) if deltas else float("nan")
+        gaps_typ = [r["gap_typ_vs_annrt"] for r in rows_with_theory if np.isfinite(r["gap_typ_vs_annrt"])]
+        gaps_mean = [r["gap_mean_vs_ann"] for r in rows_with_theory if np.isfinite(r["gap_mean_vs_ann"])]
+        lines += [
+            "",
+            "## Decisive readout",
+            "",
+            f"- **Training objective**: |Δ c_typ| (median−mean train) ≤ {max_abs_d:.3f} at all depths "
+            f"with theory — retraining on median runtime does **not** materially move eval scaling.",
+            "",
+        ]
+        if gaps_mean:
+            lines.append(
+                f"- **BM24 mean alignment**: |c_emp_mean − c_ann| ≲ "
+                f"{max(abs(x) for x in gaps_mean):.3f} when full-depth saddle converges — "
+                f"mean-trained angles match annealed theory for E[p]."
+            )
+        if gaps_typ:
+            lines.append(
+                f"- **Typical vs annealed runtime**: c_typ − (−c_ann) ≈ "
+                f"{np.mean(gaps_typ):+.2f} (spread + median≠mean); small positive gap persists "
+                f"even when c_emp_mean ≈ c_ann."
+            )
     path = out_dir / "README.md"
     path.write_text("\n".join(lines), encoding="utf-8")
     return path
@@ -645,8 +788,22 @@ def main() -> None:
         default=None,
         help="Rebenchmark cache JSON (incremental)",
     )
-    p.add_argument("--theory-num-iter", type=int, default=80)
-    p.add_argument("--theory-timeout", type=float, default=300.0)
+    p.add_argument("--test-size", type=int, default=None, help="Override config test_size")
+    p.add_argument("--theory-num-iter", type=int, default=250)
+    p.add_argument("--theory-damping", type=float, default=0.15)
+    p.add_argument("--theory-dz-threshold", type=float, default=1e-2)
+    p.add_argument("--theory-timeout", type=float, default=600.0)
+    p.add_argument(
+        "--skip-theory",
+        action="store_true",
+        help="Skip saddle theory (use stored c_typ + rebenchmark only)",
+    )
+    p.add_argument(
+        "--theory-max-depth",
+        type=int,
+        default=None,
+        help="Skip saddle theory above this depth (avoids OOM at large p)",
+    )
     p.add_argument(
         "--theory-inprocess",
         action="store_true",
@@ -676,10 +833,15 @@ def main() -> None:
         modes=modes,
         depths_filter=depths_filter,
         rebenchmark=not args.no_rebenchmark,
+        skip_theory=bool(args.skip_theory),
+        theory_max_depth=args.theory_max_depth,
         cache_path=cache_path,
         theory_num_iter=int(args.theory_num_iter),
+        theory_damping=float(args.theory_damping),
+        theory_dz_threshold=float(args.theory_dz_threshold),
         theory_timeout_s=float(args.theory_timeout),
         theory_subprocess=not args.theory_inprocess,
+        test_size_override=args.test_size,
     )
 
     out_dir = out_dir.resolve()

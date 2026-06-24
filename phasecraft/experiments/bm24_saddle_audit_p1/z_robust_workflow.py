@@ -32,8 +32,8 @@ from phasecraft.bm24_saddle_audit_p1.continue_seed_branch_certified import (
     step_from_previous_z,
     initialize_seed_at_gamma,
 )
-from phasecraft.krawczyk_p1_roots import SaddleSystem, discover_roots
-from phasecraft.picard_lefschetz import compute_phi
+from phasecraft.lib.saddles.krawczyk_p1_roots import SaddleSystem, discover_roots
+from phasecraft.lib.saddles.picard_lefschetz import compute_phi
 from phasecraft.w_saddle.workflow import (
     SEED_DUPLICATE_W_FACTOR,
     STATUS_COMPETITOR_CERTIFIED_LOCAL,
@@ -69,6 +69,9 @@ Z_DISCLAIMER = (
 )
 
 
+DEFAULT_RUN_DIR = Path(__file__).resolve().parents[2] / "results" / "bm24_saddle_audit_p1"
+
+
 @dataclass
 class ZConfig:
     q: int = DEFAULT_Q
@@ -92,7 +95,9 @@ def make_gamma_mesh(gamma_start: float, gamma_stop: float, num_points: int) -> n
 def z_from_record(rec: dict[str, Any]) -> np.ndarray:
     if "z_real" in rec:
         return np.asarray(rec["z_real"], dtype=float) + 1j * np.asarray(rec["z_imag"], dtype=float)
-    return np.asarray(rec["w_star_real"], dtype=float) + 1j * np.asarray(rec["w_star_imag"], dtype=float)
+    if "w_star_real" in rec:
+        return np.asarray(rec["w_star_real"], dtype=float) + 1j * np.asarray(rec["w_star_imag"], dtype=float)
+    return np.asarray(rec["w_real"], dtype=float) + 1j * np.asarray(rec["w_imag"], dtype=float)
 
 
 def cluster_z_roots(roots: list[np.ndarray], z_ref: np.ndarray, cluster_tol: float) -> list[np.ndarray]:
@@ -663,46 +668,60 @@ def track_branches_z(
         d_re = abs(float(node["Phi_eff_real"]) - br.points[-1].Phi_eff_real) / max(abs(br.points[-1].Phi_eff_real), 1.0)
         return d_z + 0.15 * d_re
 
+    def _z_norm_scale(z: np.ndarray) -> float:
+        return max(float(np.max(np.abs(z))), 1e-3)
+
     sl0 = gamma_slices[0]
     seed_br = CompetitorBranch(branch_id=next_id, is_seed_sheet=True, label="seed sheet")
     next_id += 1
     for node in sl0["nodes"]:
         if node.get("is_seed_sheet"):
-            append_point(seed_br, sl0, node)
+            seed_br.points.append(append_point(seed_br, sl0, node))
     if seed_br.points:
         branches.append(seed_br)
 
-    open_branches = [start_branch() for _ in tracking_nodes(sl0)]
     for node in tracking_nodes(sl0):
-        if node.get("is_seed_sheet"):
-            continue
-        costs = [match_cost(br, node, sl0) for br in open_branches]
-        j = int(np.argmin(costs))
-        open_branches[j].points.append(append_point(open_branches[j], sl0, node))
+        br = start_branch()
+        br.points.append(append_point(br, sl0, node))
+        branches.append(br)
 
     for sl in gamma_slices[1:]:
-        pool = open_branches[:]
-        used: set[int] = set()
-        for node in tracking_nodes(sl):
+        for node in sl["nodes"]:
             if node.get("is_seed_sheet"):
-                append_point(seed_br, sl, node)
-                continue
-            if not pool:
-                br = start_branch()
-                br.points.append(append_point(br, sl, node))
-                open_branches.append(br)
-                continue
-            costs = [match_cost(br, node, sl) for br in pool]
-            j = int(np.argmin(costs))
-            br = pool[j]
-            br.points.append(append_point(br, sl, node))
-            used.add(j)
-        open_branches = [br for k, br in enumerate(open_branches) if k in used or len(br.points) > 0]
+                seed_br.points.append(append_point(seed_br, sl, node))
 
-    for br in open_branches:
+        open_branches = [b for b in branches if b.points and not b.is_seed_sheet]
+        endpoints = [
+            (b, z_from_record({"w_real": b.points[-1].w_real, "w_imag": b.points[-1].w_imag}))
+            for b in open_branches
+        ]
+        nodes = tracking_nodes(sl)
+        matches: list[tuple[float, int, int]] = []
+        for bi, (br, z_end) in enumerate(endpoints):
+            scale = _z_norm_scale(z_end) * max(branch_step_tol, 0.05)
+            for ni, node in enumerate(nodes):
+                z_n = z_from_record(node)
+                if float(np.linalg.norm(z_n - z_end, ord=np.inf)) <= scale:
+                    matches.append((match_cost(br, node, sl), bi, ni))
+        matches.sort(key=lambda t: t[0])
+        used_b: set[int] = set()
+        used_n: set[int] = set()
+        for _cost, bi, ni in matches:
+            if bi in used_b or ni in used_n:
+                continue
+            used_b.add(bi)
+            used_n.add(ni)
+            open_branches[bi].points.append(append_point(open_branches[bi], sl, nodes[ni]))
+        for ni, node in enumerate(nodes):
+            if ni in used_n:
+                continue
+            br = start_branch()
+            br.points.append(append_point(br, sl, node))
+            branches.append(br)
+
+    for br in branches:
         if br.points and not br.is_seed_sheet:
             br.label = f"branch {br.branch_id} Re~{br.points[0].Phi_eff_real:.3g}"
-            branches.append(br)
     return branches
 
 

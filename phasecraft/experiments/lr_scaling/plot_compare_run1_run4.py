@@ -33,6 +33,27 @@ MODE_KEYS = {
     "median_rt": "median_runtime_fixed_n",
 }
 WINDOWS: Tuple[Tuple[int, int], ...] = ((12, 18), (14, 18))
+FAIR_WINDOW = (14, 18)
+RUN4_CANDIDATES = (
+    Path("results/bm24_runs/06-09/run4/train16-tr100-te200-n14-18.json"),
+    Path("results/bm24_runs/06-09/run4/train16-tr100-te200-n12-18.json"),
+    Path("bm24_runs/06-09/run4/train16-tr100-te200-n14-18.json"),
+    Path("bm24_runs/06-09/run4/train16-tr100-te200-n12-18.json"),
+)
+
+
+def _resolve_run_json(explicit: Path, candidates: Sequence[Path]) -> Path:
+    tried: List[Path] = []
+    for cand in (explicit, *candidates):
+        p = (_PHASECRAFT / cand).resolve() if not cand.is_absolute() else cand.resolve()
+        if p in tried:
+            continue
+        tried.append(p)
+        if p.is_file():
+            return p
+    raise FileNotFoundError(
+        "No run JSON found. Tried:\n  " + "\n  ".join(str(p) for p in tried)
+    )
 
 
 def fit_log2_slope(ns: Sequence[int], ys: Sequence[float]) -> float:
@@ -267,6 +288,157 @@ def plot_all_windows(
     print(f"Wrote {out_path}")
 
 
+def build_summary(
+    run1_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    run4_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    *,
+    run1_path: Path,
+    run4_path: Path,
+) -> dict:
+    rows: List[dict] = []
+    for mode in MODE_KEYS:
+        for window in WINDOWS:
+            d1 = run1_series[mode].get(window, {})
+            d4 = run4_series[mode].get(window, {})
+            for depth in sorted(set(d1) & set(d4)):
+                v1, v4 = float(d1[depth]), float(d4[depth])
+                rows.append({
+                    "mode": mode,
+                    "window": f"n={window[0]}–{window[1]}",
+                    "depth": int(depth),
+                    "run1_c_typ": v1,
+                    "run4_c_typ": v4,
+                    "delta_run4_minus_run1": v4 - v1,
+                })
+    fair = [r for r in rows if r["window"] == f"n={FAIR_WINDOW[0]}–{FAIR_WINDOW[1]}"]
+    return {
+        "run1": str(run1_path),
+        "run4": str(run4_path),
+        "fair_window": f"n={FAIR_WINDOW[0]}–{FAIR_WINDOW[1]}",
+        "rows": rows,
+        "fair_window_mean_abs_delta": {
+            mode: float(np.nanmean([abs(r["delta_run4_minus_run1"]) for r in fair if r["mode"] == mode]))
+            for mode in MODE_KEYS
+        },
+    }
+
+
+def plot_train_n_delta(
+    run1_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    run4_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    *,
+    out_path: Path,
+    window: Tuple[int, int] = FAIR_WINDOW,
+) -> None:
+    """run4 − run1 at the common eval window (train_n=16 vs 12)."""
+    depths = sorted(
+        set(run1_series["mean_p"].get(window, {}))
+        & set(run4_series["mean_p"].get(window, {}))
+    )
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharex=True)
+    for ax, mode in zip(axes, ("mean_p", "median_rt")):
+        delta = [
+            run4_series[mode].get(window, {}).get(d, float("nan"))
+            - run1_series[mode].get(window, {}).get(d, float("nan"))
+            for d in depths
+        ]
+        ax.axhline(0, color="k", lw=0.8, alpha=0.35)
+        ax.plot(depths, delta, "o-", color="#55A868" if mode == "mean_p" else "#C44E52")
+        ax.set_xlabel("QAOA depth p")
+        ax.set_ylabel("Δ c_typ (train_n=16 − 12)")
+        ax.set_title(mode)
+        ax.set_xticks(depths)
+        ax.grid(True, alpha=0.3)
+    fig.suptitle(
+        f"Effect of train_n at fair eval window (n={window[0]}–{window[1]})",
+        fontsize=11,
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+
+
+def plot_with_theory(
+    run1_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    run4_series: Dict[str, Dict[Tuple[int, int], Dict[int, float]]],
+    *,
+    run1_payload: dict,
+    run4_payload: dict,
+    theory_cache_path: Path,
+    out_path: Path,
+    window: Tuple[int, int] = FAIR_WINDOW,
+    theory_max_depth: int = 10,
+) -> None:
+    """Overlay −c_ann (BM24 saddle) on c_typ for both runs at shared depths."""
+    from plot_ctyp_vs_cann import (  # noqa: WPS433
+        _merge_cache_on_disk,
+        _theory_cache_valid,
+        _theory_with_fallback,
+    )
+
+    cache: dict = {}
+    if theory_cache_path.is_file():
+        cache = json.loads(theory_cache_path.read_text(encoding="utf-8"))
+    cfg = run1_payload["config"]
+    k, r = int(cfg["k"]), float(cfg["r"])
+    beta_schedule = cfg.get("lr_beta_schedule", "decreasing")
+
+    def theory_for(payload: dict, run_label: str, depth: int) -> float:
+        traces = _traces(payload)
+        row = next(tr for tr in traces["bm24_mean_p_fixed_n"] if int(tr["depth"]) == depth)
+        legacy_key = f"theory|bm24_mean_p_fixed_n|{depth}"
+        key = f"theory|bm24_mean_p_fixed_n|{depth}|{run_label}"
+        for k in (legacy_key if run_label == "run1" else None, key):
+            if k and k in cache.get("theory", {}) and _theory_cache_valid(cache["theory"][k]):
+                return float(cache["theory"][k]["c_ann_rt"])
+        th = _theory_with_fallback(
+            k=k, r=r, depth=depth,
+            delta_gamma=float(row["delta_gamma"]),
+            delta_beta=float(row["delta_beta"]),
+            beta_schedule=beta_schedule,
+            num_iter=250, damping=0.15, dz_threshold=1e-2,
+            timeout_s=600.0, use_subprocess=True, skip_fallback=True,
+        )
+        cache.setdefault("theory", {})[key] = th
+        _merge_cache_on_disk(theory_cache_path, cache)
+        return float(th["c_ann_rt"]) if th.get("theory_ok") else float("nan")
+
+    depths = sorted(
+        set(run1_series["mean_p"].get(window, {}))
+        & set(run4_series["mean_p"].get(window, {}))
+    )
+    depths = [d for d in depths if d <= theory_max_depth]
+
+    fig, ax = plt.subplots(figsize=(7, 4.2))
+    for label, series, color, marker in (
+        ("train_n=12", run1_series, "#DD8452", "o"),
+        ("train_n=16", run4_series, "#55A868", "s"),
+    ):
+        ys = [series["mean_p"].get(window, {}).get(d, float("nan")) for d in depths]
+        ax.plot(depths, ys, f"{marker}-", color=color, label=f"{label} c_typ")
+    ann1, ann4 = [], []
+    for d in depths:
+        ann1.append(theory_for(run1_payload, "run1", d))
+        ann4.append(theory_for(run4_payload, "run4", d))
+    if any(np.isfinite(x) for x in ann1):
+        ax.plot(depths, ann1, ":", color="#DD8452", alpha=0.7, label="−c_ann (run1 theory)")
+    if any(np.isfinite(x) for x in ann4):
+        ax.plot(depths, ann4, ":", color="#55A868", alpha=0.7, label="−c_ann (run4 theory)")
+    ax.set_xlabel("QAOA depth p")
+    ax.set_ylabel("log₂ slope vs n")
+    ax.set_title(f"mean_p train · eval n={window[0]}–{window[1]}")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+    fig.suptitle("c_typ vs BM24 annealed runtime proxy (−c_ann)", fontsize=11)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
@@ -277,7 +449,7 @@ def main() -> None:
     p.add_argument(
         "--run4",
         type=Path,
-        default=Path("results/bm24_runs/06-09/run4/train16-tr100-te200-n14-18.json"),
+        default=Path("results/bm24_runs/06-09/run4/train16-tr100-te200-n12-18.json"),
     )
     p.add_argument(
         "--all-windows-output",
@@ -288,6 +460,21 @@ def main() -> None:
         "--legacy-output",
         type=Path,
         default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-corrected.png"),
+    )
+    p.add_argument(
+        "--delta-output",
+        type=Path,
+        default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-train-n-delta.png"),
+    )
+    p.add_argument(
+        "--theory-output",
+        type=Path,
+        default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-with-theory.png"),
+    )
+    p.add_argument(
+        "--summary-json",
+        type=Path,
+        default=Path("results/bm24_runs/06-09/compare-run1-vs-run4-summary.json"),
     )
     p.add_argument("--test-size", type=int, default=200)
     p.add_argument(
@@ -300,10 +487,18 @@ def main() -> None:
         action="store_true",
         help="Plot only from existing JSON/cache (no QAOA re-eval).",
     )
+    p.add_argument(
+        "--with-theory",
+        action="store_true",
+        help="Also plot c_typ vs −c_ann (slow: saddle at run4 angles).",
+    )
+    p.add_argument("--theory-max-depth", type=int, default=10)
     args = p.parse_args()
 
-    run1_path = (_PHASECRAFT / args.run1).resolve() if not args.run1.is_absolute() else args.run1
-    run4_path = (_PHASECRAFT / args.run4).resolve() if not args.run4.is_absolute() else args.run4
+    run1_path = _resolve_run_json(args.run1, (
+        Path("bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json"),
+    ))
+    run4_path = _resolve_run_json(args.run4, RUN4_CANDIDATES)
     all_windows_out = (
         (_PHASECRAFT / args.all_windows_output).resolve()
         if not args.all_windows_output.is_absolute()
@@ -314,14 +509,29 @@ def main() -> None:
         if not args.legacy_output.is_absolute()
         else args.legacy_output
     )
-    cache_path = (
-        (_PHASECRAFT / args.rebench_cache).resolve()
-        if not args.rebench_cache.is_absolute()
-        else args.rebench_cache
+    delta_out = (
+        (_PHASECRAFT / args.delta_output).resolve()
+        if not args.delta_output.is_absolute()
+        else args.delta_output
+    )
+    theory_out = (
+        (_PHASECRAFT / args.theory_output).resolve()
+        if not args.theory_output.is_absolute()
+        else args.theory_output
+    )
+    summary_out = (
+        (_PHASECRAFT / args.summary_json).resolve()
+        if not args.summary_json.is_absolute()
+        else args.summary_json
+    )
+    cache_path = _resolve_run_json(
+        args.rebench_cache,
+        (Path("bm24_runs/06-09/run1/train12-tr100-te200-n12-18-per_n-all.json"),),
     )
 
     run1_payload = json.loads(run1_path.read_text(encoding="utf-8"))
     run4_payload = json.loads(run4_path.read_text(encoding="utf-8"))
+    print(f"run1: {run1_path.name}  run4: {run4_path.name}", flush=True)
 
     if args.skip_rebench and cache_path.is_file():
         rebench = json.loads(cache_path.read_text(encoding="utf-8"))
@@ -332,14 +542,38 @@ def main() -> None:
     run1_series = series_from_run1(run1_payload, rebench)
     run4_series = series_from_run4(run4_payload)
 
-    for out_path, plot_fn in (
+    summary = build_summary(run1_series, run4_series, run1_path=run1_path, run4_path=run4_path)
+    summary_out.parent.mkdir(parents=True, exist_ok=True)
+    summary_out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    print(f"Wrote {summary_out}")
+
+    outputs = [
         (all_windows_out, plot_all_windows),
         (legacy_out, plot_legacy_corrected),
-    ):
+        (delta_out, plot_train_n_delta),
+    ]
+    for out_path, plot_fn in outputs:
         plot_fn(run1_series, run4_series, out_path=out_path)
         mirror = _PHASECRAFT / "bm24_runs" / "06-09" / out_path.name
         if mirror.resolve() != out_path.resolve():
             plot_fn(run1_series, run4_series, out_path=mirror)
+
+    if args.with_theory:
+        theory_cache = run1_path.parent / f"{run1_path.stem}-ctyp-cann-cache.json"
+        plot_with_theory(
+            run1_series, run4_series,
+            run1_payload=run1_payload, run4_payload=run4_payload,
+            theory_cache_path=theory_cache, out_path=theory_out,
+            theory_max_depth=int(args.theory_max_depth),
+        )
+        mirror = _PHASECRAFT / "bm24_runs" / "06-09" / theory_out.name
+        if mirror.resolve() != theory_out.resolve():
+            plot_with_theory(
+                run1_series, run4_series,
+                run1_payload=run1_payload, run4_payload=run4_payload,
+                theory_cache_path=theory_cache, out_path=mirror,
+                theory_max_depth=int(args.theory_max_depth),
+            )
 
 
 if __name__ == "__main__":

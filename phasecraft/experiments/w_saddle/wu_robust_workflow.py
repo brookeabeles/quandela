@@ -4,8 +4,8 @@ wu_robust_workflow.py
 Robust competitor pipeline for BM24 w,u-saddle, general q >= 1, p=1.
 
 Mirrors ``phasecraft.bm24_saddle_audit_p1.z_robust_workflow`` but uses
-``krawczyk_w_saddle_q.WSaddleSystem`` and ``krawczyk_certify_reduced_escalate``
-rather than the z-chart certifier.
+``krawczyk_w_saddle_q.FullUWSaddleSystem`` and ``krawczyk_certify_full_escalate``
+to certify the full (u,w) saddle equations rather than the reduced w-only form.
 
 Three-step pipeline (same as z and q=1 w_saddle workflows):
   1. ``continue_wu_seed_branch``  – gamma continuation of the BM24 seed
@@ -34,9 +34,11 @@ if str(REPO_ROOT) not in sys.path:
 from phasecraft.w_saddle.krawczyk_w_saddle_q import (
     SLICE_BETA,
     SLICE_P,
+    FullUWSaddleSystem,
     WSaddleSystem,
     discover_w_roots,
-    krawczyk_certify_reduced_escalate,
+    krawczyk_certify_full_escalate,
+    solve_uw_from_w,
     solve_w_from_init,
 )
 from phasecraft.w_saddle.workflow import (
@@ -105,6 +107,9 @@ class WUConfig:
     def system(self, gamma: float) -> WSaddleSystem:
         return WSaddleSystem(r=self.r, gamma=gamma, q=self.q, beta=self.beta)
 
+    def full_system(self, gamma: float) -> FullUWSaddleSystem:
+        return FullUWSaddleSystem(r=self.r, gamma=gamma, q=self.q, beta=self.beta)
+
 
 # ---------------------------------------------------------------------------
 # Small helpers
@@ -150,9 +155,9 @@ def certify_wu_point(
     dps: int,
     max_levels: int = 4,
 ) -> tuple[bool, dict[str, Any]]:
-    ok, info = krawczyk_certify_reduced_escalate(
-        cfg.system(gamma), w, dps_start=dps, max_levels=max_levels
-    )
+    sf = cfg.full_system(gamma)
+    x, _, _ = solve_uw_from_w(sf, w)
+    ok, info = krawczyk_certify_full_escalate(sf, x, dps_start=dps, max_levels=max_levels)
     return bool(ok), dict(info)
 
 
@@ -840,7 +845,7 @@ def main() -> None:
     p.add_argument("--refine-num-points", type=int, default=119)
     p.add_argument("--dps", type=int, default=80)
     p.add_argument("--q", type=int, default=3)
-    p.add_argument("--r", type=float, default=1.0)
+    p.add_argument("--r", type=float, default=DEFAULT_R)
     p.add_argument("--beta", type=float, default=SLICE_BETA)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--quick", action="store_true", help="20 mesh pts, 80 starts, no auto-refine")
