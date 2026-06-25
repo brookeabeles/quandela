@@ -100,6 +100,22 @@ def save_benchmark_dataset_clauses(path: Path, *, meta: dict[str, Any], dataset:
     return path
 
 
+def load_benchmark_clauses_only(path: Path, *, meta: dict[str, Any]) -> Dataset | None:
+    """Load SAT clauses without building H_diag (eval rebuilds it once)."""
+    path = Path(path)
+    if not path.is_file():
+        return None
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        payload = json.load(f)
+    if not _meta_matches(payload, meta):
+        return None
+    clauses_by_n = _deserialize_clauses(payload["clauses_by_n"])
+    return {
+        int(n_key): [{"clauses": clauses} for clauses in instances]
+        for n_key, instances in clauses_by_n.items()
+    }
+
+
 def load_benchmark_dataset_clauses(path: Path, *, meta: dict[str, Any]) -> Dataset | None:
     path = Path(path)
     if not path.is_file():

@@ -344,6 +344,90 @@ def extend_eval_from_json(
     return out_json, out_png
 
 
+def extend_depths_from_json(
+    json_path: Path,
+    extra_depths: List[int],
+    *,
+    output_json: Path | None = None,
+    output_png: Path | None = None,
+) -> tuple[Path, Path]:
+    """Train + evaluate at additional depths, warm-starting from the last saved angles."""
+    json_path = Path(json_path).expanduser().resolve()
+    with open(json_path, encoding="utf-8") as f:
+        payload = json.load(f)
+
+    cfg = payload["config"]
+    existing_depths = {int(d) for d in payload["depths"]}
+    new_depths = sorted({int(d) for d in extra_depths} - existing_depths)
+    if not new_depths:
+        print(f"No new depths to add (already have {sorted(existing_depths)})")
+        out_json = output_json or json_path
+        out_png = replot_from_json(out_json, output_png)
+        return out_json, out_png
+
+    n_values = [int(n) for n in payload["n_values"]]
+    print(f"Extending depths {sorted(existing_depths)} → +{new_depths}")
+    print(f"  train_n={cfg['train_n']}  k={cfg['k']}  r={cfg['r']}  seed={cfg['seed']}")
+
+    dataset = generate_eval_dataset(
+        n_values,
+        int(cfg["k"]),
+        float(cfg["r"]),
+        int(cfg["test_size"]),
+        int(cfg["seed"]),
+    )
+
+    training_instances = generate_training_instances(
+        train_n=int(cfg["train_n"]),
+        k=int(cfg["k"]),
+        r=float(cfg["r"]),
+        train_size=int(cfg["train_size"]),
+        base_seed=int(cfg["seed"]),
+    )
+
+    traces_by_mode = traces_from_payload(payload)
+    for mode, trace in traces_by_mode.items():
+        last = trace[-1]
+        init_deltas = (float(last["delta_gamma"]), float(last["delta_beta"]))
+        init_accepted = init_deltas
+        for row in reversed(trace):
+            if not row.get("eval_rejected") and not row.get("train_rejected"):
+                init_accepted = (float(row["delta_gamma"]), float(row["delta_beta"]))
+                break
+        init_med_rt = {
+            int(k): float(v)
+            for k, v in (last.get("median_runtime_per_n") or {}).items()
+        }
+        new_rows = run_arm(
+            training_mode=mode,
+            depths=new_depths,
+            training_instances=training_instances,
+            dataset=dataset,
+            n_values=n_values,
+            cfg=cfg,
+            initial_prev_deltas=init_deltas,
+            initial_prev_accepted_deltas=init_accepted,
+            initial_prev_med_rt=init_med_rt,
+        )
+        trace.extend(new_rows)
+
+    all_depths = sorted(existing_depths | set(new_depths))
+    payload["depths"] = all_depths
+    if "traces_by_mode" in payload:
+        payload["traces_by_mode"] = traces_by_mode
+    for mode, trace in traces_by_mode.items():
+        payload[trace_json_key(mode)] = trace
+
+    out_json = output_json or json_path
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Wrote {out_json}")
+
+    out_png = replot_from_json(out_json, output_png)
+    print(f"Wrote {out_png}")
+    return out_json, out_png
+
+
 # --------------------------------------------------------------------------- #
 # Classical baselines (WalkSAT via numba — inline for self-containedness)      #
 # --------------------------------------------------------------------------- #
@@ -437,12 +521,15 @@ def run_arm(
     dataset: Dict[int, List[dict]],
     n_values: List[int],
     cfg: dict,
+    initial_prev_deltas: Optional[Tuple[float, float]] = None,
+    initial_prev_accepted_deltas: Optional[Tuple[float, float]] = None,
+    initial_prev_med_rt: Optional[Dict[int, float]] = None,
 ) -> List[dict]:
     print(f"\n{'#'*72}\nARM: {training_mode}\n{'#'*72}")
 
-    prev_deltas: Optional[Tuple[float, float]] = None
-    prev_accepted_deltas: Optional[Tuple[float, float]] = None
-    prev_med_rt: Optional[Dict[int, float]] = None
+    prev_deltas: Optional[Tuple[float, float]] = initial_prev_deltas
+    prev_accepted_deltas: Optional[Tuple[float, float]] = initial_prev_accepted_deltas
+    prev_med_rt: Optional[Dict[int, float]] = initial_prev_med_rt
     trace: List[dict] = []
 
     for depth in depths:
@@ -573,6 +660,11 @@ def main() -> None:
         default=None,
         help="Comma-separated extra n to evaluate from --from-json (no retraining).",
     )
+    ap.add_argument(
+        "--extend-depths",
+        default=None,
+        help="Comma-separated extra depths to train from --from-json (warm-starts from last saved angles).",
+    )
     args = ap.parse_args()
 
     if args.extend_eval_n is not None:
@@ -594,6 +686,27 @@ def main() -> None:
                 else json_path.with_suffix(".png")
             )
         extend_eval_from_json(json_path, extra_n, output_json=out_json, output_png=out_png)
+        return
+
+    if args.extend_depths is not None:
+        if args.from_json is None:
+            ap.error("--extend-depths requires --from-json")
+        extra_depths = [int(x) for x in args.extend_depths.split(",") if x.strip()]
+        json_path = Path(args.from_json).expanduser().resolve()
+        if args.output_dir is not None:
+            out_dir = Path(args.output_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            stem = args.output_stem or json_path.stem
+            out_json = out_dir / f"{stem}.json"
+            out_png = out_dir / f"{stem}.png"
+        else:
+            out_json = json_path
+            out_png = (
+                json_path.parent / f"{args.output_stem}.png"
+                if args.output_stem
+                else json_path.with_suffix(".png")
+            )
+        extend_depths_from_json(json_path, extra_depths, output_json=out_json, output_png=out_png)
         return
 
     if args.from_json is not None:
