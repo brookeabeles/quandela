@@ -9,6 +9,7 @@ extrapolates to c_inf = lim_{p→∞} c_typ(p) by fitting three functional forms
   power:  c_inf + A · p^(-alpha)   [3 params]
   inv:    c_inf + A / p             [2 params]
   log:    c_inf + A / ln(p)         [2 params]
+  exp:    c_inf + A · exp(-β p)     [3 params]
 
 Outputs:
   - fit summary table to stdout
@@ -77,17 +78,28 @@ def _f_log(p, c_inf, A):
     return c_inf + A / np.log(np.asarray(p, dtype=float))
 
 
+def _f_exp(p, c_inf, A, beta):
+    return c_inf + A * np.exp(-beta * np.asarray(p, dtype=float))
+
+
 _MODELS_DEF = {
     "power": (_f_power, r"$c_\infty + A\,p^{-\alpha}$"),
     "inv":   (_f_inv,   r"$c_\infty + A/p$"),
     "log":   (_f_log,   r"$c_\infty + A/\ln p$"),
+    "exp":   (_f_exp,   r"$c_\infty + A\,e^{-\beta p}$"),
 }
 # Physical bounds: c_inf ∈ [0, 1], A > 0, alpha > 0
 _BOUNDS = {
     "power": ([0.0, 0.0, 0.01], [1.0, 10.0, 5.0]),
     "inv":   ([0.0, 0.0],       [1.0, 10.0]),
     "log":   ([0.0, 0.0],       [1.0, 10.0]),
+    "exp":   ([0.0, 0.0, 1e-4], [1.0, 1.0, 0.5]),
 }
+_P0_GRID_EXP = [
+    [0.32, 0.35, 0.05],
+    [0.30, 0.40, 0.03],
+    [0.34, 0.25, 0.08],
+]
 # Multiple initial guesses for power (most degenerate)
 _P0_GRID_POWER = [
     [0.20, 0.6, 0.40],
@@ -124,7 +136,12 @@ def fit_models(
     results: Dict[str, dict] = {}
     for name, (fn, label) in _MODELS_DEF.items():
         bounds = _BOUNDS[name]
-        p0_list = _P0_GRID_POWER if name == "power" else [[0.25, 0.5]]
+        if name == "power":
+            p0_list = _P0_GRID_POWER
+        elif name == "exp":
+            p0_list = _P0_GRID_EXP
+        else:
+            p0_list = [[0.25, 0.5]]
         best_popt, best_perr, best_ssr = None, None, float("inf")
         last_exc = None
         for p0 in p0_list:
@@ -312,6 +329,184 @@ def plot_convergence(
     print(f"Wrote {out_path}")
 
 
+def load_multiseed_objective_series(
+    manifest_path: Path,
+) -> Dict[str, Dict[int, List[float]]]:
+    """Return {mode_label: {depth: [c_typ per seed]}} from multi-seed manifest."""
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mode_keys = {
+        "mean_p": "trace_bm24_mean_p_fixed_n",
+        "median_rt": "trace_median_runtime_fixed_n",
+    }
+    out: Dict[str, Dict[int, List[float]]] = {k: {} for k in mode_keys}
+    for rec in manifest.get("runs", []):
+        jp = Path(rec["json"])
+        if not jp.is_file():
+            continue
+        payload = json.loads(jp.read_text(encoding="utf-8"))
+        for label, trace_key in mode_keys.items():
+            for row in payload.get(trace_key, []):
+                depth = int(row["depth"])
+                val = float(row.get("lr_log2_slope", float("nan")))
+                if np.isfinite(val):
+                    out[label].setdefault(depth, []).append(val)
+    return out
+
+
+def _fit_exp_only(ps: np.ndarray, ys: np.ndarray) -> Optional[dict]:
+    fits = fit_models(ps, ys, p_min_fit=int(np.min(ps)))
+    res = fits.get("exp", {})
+    return res if res.get("ok") else None
+
+
+def plot_objective_exp_convergence(
+    *,
+    seed27_series: Dict[str, dict],
+    multiseed: Dict[str, Dict[int, List[float]]],
+    out_path: Path,
+    p_min_fit: int = 10,
+    p_max_extrap: int = 120,
+) -> dict:
+    """
+    Two-panel figure: seed-27 extended depths + multi-seed mean with exp fits.
+
+    Compares mean_p vs median_rt training on the same eval protocol.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.2), gridspec_kw={"wspace": 0.28})
+    p_line = np.linspace(max(2, p_min_fit), p_max_extrap, 400)
+    fit_rows: List[dict] = []
+
+    panel_cfg = (
+        (
+            axes[0],
+            "seed 27 · train $n=12$ · eval $n\\in[12,18]$",
+            seed27_series,
+            "per-run",
+        ),
+        (
+            axes[1],
+            "multi-seed mean · train $n=12$ · eval $n\\in[12,18]$",
+            None,
+            "multiseed",
+        ),
+    )
+
+    for ax, title, series_src, src_kind in panel_cfg:
+        for mode, color, marker in (
+            ("bm24_mean_p_fixed_n", "#4C72B0", "o"),
+            ("median_runtime_fixed_n", "#C44E52", "s"),
+        ):
+            mode_label = _MODE_LABEL.get(mode, mode)
+            if src_kind == "per-run":
+                if mode not in series_src:
+                    continue
+                ps = series_src[mode]["ps"]
+                ys = series_src[mode]["ys"]
+            else:
+                label_key = "mean_p" if mode == "bm24_mean_p_fixed_n" else "median_rt"
+                depths = sorted(
+                    d for d, vals in multiseed[label_key].items() if len(vals) > 0
+                )
+                ps = np.array(depths, dtype=float)
+                ys = np.array(
+                    [float(np.mean(multiseed[label_key][d])) for d in depths],
+                    dtype=float,
+                )
+                yerr = np.array(
+                    [float(np.std(multiseed[label_key][d])) for d in depths],
+                    dtype=float,
+                )
+                mask = ps >= p_min_fit
+                ax.errorbar(
+                    ps[mask],
+                    ys[mask],
+                    yerr=yerr[mask],
+                    fmt=f"{marker}-",
+                    color=color,
+                    mfc="white",
+                    mec=color,
+                    mew=1.1,
+                    ms=7,
+                    lw=1.8,
+                    capsize=3,
+                    elinewidth=1.0,
+                    zorder=4,
+                    label=f"{mode_label} data",
+                )
+
+            mask = np.isfinite(ys) & (ps >= p_min_fit)
+            ps_f, ys_f = ps[mask], ys[mask]
+            if src_kind == "per-run":
+                ax.plot(
+                    ps_f,
+                    ys_f,
+                    f"{marker}-",
+                    color=color,
+                    lw=2,
+                    ms=7,
+                    mfc="white",
+                    mec=color,
+                    mew=1.1,
+                    label=f"{mode_label} data",
+                    zorder=4,
+                )
+
+            exp_fit = _fit_exp_only(ps_f, ys_f)
+            if exp_fit is None:
+                continue
+            fn = _MODELS_DEF["exp"][0]
+            y_fit = fn(p_line, *exp_fit["params"])
+            c_inf, c_err = exp_fit["c_inf"], exp_fit["c_inf_err"]
+            beta = float(exp_fit["params"][2])
+            beta_err = float(exp_fit["param_err"][2])
+            ax.plot(
+                p_line,
+                y_fit,
+                color=color,
+                lw=1.6,
+                ls="--",
+                alpha=0.85,
+                label=(
+                    rf"{mode_label} fit: $c_\infty={c_inf:.3f}\!\pm\!{c_err:.3f}$, "
+                    rf"$\beta={beta:.3f}\!\pm\!{beta_err:.3f}$"
+                ),
+            )
+            fit_rows.append({
+                "panel": src_kind,
+                "mode": mode,
+                "mode_label": mode_label,
+                "p_min_fit": int(p_min_fit),
+                "n_fit": int(mask.sum()),
+                "c_inf": c_inf,
+                "c_inf_err": c_err,
+                "beta": beta,
+                "beta_err": beta_err,
+                "params": exp_fit["params"],
+                "param_err": exp_fit["param_err"],
+                "ssr": float(np.sum((ys_f - fn(ps_f, *exp_fit["params"])) ** 2)),
+            })
+
+        ax.set_xlabel("QAOA depth $p$")
+        ax.set_ylabel(r"$c_{\mathrm{typ}}$  (log$_2$ slope vs $n$)")
+        ax.set_title(title, fontsize=10)
+        ax.legend(fontsize=7, loc="upper right")
+        ax.grid(True, alpha=0.3)
+        ax.set_xlim(left=0)
+
+    fig.suptitle(
+        r"Training objective convergence: $c_{\mathrm{typ}}(p)=c_\infty + A\,e^{-\beta p}$"
+        "\n(extended depths include $p=80,100$)",
+        fontsize=11,
+        y=1.02,
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+    return {"fits": fit_rows, "output": str(out_path)}
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -425,6 +620,26 @@ def main() -> None:
     json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(json.dumps({"fits": json_rows}, indent=2), encoding="utf-8")
     print(f"Wrote {json_path}")
+
+    manifest_candidates = (
+        _PHASECRAFT / "results/bm24_runs/multi_seed_ctyp_cann/manifest.json",
+        _PHASECRAFT / "bm24_runs/multi_seed_ctyp_cann/manifest.json",
+    )
+    manifest_path = next((p for p in manifest_candidates if p.is_file()), None)
+    if manifest_path and len(run_jsons) == 1 and run_jsons[0].is_file():
+        seed27 = load_series(run_jsons[0], modes=modes)
+        if {"bm24_mean_p_fixed_n", "median_runtime_fixed_n"} <= set(seed27):
+            exp_p_min = max(10, int(args.p_min_fit))
+            exp_meta = plot_objective_exp_convergence(
+                seed27_series=seed27,
+                multiseed=load_multiseed_objective_series(manifest_path),
+                out_path=out_dir / "objective_exp_convergence.png",
+                p_min_fit=exp_p_min,
+                p_max_extrap=min(120, int(args.p_max_extrap)),
+            )
+            exp_json = out_dir / "objective_exp_convergence.json"
+            exp_json.write_text(json.dumps(exp_meta, indent=2), encoding="utf-8")
+            print(f"Wrote {exp_json}")
 
 
 if __name__ == "__main__":

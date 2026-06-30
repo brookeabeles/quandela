@@ -57,6 +57,11 @@ from phasecraft.lib.sim.bm24_qaoa_sim import (  # noqa: E402
     per_instance_success_probability,
     run_qaoa,
 )
+from plot_compare_run1_run4 import (  # noqa: E402
+    add_classical_baselines,
+    classical_slopes,
+    load_classical_baselines,
+)
 from train_lr_fixed_n import (  # noqa: E402
     DEFAULT_EVAL_RUNTIME_REGRESSION_FACTOR,
     DEFAULT_EVAL_TRAIN_RETRIES,
@@ -69,6 +74,7 @@ from train_lr_fixed_n import (  # noqa: E402
 )
 
 LN2 = float(np.log(2.0))
+_DEFAULT_CLASSICAL_JSON = Path("results/bm24_runs/06-10/run1/scaling-tn14.json")
 
 DEFAULT_COMPARE_MODES = ("bm24_mean_p_fixed_n", "median_runtime_fixed_n")
 
@@ -176,16 +182,82 @@ def fit_log2_slope(n_values: List[int], y_values: List[float]) -> float:
     return float(slope_nat / LN2)
 
 
+def _eval_window(cfg: dict, eval_n_min: int | None, eval_n_max: int | None) -> Tuple[int, int]:
+    n_lo = int(eval_n_min if eval_n_min is not None else cfg.get("n_min", min(cfg.get("n_values", [12]))))
+    n_hi = int(eval_n_max if eval_n_max is not None else cfg.get("n_max", max(cfg.get("n_values", [18]))))
+    return n_lo, n_hi
+
+
+def _median_runtime_lookup(row: dict, n: int) -> float:
+    med = row.get("median_runtime_per_n") or {}
+    if str(n) in med:
+        return float(med[str(n)])
+    if n in med:
+        return float(med[n])
+    raise KeyError(f"median_runtime_per_n missing n={n}")
+
+
+def _refit_traces_for_window(
+    traces_by_mode: Dict[str, List[dict]],
+    n_lo: int,
+    n_hi: int,
+) -> Dict[str, List[dict]]:
+    """Return shallow copies with lr_log2_slope refit on median_runtime_per_n in [n_lo, n_hi]."""
+    ns = list(range(n_lo, n_hi + 1))
+    out: Dict[str, List[dict]] = {}
+    for mode, trace in traces_by_mode.items():
+        refit: List[dict] = []
+        for row in trace:
+            row_copy = dict(row)
+            med = row.get("median_runtime_per_n") or {}
+            ys = [_median_runtime_lookup(row, n) for n in ns]
+            row_copy["lr_log2_slope"] = fit_log2_slope(ns, ys)
+            refit.append(row_copy)
+        out[mode] = refit
+    return out
+
+
+def resolve_classical_slopes(
+    cfg: dict,
+    *,
+    eval_n_min: int | None = None,
+    eval_n_max: int | None = None,
+    classical_json: Path | None = None,
+    payload: dict | None = None,
+) -> Tuple[float, float, Tuple[int, int], dict | None]:
+    """WalkSAT / WalkSATlm log2 slopes on the eval n window."""
+    window = _eval_window(cfg, eval_n_min, eval_n_max)
+    if payload is not None:
+        ws = float(payload.get("walksat_log2_slope", float("nan")))
+        lm = float(payload.get("walksatlm_log2_slope", float("nan")))
+        if np.isfinite(ws) and np.isfinite(lm):
+            return ws, lm, window, payload.get("classical")
+
+    classical = load_classical_baselines(classical_json or _DEFAULT_CLASSICAL_JSON)
+    if classical is None:
+        return float("nan"), float("nan"), window, None
+    ws, lm = classical_slopes(classical, window[0], window[1])
+    return ws, lm, window, classical
+
+
 def plot_objective_comparison(
     *,
     traces_by_mode: Dict[str, List[dict]],
     n_values: List[int],
     depths: List[int],
     cfg: dict,
-    walksat_log2_slope: float,
     output_path: Path,
+    classical: dict | None = None,
+    eval_window: Tuple[int, int] | None = None,
+    walksat_log2_slope: float | None = None,
+    walksatlm_log2_slope: float | None = None,
 ) -> None:
     """Single slope-vs-depth panel (no secondary delta or scaling gauge)."""
+    window = eval_window or _eval_window(cfg, None, None)
+    title_cfg = dict(cfg)
+    title_cfg["n_min"] = window[0]
+    title_cfg["n_max"] = window[1]
+
     fig, ax = plt.subplots(figsize=(8, 5))
 
     for mode, trace in traces_by_mode.items():
@@ -204,21 +276,37 @@ def plot_objective_comparison(
                     markeredgewidth=2,
                     linestyle="none",
                 )
-    if np.isfinite(walksat_log2_slope):
-        ax.axhline(
-            walksat_log2_slope,
-            color="C2",
-            linestyle=":",
-            linewidth=1.5,
-            label=f"WalkSAT ({walksat_log2_slope:.3f})",
-        )
+
+    if classical is not None:
+        add_classical_baselines(ax, classical, window)
+    else:
+        ws = float(walksat_log2_slope if walksat_log2_slope is not None else float("nan"))
+        lm = float(walksatlm_log2_slope if walksatlm_log2_slope is not None else float("nan"))
+        n_rng = f"n={window[0]}–{window[1]}"
+        if np.isfinite(ws):
+            ax.axhline(
+                ws,
+                color="C1",
+                linestyle=":",
+                linewidth=1.5,
+                label=f"WalkSAT ({ws:.3f}, {n_rng})",
+            )
+        if np.isfinite(lm):
+            ax.axhline(
+                lm,
+                color="C2",
+                linestyle=":",
+                linewidth=1.5,
+                label=f"WalkSATlm ({lm:.3f}, {n_rng})",
+            )
+
     ax.set_xlabel("QAOA depth p")
     ax.set_ylabel(r"Eval: $\log_2$ slope of median(1/p_succ) vs n")
     modes_label = " vs ".join(
         _MODE_PLOT_STYLE.get(m, (None, m))[1] for m in traces_by_mode
     )
     title = format_benchmark_title(
-        cfg,
+        title_cfg,
         headline=f"LR objective compare · {modes_label} @ train_n",
         depths=depths,
     )
@@ -245,31 +333,45 @@ def traces_from_payload(payload: dict) -> Dict[str, List[dict]]:
     return out
 
 
-def replot_from_json(json_path: Path, output_path: Path | None = None) -> Path:
+def replot_from_json(
+    json_path: Path,
+    output_path: Path | None = None,
+    *,
+    eval_n_min: int | None = None,
+    eval_n_max: int | None = None,
+    classical_json: Path | None = None,
+    refit_eval_window: bool = False,
+) -> Path:
     with open(json_path, encoding="utf-8") as f:
         payload = json.load(f)
     cfg = payload["config"]
     n_values = [int(n) for n in payload["n_values"]]
     depths = [int(d) for d in payload["depths"]]
+    window = _eval_window(cfg, eval_n_min, eval_n_max)
+    traces = traces_from_payload(payload)
+    if refit_eval_window and window != (min(n_values), max(n_values)):
+        traces = _refit_traces_for_window(traces, window[0], window[1])
+
+    ws, lm, window, classical = resolve_classical_slopes(
+        cfg,
+        eval_n_min=window[0],
+        eval_n_max=window[1],
+        classical_json=classical_json,
+        payload=payload,
+    )
     out = output_path or json_path.with_suffix(".png")
     plot_objective_comparison(
-        traces_by_mode=traces_from_payload(payload),
+        traces_by_mode=traces,
         n_values=n_values,
         depths=depths,
         cfg=cfg,
-        walksat_log2_slope=float(payload.get("walksat_log2_slope", float("nan"))),
         output_path=out,
+        classical=classical,
+        eval_window=window,
+        walksat_log2_slope=ws,
+        walksatlm_log2_slope=lm,
     )
     return out
-
-
-def _median_runtime_lookup(row: dict, n: int) -> float:
-    med = row.get("median_runtime_per_n") or {}
-    if str(n) in med:
-        return float(med[str(n)])
-    if n in med:
-        return float(med[n])
-    raise KeyError(f"median_runtime_per_n missing n={n}")
 
 
 def extend_eval_from_json(
@@ -665,6 +767,29 @@ def main() -> None:
         default=None,
         help="Comma-separated extra depths to train from --from-json (warm-starts from last saved angles).",
     )
+    ap.add_argument(
+        "--eval-n-min",
+        type=int,
+        default=None,
+        help="Eval n window low (for replot / sub-window slopes). Default: config n_min.",
+    )
+    ap.add_argument(
+        "--eval-n-max",
+        type=int,
+        default=None,
+        help="Eval n window high (for replot / sub-window slopes). Default: config n_max.",
+    )
+    ap.add_argument(
+        "--classical-json",
+        type=Path,
+        default=None,
+        help="JSON with setup.classical WalkSAT medians (default: scaling-tn14).",
+    )
+    ap.add_argument(
+        "--refit-eval-window",
+        action="store_true",
+        help="With --from-json: refit lr_log2_slope on --eval-n-min..--eval-n-max.",
+    )
     args = ap.parse_args()
 
     if args.extend_eval_n is not None:
@@ -722,7 +847,14 @@ def main() -> None:
                 if args.output_stem
                 else json_path.with_suffix(".png")
             )
-        replot_from_json(json_path, png_path)
+        replot_from_json(
+            json_path,
+            png_path,
+            eval_n_min=args.eval_n_min,
+            eval_n_max=args.eval_n_max,
+            classical_json=args.classical_json,
+            refit_eval_window=bool(args.refit_eval_window),
+        )
         print(f"Wrote {png_path}")
         return
 
@@ -799,9 +931,13 @@ def main() -> None:
         )
     total_elapsed = time.time() - t_total
 
-    # --- WalkSAT log2 slope (cheap estimate from the BM24 formula for these n) ---
-    # Fit from a short walksat run; if numba unavailable, leave as NaN.
-    ws_slope = float("nan")
+    # --- Classical baselines (median-flip slopes on eval n window) ---
+    ws_slope, lm_slope, eval_window, classical = resolve_classical_slopes(
+        cfg,
+        eval_n_min=args.n_min,
+        eval_n_max=args.n_max,
+        classical_json=args.classical_json,
+    )
 
     # --- Save JSON (re-mkdir: output tree may disappear on long runs) ---
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -812,6 +948,8 @@ def main() -> None:
         "depths": depths,
         "n_values": n_values,
         "walksat_log2_slope": ws_slope,
+        "walksatlm_log2_slope": lm_slope,
+        "classical": classical,
         "traces_by_mode": traces_by_mode,
         **{trace_json_key(mode): trace for mode, trace in traces_by_mode.items()},
         "total_elapsed_s": total_elapsed,
@@ -830,8 +968,11 @@ def main() -> None:
         n_values=n_values,
         depths=depths,
         cfg=cfg,
-        walksat_log2_slope=ws_slope,
         output_path=png_path,
+        classical=classical,
+        eval_window=eval_window,
+        walksat_log2_slope=ws_slope,
+        walksatlm_log2_slope=lm_slope,
     )
     print(f"Wrote {png_path}")
 
