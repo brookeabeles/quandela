@@ -152,6 +152,59 @@ def _ctyp_summary_path(run_path: Path) -> Path:
     return root / stem / "ctyp_vs_cann_summary.json"
 
 
+def _ctyp_cache_path(run_path: Path) -> Path:
+    return run_path.parent / f"{run_path.stem}-ctyp-cann-cache.json"
+
+
+def _merge_mean_p_rows_from_cache(
+    rows: List[dict],
+    run: dict,
+    *,
+    mode: str = "bm24_mean_p_fixed_n",
+    focus_depths: Optional[List[int]] = None,
+) -> List[dict]:
+    """Fill in partial rebenchmark rows from incremental ctyp-cann cache."""
+    cache_path = _ctyp_cache_path(run["path"])
+    if not cache_path.is_file():
+        return rows
+    cache = json.loads(cache_path.read_text(encoding="utf-8"))
+    rb = cache.get("rebenchmark") or {}
+    depth_set = set(focus_depths) if focus_depths else None
+    by_depth = {int(r["depth"]): r for r in rows if int(r["seed"]) == int(run["seed"])}
+    for key, entry in rb.items():
+        if "|" not in key:
+            continue
+        mode_part, depth_s = key.rsplit("|", 1)
+        if mode_part != mode:
+            continue
+        depth = int(depth_s)
+        if depth_set is not None and depth not in depth_set:
+            continue
+        c_inv = entry.get("c_inv_mean_rt")
+        if c_inv is None or not np.isfinite(float(c_inv)):
+            continue
+        c_inv = float(c_inv)
+        row = by_depth.get(depth)
+        if row is None:
+            row = {
+                "seed": int(run["seed"]),
+                "depth": depth,
+                "c_inv_mean": c_inv,
+                "c_emp_mean": float(entry.get("c_emp_mean", float("nan"))),
+                "has_mean_rebenchmark": True,
+            }
+            rows.append(row)
+            by_depth[depth] = row
+        elif not row.get("has_mean_rebenchmark") or not np.isfinite(
+            float(row.get("c_inv_mean", float("nan")))
+        ):
+            row["c_inv_mean"] = c_inv
+            if entry.get("c_emp_mean") is not None:
+                row["c_emp_mean"] = float(entry["c_emp_mean"])
+            row["has_mean_rebenchmark"] = True
+    return rows
+
+
 def extract_exponent_equivalence_rows(
     runs: List[dict],
     *,
@@ -417,6 +470,12 @@ def extract_mean_p_exponent_rows(
                 "c_emp_mean": c_emp_mean,
                 "has_mean_rebenchmark": np.isfinite(c_inv_mean),
             })
+        rows = _merge_mean_p_rows_from_cache(
+            rows,
+            run,
+            mode=mode,
+            focus_depths=focus_depths,
+        )
     return rows
 
 
@@ -578,6 +637,7 @@ def plot_dual_exponent_convergence(
     train_n: int = 12,
     eval_window: Tuple[int, int] = (12, 18),
     classical: Optional[dict] = None,
+    png_name: str = "multi_seed_exponent_convergence.png",
 ) -> Path:
     """c_typ (median runtime) and mean(1/p) exponent on one panel."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -601,7 +661,18 @@ def plot_dual_exponent_convergence(
     if classical:
         ws_slope, lm_slope = classical_slopes(classical, n_lo, n_hi)
 
-    all_vals = [v for v in typ_mean + typ_lo + typ_hi + inv_mean + inv_lo + inv_hi if np.isfinite(v)]
+    p_max = float(max(depths))
+    depths_arr = np.asarray(depths, dtype=float)
+    x_eq = np.arange(len(depths), dtype=float)
+
+    def _p_to_x(ps: np.ndarray) -> np.ndarray:
+        return np.interp(ps, depths_arr, x_eq)
+
+    all_vals = [
+        v
+        for v in typ_mean + typ_lo + typ_hi + inv_mean + inv_lo + inv_hi
+        if np.isfinite(v)
+    ]
     for v in (ws_slope, lm_slope):
         if np.isfinite(v):
             all_vals.append(v)
@@ -610,7 +681,7 @@ def plot_dual_exponent_convergence(
     yerr_typ_lo = [m - lo for m, lo in zip(typ_mean, typ_lo)]
     yerr_typ_hi = [hi - m for m, hi in zip(typ_mean, typ_hi)]
     ax.errorbar(
-        depths,
+        x_eq,
         typ_mean,
         yerr=[yerr_typ_lo, yerr_typ_hi],
         fmt="o-",
@@ -634,13 +705,14 @@ def plot_dual_exponent_convergence(
         exp_fit = _fit_exp_only(ps_f, ys_f)
         if exp_fit is not None:
             fn = _MODELS_DEF["exp"][0]
-            p_line = np.linspace(float(np.min(ps_f)), 120.0, 400)
+            p_line = np.linspace(float(np.min(ps_f)), p_max * 1.2, 400)
+            x_line = _p_to_x(p_line)
             y_fit = fn(p_line, *exp_fit["params"])
             c_inf, c_err = exp_fit["c_inf"], exp_fit["c_inf_err"]
             beta = float(exp_fit["params"][2])
             beta_err = float(exp_fit["param_err"][2])
             ax.plot(
-                p_line,
+                x_line,
                 y_fit,
                 color="#4C72B0",
                 lw=1.6,
@@ -648,7 +720,7 @@ def plot_dual_exponent_convergence(
                 alpha=0.85,
                 zorder=2,
                 label=(
-                    rf"exp fit: $c_\infty={c_inf:.3f}\!\pm\!{c_err:.3f}$, "
+                    rf"$2^{{-cn}}$ fit: $c_\infty={c_inf:.3f}\!\pm\!{c_err:.3f}$, "
                     rf"$\beta={beta:.3f}\!\pm\!{beta_err:.3f}$"
                 ),
             )
@@ -662,7 +734,7 @@ def plot_dual_exponent_convergence(
             + ", rebenchmark)"
         )
         ax.errorbar(
-            depths,
+            x_eq,
             inv_mean,
             yerr=[yerr_inv_lo, yerr_inv_hi],
             fmt="s--",
@@ -686,14 +758,17 @@ def plot_dual_exponent_convergence(
     pad = max(0.012, 0.08 * span)
     ax.set_ylim(y_min - pad, y_max + pad)
     ax.set_xlabel(r"QAOA depth $p$", fontsize=11)
-    ax.set_ylabel(r"$\log_2$ scaling exponent vs $n$", fontsize=11)
+    ax.set_ylabel(
+        r"Scaling exponent $c$ ($p_{\mathrm{succ}} \propto 2^{-cn}$)",
+        fontsize=11,
+    )
     ax.set_title(
         rf"Multi-seed exponent convergence (train $n={train_n}$, "
         rf"mean$_p$ training, $n \in [{n_lo},{n_hi}]$)",
         fontsize=11,
     )
-    ax.set_xticks(depths)
-    ax.set_xticklabels([str(d) for d in depths])
+    ax.set_xticks(x_eq)
+    ax.set_xticklabels([str(int(d)) for d in depths])
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8.5, loc="upper right", framealpha=0.95)
     if not has_mean_line:
@@ -709,7 +784,7 @@ def plot_dual_exponent_convergence(
     fig.subplots_adjust(right=0.88)
     fig.tight_layout()
 
-    png = out_dir / "multi_seed_exponent_convergence.png"
+    png = out_dir / png_name
     fig.savefig(png, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Wrote {png}")
