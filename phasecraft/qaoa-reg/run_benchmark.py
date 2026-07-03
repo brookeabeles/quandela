@@ -66,6 +66,17 @@ except Exception:  # pragma: no cover
     detect_device = None  # type: ignore[assignment]
     success_probs_for_instances = None  # type: ignore[assignment]
 
+try:
+    from phasecraft.experiments.lr_scaling.benchmark_dataset_cache import (  # type: ignore
+        benchmark_dataset_cache_path,
+        load_benchmark_dataset_clauses,
+        save_benchmark_dataset_clauses,
+    )
+except Exception:  # pragma: no cover
+    benchmark_dataset_cache_path = None  # type: ignore[assignment]
+    load_benchmark_dataset_clauses = None  # type: ignore[assignment]
+    save_benchmark_dataset_clauses = None  # type: ignore[assignment]
+
 
 LN2 = float(np.log(2.0))
 DEFAULT_RESULTS_DIR = _THIS_DIR / "results"
@@ -139,6 +150,134 @@ def generate_benchmark_dataset(
         pbar.close()
         dataset[int(n)] = insts
     return dataset
+
+
+def generate_benchmark_dataset_with_clauses(
+    n_values: Sequence[int],
+    *,
+    k: int,
+    r: float,
+    test_size: int,
+    base_seed: int,
+    require_sat: bool,
+    m_sampling: str,
+    max_trials_per_n: int,
+) -> Dict[int, List[dict]]:
+    """Generate held-out formulas and keep clauses so they can be cached."""
+    dataset: Dict[int, List[dict]] = {}
+    for n in n_values:
+        accepted = 0
+        trial = 0
+        insts: List[dict] = []
+        pbar = tqdm(total=int(test_size), desc=f"dataset n={n}", leave=False)
+        while accepted < int(test_size):
+            if trial >= int(max_trials_per_n):
+                raise RuntimeError(f"too many rejected eval formulas at n={n}")
+            ss = np.random.SeedSequence([int(base_seed), int(n), int(accepted), int(trial)])
+            rng = np.random.default_rng(ss)
+            m = sample_m(rng, int(n), float(r), m_sampling)
+            clauses = [generate_random_clause(int(n), int(k), rng) for _ in range(m)]
+            h_diag = build_h_diagonal(clauses, int(n))
+            if require_sat and not np.any(h_diag == 0):
+                trial += 1
+                continue
+            insts.append({"clauses": clauses, "h_diag": h_diag})
+            accepted += 1
+            trial += 1
+            pbar.update(1)
+        pbar.close()
+        dataset[int(n)] = insts
+    return dataset
+
+
+def dense_dataset_from_records(dataset: Mapping[int, Sequence[Mapping]]) -> Dict[int, List[np.ndarray]]:
+    """Convert cached clause records to the dense H_diag form used by qaoa-reg."""
+    return {
+        int(n): [np.asarray(inst["h_diag"]) for inst in instances]
+        for n, instances in dataset.items()
+    }
+
+
+def cache_meta(
+    *,
+    k: int,
+    r: float,
+    base_seed: int,
+    test_size: int,
+    n_values: Sequence[int],
+) -> dict:
+    return {
+        "version": 1,
+        "k": int(k),
+        "r": float(r),
+        "seed": int(base_seed),
+        "test_size": int(test_size),
+        "n_values": [int(n) for n in n_values],
+    }
+
+
+def load_or_generate_benchmark_dataset(cfg: Mapping, n_values: Sequence[int]) -> Dict[int, List[np.ndarray]]:
+    """Load/save LR-compatible benchmark clause caches when possible."""
+    use_cache = bool(cfg.get("use_dataset_cache", True))
+    cache_dir_text = cfg.get("dataset_cache_dir")
+    cache_supported = (
+        use_cache
+        and benchmark_dataset_cache_path is not None
+        and load_benchmark_dataset_clauses is not None
+        and save_benchmark_dataset_clauses is not None
+        and bool(cfg["sat_filter"])
+        and str(cfg["m_sampling"]) == "notebook"
+    )
+    if not cache_supported:
+        if use_cache:
+            print("Dataset cache unavailable for this configuration; generating benchmark dataset.")
+        return generate_benchmark_dataset(
+            n_values,
+            k=int(cfg["k"]),
+            r=float(cfg["r"]),
+            test_size=int(cfg["test_size"]),
+            base_seed=int(cfg["eval_seed"]),
+            require_sat=bool(cfg["sat_filter"]),
+            m_sampling=str(cfg["m_sampling"]),
+            max_trials_per_n=int(cfg["max_trials_per_n"]),
+        )
+
+    cache_dir = Path(cache_dir_text) if cache_dir_text else Path(cfg["output_dir"])
+    cache_dir = cache_dir.expanduser().resolve()
+    meta = cache_meta(
+        k=int(cfg["k"]),
+        r=float(cfg["r"]),
+        base_seed=int(cfg["eval_seed"]),
+        test_size=int(cfg["test_size"]),
+        n_values=n_values,
+    )
+    cache_path = benchmark_dataset_cache_path(
+        cache_dir,
+        k=int(cfg["k"]),
+        r=float(cfg["r"]),
+        base_seed=int(cfg["eval_seed"]),
+        test_size=int(cfg["test_size"]),
+        n_values=n_values,
+    )
+    loaded = load_benchmark_dataset_clauses(cache_path, meta=meta)
+    if loaded is not None:
+        print(f"Loaded benchmark clauses from {cache_path} (rebuilt H_diag)")
+        return dense_dataset_from_records(loaded)
+
+    print(f"No benchmark cache at {cache_path}; generating and saving it.")
+    records = generate_benchmark_dataset_with_clauses(
+        n_values,
+        k=int(cfg["k"]),
+        r=float(cfg["r"]),
+        test_size=int(cfg["test_size"]),
+        base_seed=int(cfg["eval_seed"]),
+        require_sat=bool(cfg["sat_filter"]),
+        m_sampling=str(cfg["m_sampling"]),
+        max_trials_per_n=int(cfg["max_trials_per_n"]),
+    )
+    save_benchmark_dataset_clauses(cache_path, meta=meta, dataset=records)
+    print(f"Saved benchmark clauses -> {cache_path}")
+    return dense_dataset_from_records(records)
 
 
 def fit_log2_slope(n_values: Sequence[int], y_values: Sequence[float]) -> float:
@@ -288,17 +427,8 @@ def run_pipeline(cfg: Mapping) -> Path:
     elif bool(cfg.get("compare_lr")):
         print("LR-QAOA training: CPU serial")
 
-    print("Building shared SAT-filtered benchmark dataset...")
-    dataset = generate_benchmark_dataset(
-        n_values,
-        k=int(cfg["k"]),
-        r=float(cfg["r"]),
-        test_size=int(cfg["test_size"]),
-        base_seed=int(cfg["eval_seed"]),
-        require_sat=bool(cfg["sat_filter"]),
-        m_sampling=str(cfg["m_sampling"]),
-        max_trials_per_n=int(cfg["max_trials_per_n"]),
-    )
+    print("Loading/building shared SAT-filtered benchmark dataset...")
+    dataset = load_or_generate_benchmark_dataset(cfg, n_values)
 
     print(f"Building training set n={cfg['train_n']}, size={cfg['train_size']}...")
     training_instances = generate_training_instances(
@@ -467,6 +597,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     p.add_argument("--m-sampling", choices=["notebook", "bm24"], default="notebook")
     p.add_argument("--sat-filter", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--max-trials-per-n", type=int, default=1_000_000)
+    p.add_argument("--dataset-cache-dir", default=None, help="Directory containing LR-compatible benchmark_clauses_*.json.gz files.")
+    p.add_argument("--use-dataset-cache", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--gamma-bounds", default=None, help="Regular-QAOA gamma box as lo,hi. Default: -2,0.")
     p.add_argument("--beta-bounds", default=None, help="Regular-QAOA beta box as lo,hi. Default: 0,4.")
     p.add_argument("--optimizer", choices=["COBYLA", "L-BFGS-B", "Powell"], default="COBYLA")
@@ -511,6 +643,8 @@ def build_cfg(args: argparse.Namespace) -> dict:
         "m_sampling": str(args.m_sampling),
         "sat_filter": bool(args.sat_filter),
         "max_trials_per_n": int(args.max_trials_per_n),
+        "dataset_cache_dir": args.dataset_cache_dir,
+        "use_dataset_cache": bool(args.use_dataset_cache),
         "gamma_bounds": parse_float_pair(args.gamma_bounds, DEFAULT_GAMMA_BOUNDS),
         "beta_bounds": parse_float_pair(args.beta_bounds, DEFAULT_BETA_BOUNDS),
         "optimizer": str(args.optimizer),
