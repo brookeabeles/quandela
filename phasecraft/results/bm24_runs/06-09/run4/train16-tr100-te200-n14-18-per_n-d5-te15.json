@@ -1,0 +1,111 @@
+{
+  "source_run": "06-09_1912-train16-tr100-te200-n14-18",
+  "source_path": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run4/06-09_1912-train16-tr100-te200-n14-18.json",
+  "test_size_used": 15,
+  "config": {
+    "k": 8,
+    "r": 176.54,
+    "seed": 27,
+    "train_n": 16,
+    "train_size": 100,
+    "n_min": 12,
+    "n_max": 18,
+    "test_size": 200,
+    "cobyla_maxiter": 120,
+    "cobyla_restarts": 5,
+    "cobyla_perturb_scale": 0.2,
+    "grid_top_k": 5,
+    "skip_grid": false,
+    "skip_grid_if_warm_start": true,
+    "lr_beta_schedule": "decreasing",
+    "eval_train_retries": 1,
+    "walksat_p_noise": 0.5,
+    "max_flips": 100000
+  },
+  "results": {
+    "mean_p": {
+      "depth": 5,
+      "delta_gamma": -1.6151803414250507,
+      "delta_beta": 1.0142976539482436,
+      "per_n": [
+        {
+          "n": 14,
+          "mean_p": 0.012059918224142352,
+          "median_p": 0.00868713388894809,
+          "median_rt": 115.11276478335576,
+          "inverse_mean": 82.9193018903008,
+          "spread_ratio": 0.7203310774991495,
+          "rt_over_inv_mean": 1.388250529842204
+        },
+        {
+          "n": 15,
+          "mean_p": 0.006180902135566727,
+          "median_p": 0.004283451446347204,
+          "median_rt": 233.45659744848268,
+          "inverse_mean": 161.78868036847018,
+          "spread_ratio": 0.693013956926929,
+          "rt_over_inv_mean": 1.4429723817314684
+        },
+        {
+          "n": 16,
+          "mean_p": 0.006725276349476675,
+          "median_p": 0.0033164156503053435,
+          "median_rt": 301.53035850856924,
+          "inverse_mean": 148.69277454714774,
+          "spread_ratio": 0.49312704459548484,
+          "rt_over_inv_mean": 2.0278749887269036
+        }
+      ],
+      "slope_mean_p_log2": -0.4212773343105987,
+      "slope_median_rt_log2": 0.694627720069779,
+      "gap_log2": 0.2733503857591803,
+      "fitted_exponents_log2": {
+        "mean_success_log_slope": -0.4212773343105987,
+        "median_runtime_log_slope": 0.694627720069779
+      },
+      "stored_lr_log2_slope": 0.5578509357801049
+    },
+    "median_rt": {
+      "depth": 5,
+      "delta_gamma": -1.4047975833168846,
+      "delta_beta": 1.2059117884029518,
+      "per_n": [
+        {
+          "n": 14,
+          "mean_p": 0.011793168966780315,
+          "median_p": 0.007746593338956486,
+          "median_rt": 129.0890016094102,
+          "inverse_mean": 84.79485054584211,
+          "spread_ratio": 0.6568712244162311,
+          "rt_over_inv_mean": 1.5223684077327504
+        },
+        {
+          "n": 15,
+          "mean_p": 0.005649072654136355,
+          "median_p": 0.00397052907947569,
+          "median_rt": 251.85560412317906,
+          "inverse_mean": 177.02020512477947,
+          "spread_ratio": 0.7028638721026885,
+          "rt_over_inv_mean": 1.4227506060432424
+        },
+        {
+          "n": 16,
+          "mean_p": 0.0061542889400365165,
+          "median_p": 0.003340492758669579,
+          "median_rt": 299.3570327026456,
+          "inverse_mean": 162.48830851839506,
+          "spread_ratio": 0.5427910179741672,
+          "rt_over_inv_mean": 1.8423296754840415
+        }
+      ],
+      "slope_mean_p_log2": -0.46914367798348666,
+      "slope_median_rt_log2": 0.6067505376256833,
+      "gap_log2": 0.13760685964219666,
+      "fitted_exponents_log2": {
+        "mean_success_log_slope": -0.46914367798348666,
+        "median_runtime_log_slope": 0.6067505376256833
+      },
+      "stored_lr_log2_slope": 0.5665881567909297
+    }
+  }
+}

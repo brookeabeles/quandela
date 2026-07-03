@@ -1,0 +1,10 @@
+{
+  "figures": {
+    "full_01_phase_map": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_01_phase_map_beta_gamma_0_2pi.png",
+    "full_02_residual_and_decoy_maps": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_02_residual_and_decoy_maps.png",
+    "full_03_beta_opt_mechanism": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_03_beta_opt_gamma_0_2pi_mechanism.png",
+    "full_04_beta_cuts": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_04_beta_cuts_gamma_0_2pi.png",
+    "full_05_beta_regime_strip": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_05_beta_regime_strip_0_2pi.png"
+  },
+  "report": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/full_domain_story/full_domain_story_report.md"
+}

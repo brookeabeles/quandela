@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_gap_seed_audit",
+  "angles": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/angles_grid_existing.json",
+  "eval_seed": 100027,
+  "train_seed": 27,
+  "train_size": 100,
+  "train_ns": [
+    12,
+    16
+  ],
+  "N": 500,
+  "sat_filter": true,
+  "m_sampling": "notebook",
+  "train_eval_entropy_roots_disjoint": true,
+  "train_eval_seed_overlap": 0,
+  "passed": true,
+  "fail_reasons": [],
+  "per_n": [
+    {
+      "n": 12,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 817,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.6838025295798,
+      "std_alpha_candidates": 3.697984216565633,
+      "mean_alpha_accepted": 176.44366666666664,
+      "sat_fraction_candidates": 0.6119951040391677,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 47691385,
+      "seed_max": 4285790561
+    },
+    {
+      "n": 13,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 854,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.63411997838227,
+      "std_alpha_candidates": 3.715694694290626,
+      "mean_alpha_accepted": 176.36846153846153,
+      "sat_fraction_candidates": 0.585480093676815,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 264717,
+      "seed_max": 4292778987
+    },
+    {
+      "n": 14,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 864,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.76165674603175,
+      "std_alpha_candidates": 3.5819304208297313,
+      "mean_alpha_accepted": 176.3932857142857,
+      "sat_fraction_candidates": 0.5787037037037037,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 9456957,
+      "seed_max": 4281971622
+    },
+    {
+      "n": 15,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 889,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.63097112860893,
+      "std_alpha_candidates": 3.3978376903939367,
+      "mean_alpha_accepted": 176.09,
+      "sat_fraction_candidates": 0.562429696287964,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 1984464,
+      "seed_max": 4259417192,
+      "alpha_z_vs_r": 0.7906395434744591,
+      "sat_fraction_z_vs_other_n": 1.5828358762201642
+    },
+    {
+      "n": 16,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 865,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.4599710982659,
+      "std_alpha_candidates": 3.2413170154327844,
+      "mean_alpha_accepted": 176.22875,
+      "sat_fraction_candidates": 0.5780346820809249,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 734114,
+      "seed_max": 4287496532
+    }
+  ]
+}

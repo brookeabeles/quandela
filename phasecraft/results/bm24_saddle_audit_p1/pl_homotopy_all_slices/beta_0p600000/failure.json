@@ -1,0 +1,7 @@
+{
+  "beta": 0.6,
+  "anchor_Gamma": 1.875,
+  "refined_regime": "ambiguous_or_nonmonotone",
+  "status": "failed",
+  "error": "LinAlgError('SVD did not converge')"
+}

@@ -1,0 +1,10 @@
+{
+  "figures": {
+    "story_01_qaoa_band_transition": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_01_qaoa_band_transition.png",
+    "story_02_beta_opt_mechanism": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_02_beta_opt_mechanism.png",
+    "story_03_43_46_pair_identity": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_03_43_46_pair_identity.png",
+    "story_04_decoy_filter": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_04_decoy_filter.png",
+    "story_05_global_regime_strip": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_05_global_regime_strip.png"
+  },
+  "report": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/story_figures/story_figures_report.md"
+}

@@ -1,0 +1,275 @@
+{
+  "metadata": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "phi_pref_conv2": -0.689609375,
+    "beta_grid": [
+      0.35,
+      0.4,
+      0.45,
+      0.5,
+      0.5433996421,
+      0.575,
+      0.6,
+      0.625,
+      0.65
+    ],
+    "Gamma_grid": [
+      1.45,
+      1.5,
+      1.55,
+      1.6,
+      1.65,
+      1.7,
+      1.75,
+      1.8,
+      1.825,
+      1.85,
+      1.875,
+      1.9,
+      1.95,
+      2.0,
+      2.05,
+      2.1
+    ],
+    "gamma_grid": [
+      -1.45,
+      -1.5,
+      -1.55,
+      -1.6,
+      -1.65,
+      -1.7,
+      -1.75,
+      -1.8,
+      -1.825,
+      -1.85,
+      -1.875,
+      -1.9,
+      -1.95,
+      -2.0,
+      -2.05,
+      -2.1
+    ],
+    "n_values": [
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24
+    ],
+    "n_competitor_starts": 200,
+    "profile": "quick",
+    "timestamp": "2026-06-25T13:19:33Z"
+  },
+  "counts": {
+    "rows": 144,
+    "ok": 144,
+    "seed_best": 8,
+    "decoy_challenge": 70,
+    "competitor_best": 66
+  },
+  "transitions": [
+    {
+      "beta": 0.35,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 4,
+      "n_competitor_best": 11,
+      "transitions": [
+        {
+          "Gamma_low": 1.65,
+          "Gamma_high": 1.7,
+          "Gamma_mid": 1.6749999999999998,
+          "uncertainty": 0.025000000000000022,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.4,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 5,
+      "n_competitor_best": 10,
+      "transitions": [
+        {
+          "Gamma_low": 1.7,
+          "Gamma_high": 1.75,
+          "Gamma_mid": 1.725,
+          "uncertainty": 0.025000000000000022,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.45,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 6,
+      "n_competitor_best": 9,
+      "transitions": [
+        {
+          "Gamma_low": 1.75,
+          "Gamma_high": 1.8,
+          "Gamma_mid": 1.775,
+          "uncertainty": 0.025000000000000022,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.5,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 7,
+      "n_competitor_best": 8,
+      "transitions": [
+        {
+          "Gamma_low": 1.8,
+          "Gamma_high": 1.825,
+          "Gamma_mid": 1.8125,
+          "uncertainty": 0.012499999999999956,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.5433996421,
+      "n_points": 16,
+      "n_seed_best": 2,
+      "n_decoy_challenge": 7,
+      "n_competitor_best": 7,
+      "transitions": [
+        {
+          "Gamma_low": 1.825,
+          "Gamma_high": 1.85,
+          "Gamma_mid": 1.8375,
+          "uncertainty": 0.012500000000000067,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.575,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 8,
+      "n_competitor_best": 7,
+      "transitions": [
+        {
+          "Gamma_low": 1.825,
+          "Gamma_high": 1.85,
+          "Gamma_mid": 1.8375,
+          "uncertainty": 0.012500000000000067,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.6,
+      "n_points": 16,
+      "n_seed_best": 1,
+      "n_decoy_challenge": 13,
+      "n_competitor_best": 2,
+      "transitions": [
+        {
+          "Gamma_low": 1.65,
+          "Gamma_high": 1.7,
+          "Gamma_mid": 1.6749999999999998,
+          "uncertainty": 0.025000000000000022,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        },
+        {
+          "Gamma_low": 1.7,
+          "Gamma_high": 1.75,
+          "Gamma_mid": 1.725,
+          "uncertainty": 0.025000000000000022,
+          "from": "competitor",
+          "to": "seed_or_decoy"
+        },
+        {
+          "Gamma_low": 1.85,
+          "Gamma_high": 1.875,
+          "Gamma_mid": 1.8625,
+          "uncertainty": 0.012499999999999956,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        },
+        {
+          "Gamma_low": 1.875,
+          "Gamma_high": 1.9,
+          "Gamma_mid": 1.8875,
+          "uncertainty": 0.012499999999999956,
+          "from": "competitor",
+          "to": "seed_or_decoy"
+        }
+      ]
+    },
+    {
+      "beta": 0.625,
+      "n_points": 16,
+      "n_seed_best": 0,
+      "n_decoy_challenge": 10,
+      "n_competitor_best": 6,
+      "transitions": [
+        {
+          "Gamma_low": 1.85,
+          "Gamma_high": 1.875,
+          "Gamma_mid": 1.8625,
+          "uncertainty": 0.012499999999999956,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    },
+    {
+      "beta": 0.65,
+      "n_points": 16,
+      "n_seed_best": 0,
+      "n_decoy_challenge": 10,
+      "n_competitor_best": 6,
+      "transitions": [
+        {
+          "Gamma_low": 1.7,
+          "Gamma_high": 1.75,
+          "Gamma_mid": 1.725,
+          "uncertainty": 0.025000000000000022,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        },
+        {
+          "Gamma_low": 1.75,
+          "Gamma_high": 1.8,
+          "Gamma_mid": 1.775,
+          "uncertainty": 0.025000000000000022,
+          "from": "competitor",
+          "to": "seed_or_decoy"
+        },
+        {
+          "Gamma_low": 1.875,
+          "Gamma_high": 1.9,
+          "Gamma_mid": 1.8875,
+          "uncertainty": 0.012499999999999956,
+          "from": "seed_or_decoy",
+          "to": "competitor"
+        }
+      ]
+    }
+  ],
+  "figures": [
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/refined_transition_scan/refined_transition_map.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/refined_transition_scan/refined_decoy_pressure_and_exact_gap.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/refined_transition_scan/refined_boundary_curve.png"
+  ],
+  "report": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/refined_transition_scan/refined_transition_scan_report.md"
+}

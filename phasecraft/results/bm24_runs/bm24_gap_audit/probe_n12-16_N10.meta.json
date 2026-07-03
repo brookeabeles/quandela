@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_gap_eval_rows",
+  "angles": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/angles_grid_existing.json",
+  "output": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/probe_n12-16_N10.csv",
+  "k": 8,
+  "r": 176.54,
+  "n_values": [
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "N": 10,
+  "eval_seed": 100027,
+  "sat_filter": true,
+  "m_sampling": "notebook",
+  "angle_count": 20,
+  "row_count": 1000,
+  "required_columns": [
+    "seed",
+    "n",
+    "p",
+    "objective",
+    "train_n",
+    "X",
+    "p_succ"
+  ]
+}

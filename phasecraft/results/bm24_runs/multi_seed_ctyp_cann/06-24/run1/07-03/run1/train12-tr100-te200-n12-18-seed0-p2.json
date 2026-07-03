@@ -1,0 +1,173 @@
+{
+  "stem": "train12-tr100-te200-n12-18-seed0-p2",
+  "run_dir": "/Users/b/Quandela/phasecraft/results/bm24_runs/multi_seed_ctyp_cann/06-24/run1/07-03/run1",
+  "config": {
+    "k": 8,
+    "r": 176.54,
+    "seed": 0,
+    "train_n": 12,
+    "train_size": 100,
+    "n_min": 12,
+    "n_max": 18,
+    "test_size": 200,
+    "cobyla_maxiter": 160,
+    "cobyla_restarts": 8,
+    "cobyla_perturb_scale": 0.2,
+    "grid_top_k": 5,
+    "skip_grid": false,
+    "skip_grid_if_warm_start": true,
+    "lr_beta_schedule": "decreasing",
+    "eval_train_retries": 3,
+    "training_modes": [
+      "bm24_mean_p_fixed_n",
+      "median_runtime_fixed_n"
+    ],
+    "walksat_p_noise": 0.5,
+    "max_flips": 100000
+  },
+  "depths": [
+    2
+  ],
+  "n_values": [
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "walksat_log2_slope": 0.4070680351654889,
+  "walksatlm_log2_slope": 0.3840525383330507,
+  "classical": {
+    "walksat": {
+      "12": 99.5,
+      "13": 121.0,
+      "14": 181.0,
+      "15": 258.0,
+      "16": 258.0,
+      "17": 377.0,
+      "18": 577.0,
+      "19": 644.5,
+      "20": 971.0
+    },
+    "walksatlm": {
+      "12": 102.0,
+      "13": 153.0,
+      "14": 220.5,
+      "15": 295.5,
+      "16": 318.0,
+      "17": 416.5,
+      "18": 555.5,
+      "19": 650.5,
+      "20": 729.5
+    }
+  },
+  "traces_by_mode": {
+    "bm24_mean_p_fixed_n": [
+      {
+        "depth": 2,
+        "training_mode": "bm24_mean_p_fixed_n",
+        "delta_gamma": -1.8071341044465132,
+        "delta_beta": 1.2906744519646223,
+        "lr_log2_slope": 0.6432165190664826,
+        "best_avg_train_p_succ": 0.0058726158422265536,
+        "best_train_objective": -0.0058726158422265536,
+        "train_rejected": false,
+        "collapse_guard_applied": false,
+        "eval_rejected": false,
+        "eval_train_attempts": 1,
+        "used_previous_angles": false,
+        "median_runtime_per_n": {
+          "12": 235.42080092450425,
+          "13": 329.66104615398694,
+          "14": 575.6723738026615,
+          "15": 842.9484419432638,
+          "16": 1553.9657419767864,
+          "17": 2271.562380092404,
+          "18": 2995.305617515429
+        },
+        "elapsed_s": 61.346885204315186
+      }
+    ],
+    "median_runtime_fixed_n": [
+      {
+        "depth": 2,
+        "training_mode": "median_runtime_fixed_n",
+        "delta_gamma": -1.841865497019827,
+        "delta_beta": 1.3052810931414351,
+        "lr_log2_slope": 0.6430499949645933,
+        "best_avg_train_p_succ": 0.005867483619775157,
+        "best_train_objective": 207.53186278088532,
+        "train_rejected": false,
+        "collapse_guard_applied": false,
+        "eval_rejected": false,
+        "eval_train_attempts": 1,
+        "used_previous_angles": false,
+        "median_runtime_per_n": {
+          "12": 235.40015938441888,
+          "13": 328.72059209550406,
+          "14": 580.5433255045209,
+          "15": 843.5383653765308,
+          "16": 1549.205265711404,
+          "17": 2275.193491946161,
+          "18": 2994.397876809305
+        },
+        "elapsed_s": 60.11753964424133
+      }
+    ]
+  },
+  "trace_bm24_mean_p_fixed_n": [
+    {
+      "depth": 2,
+      "training_mode": "bm24_mean_p_fixed_n",
+      "delta_gamma": -1.8071341044465132,
+      "delta_beta": 1.2906744519646223,
+      "lr_log2_slope": 0.6432165190664826,
+      "best_avg_train_p_succ": 0.0058726158422265536,
+      "best_train_objective": -0.0058726158422265536,
+      "train_rejected": false,
+      "collapse_guard_applied": false,
+      "eval_rejected": false,
+      "eval_train_attempts": 1,
+      "used_previous_angles": false,
+      "median_runtime_per_n": {
+        "12": 235.42080092450425,
+        "13": 329.66104615398694,
+        "14": 575.6723738026615,
+        "15": 842.9484419432638,
+        "16": 1553.9657419767864,
+        "17": 2271.562380092404,
+        "18": 2995.305617515429
+      },
+      "elapsed_s": 61.346885204315186
+    }
+  ],
+  "trace_median_runtime_fixed_n": [
+    {
+      "depth": 2,
+      "training_mode": "median_runtime_fixed_n",
+      "delta_gamma": -1.841865497019827,
+      "delta_beta": 1.3052810931414351,
+      "lr_log2_slope": 0.6430499949645933,
+      "best_avg_train_p_succ": 0.005867483619775157,
+      "best_train_objective": 207.53186278088532,
+      "train_rejected": false,
+      "collapse_guard_applied": false,
+      "eval_rejected": false,
+      "eval_train_attempts": 1,
+      "used_previous_angles": false,
+      "median_runtime_per_n": {
+        "12": 235.40015938441888,
+        "13": 328.72059209550406,
+        "14": 580.5433255045209,
+        "15": 843.5383653765308,
+        "16": 1549.205265711404,
+        "17": 2275.193491946161,
+        "18": 2994.397876809305
+      },
+      "elapsed_s": 60.11753964424133
+    }
+  ],
+  "total_elapsed_s": 121.46472907066345
+}

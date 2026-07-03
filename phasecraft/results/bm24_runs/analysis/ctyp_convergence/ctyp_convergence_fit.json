@@ -1,0 +1,180 @@
+{
+  "fits": [
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "bm24_mean_p_fixed_n",
+      "model": "power",
+      "params": [
+        0.23568675320043744,
+        0.9387405938471615,
+        0.5233510871103992
+      ],
+      "param_err": [
+        0.042038969894755855,
+        0.17418783969185894,
+        0.13550918058849
+      ],
+      "c_inf": 0.23568675320043744,
+      "c_inf_err": 0.042038969894755855,
+      "aic": -75.12956020131897,
+      "label": "$c_\\infty + A\\,p^{-\\alpha}$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "bm24_mean_p_fixed_n",
+      "model": "inv",
+      "params": [
+        0.31178393325867615,
+        2.1747825829023855
+      ],
+      "param_err": [
+        0.007849615143729522,
+        0.1596617883366123
+      ],
+      "c_inf": 0.31178393325867615,
+      "c_inf_err": 0.007849615143729522,
+      "aic": -67.65890011301443,
+      "label": "$c_\\infty + A/p$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "bm24_mean_p_fixed_n",
+      "model": "log",
+      "params": [
+        0.12317886474320919,
+        0.9150754479968806
+      ],
+      "param_err": [
+        0.012295692097561825,
+        0.03986878871088656
+      ],
+      "c_inf": 0.12317886474320919,
+      "c_inf_err": 0.012295692097561825,
+      "aic": -75.84347200770272,
+      "label": "$c_\\infty + A/\\ln p$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "bm24_mean_p_fixed_n",
+      "model": "exp",
+      "params": [
+        0.3248986003588079,
+        0.30700371037140994,
+        0.05012864149018584
+      ],
+      "param_err": [
+        0.008276914059498413,
+        0.02652332536649848,
+        0.007479600309981381
+      ],
+      "c_inf": 0.3248986003588079,
+      "c_inf_err": 0.008276914059498413,
+      "aic": -71.41917840597493,
+      "label": "$c_\\infty + A\\,e^{-\\beta p}$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "median_runtime_fixed_n",
+      "model": "power",
+      "params": [
+        0.2559462936068787,
+        0.9491307594963406,
+        0.5630071096568737
+      ],
+      "param_err": [
+        0.03835897756857606,
+        0.21044409218122234,
+        0.14946297764279454
+      ],
+      "c_inf": 0.2559462936068787,
+      "c_inf_err": 0.03835897756857606,
+      "aic": -74.38073503447657,
+      "label": "$c_\\infty + A\\,p^{-\\alpha}$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "median_runtime_fixed_n",
+      "model": "inv",
+      "params": [
+        0.31776148149900246,
+        2.087155668344874
+      ],
+      "param_err": [
+        0.007021006769871171,
+        0.14280783010832782
+      ],
+      "c_inf": 0.31776148149900246,
+      "c_inf_err": 0.007021006769871171,
+      "aic": -69.4438262035995,
+      "label": "$c_\\infty + A/p$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "median_runtime_fixed_n",
+      "model": "log",
+      "params": [
+        0.1371366707922833,
+        0.8769370312917061
+      ],
+      "param_err": [
+        0.011118969369034547,
+        0.036053264576517405
+      ],
+      "c_inf": 0.1371366707922833,
+      "c_inf_err": 0.011118969369034547,
+      "aic": -77.45301420439242,
+      "label": "$c_\\infty + A/\\ln p$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    },
+    {
+      "run": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json",
+      "run_label": "train12-tr100-te200-n12-18",
+      "mode": "median_runtime_fixed_n",
+      "model": "exp",
+      "params": [
+        0.33038824557578805,
+        0.28878439000960554,
+        0.049173032044170915
+      ],
+      "param_err": [
+        0.012011266886760802,
+        0.03700518230416305,
+        0.011111530919535074
+      ],
+      "c_inf": 0.33038824557578805,
+      "c_inf_err": 0.012011266886760802,
+      "aic": -65.69933849088082,
+      "label": "$c_\\infty + A\\,e^{-\\beta p}$",
+      "n_fit": 8,
+      "stable": true,
+      "ok": true
+    }
+  ]
+}

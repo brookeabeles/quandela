@@ -1,0 +1,565 @@
+{
+  "csv": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/N500_n12-20_all.csv",
+  "objective": "mean_p",
+  "tail_n_min": 16,
+  "bootstrap": 1000,
+  "rows": [
+    {
+      "train_n": 12,
+      "depth": 2,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.6719995021337151,
+      "c_typ": 0.6653483912274251,
+      "measured_gap_slope": -0.006650657418727438,
+      "skew_slope": -0.008900936346744688,
+      "jensen_slope": 0.002250278928017248,
+      "second_order_slope": 0.002288717753095657,
+      "tail_n_kappa2_X": 0.03894625687500862,
+      "tail_n2_kappa3_X": -0.008043004705666011,
+      "tail_n3_kappa4_X": -0.010217449236727705,
+      "tail_second_order": 0.013497744073137802,
+      "tail_third_order_term": 0.0006440476419659186,
+      "tail_fourth_order_term": -0.0001417776031781582,
+      "tail_point_gap": 0.017586884256325774,
+      "tail_jensen_gap": 0.013971094444899013,
+      "tail_skew_gap": 0.0036157898114267616,
+      "tail_top1_mass_share": 0.03956161236761947,
+      "tail_top5_mass_share": 0.1442687907858768,
+      "tail_loo_max_abs_shift": 0.0006209349073404757,
+      "decomposition_residual": 2.168404344971009e-18,
+      "bootstrap_ci": {
+        "gap": [
+          -0.016354452874064004,
+          0.006570425648768665
+        ],
+        "jensen": [
+          -0.0013291212893263632,
+          0.005788005626765566
+        ],
+        "skew": [
+          -0.01747517719295233,
+          0.0029830317128948128
+        ]
+      }
+    },
+    {
+      "train_n": 12,
+      "depth": 5,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.5672954844073654,
+      "c_typ": 0.5821152719987148,
+      "measured_gap_slope": 0.014821606475858715,
+      "skew_slope": -0.003344021113721035,
+      "jensen_slope": 0.018165627589579757,
+      "second_order_slope": 0.02186204910338796,
+      "tail_n_kappa2_X": 0.07553188081558605,
+      "tail_n2_kappa3_X": 0.01986164625688284,
+      "tail_n3_kappa4_X": -0.02612238013308974,
+      "tail_second_order": 0.026177355114856644,
+      "tail_third_order_term": -0.0015904313009160876,
+      "tail_fourth_order_term": -0.00036247485637269726,
+      "tail_point_gap": 0.022112527182900733,
+      "tail_jensen_gap": 0.024327269391137774,
+      "tail_skew_gap": -0.0022147422082370418,
+      "tail_top1_mass_share": 0.046914315843527246,
+      "tail_top5_mass_share": 0.16695591900902018,
+      "tail_loo_max_abs_shift": 0.0008297429508282384,
+      "decomposition_residual": -6.938893903907228e-18,
+      "bootstrap_ci": {
+        "gap": [
+          0.001175697963803796,
+          0.02845141553869327
+        ],
+        "jensen": [
+          0.012713140474110537,
+          0.023703617296985544
+        ],
+        "skew": [
+          -0.014709244161473546,
+          0.008612156050229181
+        ]
+      }
+    },
+    {
+      "train_n": 12,
+      "depth": 10,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.4701175761419385,
+      "c_typ": 0.4953708562849755,
+      "measured_gap_slope": 0.02525359698483822,
+      "skew_slope": -0.0026284791278246783,
+      "jensen_slope": 0.02788207611266289,
+      "second_order_slope": 0.037714282194124635,
+      "tail_n_kappa2_X": 0.11765866213328265,
+      "tail_n2_kappa3_X": 0.07581453284672819,
+      "tail_n3_kappa4_X": 0.013373190477717869,
+      "tail_second_order": 0.040777384963070026,
+      "tail_third_order_term": -0.006070886800835173,
+      "tail_fourth_order_term": 0.00018556675436765248,
+      "tail_point_gap": 0.02937031387684057,
+      "tail_jensen_gap": 0.03507571580223286,
+      "tail_skew_gap": -0.005705401925392284,
+      "tail_top1_mass_share": 0.05404789008621687,
+      "tail_top5_mass_share": 0.1919855597157233,
+      "tail_loo_max_abs_shift": 0.0009207913297710312,
+      "decomposition_residual": 6.938893903907228e-18,
+      "bootstrap_ci": {
+        "gap": [
+          0.009174204914508068,
+          0.037180697548680995
+        ],
+        "jensen": [
+          0.02018522502180716,
+          0.03539742280385082
+        ],
+        "skew": [
+          -0.01640845243478968,
+          0.008656443618568661
+        ]
+      }
+    },
+    {
+      "train_n": 12,
+      "depth": 20,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.37810399107135034,
+      "c_typ": 0.42789149409238497,
+      "measured_gap_slope": 0.04978930134380679,
+      "skew_slope": 0.007112137067471862,
+      "jensen_slope": 0.042677164276334924,
+      "second_order_slope": 0.056997302136821866,
+      "tail_n_kappa2_X": 0.14766685677653207,
+      "tail_n2_kappa3_X": 0.13005039162045337,
+      "tail_n3_kappa4_X": 0.047047264684132103,
+      "tail_second_order": 0.051177432718401215,
+      "tail_third_order_term": -0.010413850435881538,
+      "tail_fourth_order_term": 0.0006528291228526726,
+      "tail_point_gap": 0.03450852435424003,
+      "tail_jensen_gap": 0.04177741764093895,
+      "tail_skew_gap": -0.007268893286698918,
+      "tail_top1_mass_share": 0.054793013122438894,
+      "tail_top5_mass_share": 0.2009802418319111,
+      "tail_loo_max_abs_shift": 0.0008719606191801343,
+      "decomposition_residual": 6.938893903907228e-18,
+      "bootstrap_ci": {
+        "gap": [
+          0.030646910360439743,
+          0.06393667796130403
+        ],
+        "jensen": [
+          0.032876749341330364,
+          0.051924602779813055
+        ],
+        "skew": [
+          -0.010580443807609504,
+          0.019808998079983993
+        ]
+      }
+    },
+    {
+      "train_n": 12,
+      "depth": 50,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.2880536071409021,
+      "c_typ": 0.3614962489565306,
+      "measured_gap_slope": 0.07344351409792467,
+      "skew_slope": 0.004987412877531377,
+      "jensen_slope": 0.06845610122039329,
+      "second_order_slope": 0.09997974338406804,
+      "tail_n_kappa2_X": 0.20999428864556266,
+      "tail_n2_kappa3_X": 0.3464666903122181,
+      "tail_n3_kappa4_X": 0.5981398618816913,
+      "tail_second_order": 0.07277847455418154,
+      "tail_third_order_term": -0.02774349426379489,
+      "tail_fourth_order_term": 0.00829980497266069,
+      "tail_point_gap": 0.03497648956187705,
+      "tail_jensen_gap": 0.052058701804419294,
+      "tail_skew_gap": -0.017082212242542243,
+      "tail_top1_mass_share": 0.04974909049354355,
+      "tail_top5_mass_share": 0.19788040100991905,
+      "tail_loo_max_abs_shift": 0.0007317497182341593,
+      "decomposition_residual": 0.0,
+      "bootstrap_ci": {
+        "gap": [
+          0.057210878275996545,
+          0.09073960096506818
+        ],
+        "jensen": [
+          0.05684293059325315,
+          0.08082203385278991
+        ],
+        "skew": [
+          -0.008953096088453716,
+          0.019396896326465452
+        ]
+      }
+    },
+    {
+      "train_n": 16,
+      "depth": 2,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.6715943202739597,
+      "c_typ": 0.6670022191923045,
+      "measured_gap_slope": -0.0045926899814942215,
+      "skew_slope": -0.006798879094425135,
+      "jensen_slope": 0.002206189112930914,
+      "second_order_slope": 0.0022341904284280648,
+      "tail_n_kappa2_X": 0.03839123363019213,
+      "tail_n2_kappa3_X": -0.00850783428506808,
+      "tail_n3_kappa4_X": -0.010269813290798197,
+      "tail_second_order": 0.013305387674492916,
+      "tail_third_order_term": 0.0006812691040295943,
+      "tail_fourth_order_term": -0.000142504208214973,
+      "tail_point_gap": 0.017812848159544047,
+      "tail_jensen_gap": 0.013814451697170882,
+      "tail_skew_gap": 0.003998396462373166,
+      "tail_top1_mass_share": 0.039429891011551615,
+      "tail_top5_mass_share": 0.14387358819342042,
+      "tail_loo_max_abs_shift": 0.0006188529404577813,
+      "decomposition_residual": -4.336808689942018e-19,
+      "bootstrap_ci": {
+        "gap": [
+          -0.018779429211476864,
+          0.006130613803105453
+        ],
+        "jensen": [
+          -0.0014810468838650612,
+          0.005566887239382919
+        ],
+        "skew": [
+          -0.01958676243269079,
+          0.002746001512702951
+        ]
+      }
+    },
+    {
+      "train_n": 16,
+      "depth": 5,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.5559805595504965,
+      "c_typ": 0.5675166962306525,
+      "measured_gap_slope": 0.011536384455032916,
+      "skew_slope": -0.003588774757335695,
+      "jensen_slope": 0.015125159212368608,
+      "second_order_slope": 0.017838116371091586,
+      "tail_n_kappa2_X": 0.06544898169234444,
+      "tail_n2_kappa3_X": 0.009822816850443514,
+      "tail_n3_kappa4_X": -0.027239705226780285,
+      "tail_second_order": 0.02268288856528401,
+      "tail_third_order_term": -0.0007865669934936802,
+      "tail_fourth_order_term": -0.0003779788897262303,
+      "tail_point_gap": 0.02128581720615964,
+      "tail_jensen_gap": 0.02158373579889884,
+      "tail_skew_gap": -0.0002979185927391992,
+      "tail_top1_mass_share": 0.04482476522751337,
+      "tail_top5_mass_share": 0.16005649585259665,
+      "tail_loo_max_abs_shift": 0.0007860615581352759,
+      "decomposition_residual": 3.469446951953614e-18,
+      "bootstrap_ci": {
+        "gap": [
+          -0.0012032666146750226,
+          0.02294693654843217
+        ],
+        "jensen": [
+          0.01012237083678044,
+          0.019655333073326838
+        ],
+        "skew": [
+          -0.014053418702583488,
+          0.006724553904944184
+        ]
+      }
+    },
+    {
+      "train_n": 16,
+      "depth": 10,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.4591691259985453,
+      "c_typ": 0.479557158263446,
+      "measured_gap_slope": 0.020387541948645702,
+      "skew_slope": -0.0042370457876855965,
+      "jensen_slope": 0.024624587736331298,
+      "second_order_slope": 0.032466413180091906,
+      "tail_n_kappa2_X": 0.10484984548638794,
+      "tail_n2_kappa3_X": 0.05595706255684707,
+      "tail_n3_kappa4_X": -0.011287762491835343,
+      "tail_second_order": 0.03633818739051785,
+      "tail_third_order_term": -0.004480789892574419,
+      "tail_fourth_order_term": -0.00015662929898238148,
+      "tail_point_gap": 0.027095143541191535,
+      "tail_jensen_gap": 0.03191176943342453,
+      "tail_skew_gap": -0.0048166258922329955,
+      "tail_top1_mass_share": 0.05174501579669695,
+      "tail_top5_mass_share": 0.1848209265199622,
+      "tail_loo_max_abs_shift": 0.0008613214000077307,
+      "decomposition_residual": 0.0,
+      "bootstrap_ci": {
+        "gap": [
+          0.006275705017296755,
+          0.03331109616941116
+        ],
+        "jensen": [
+          0.016908534622022575,
+          0.031317728362112225
+        ],
+        "skew": [
+          -0.01698062372313366,
+          0.006417460139964188
+        ]
+      }
+    },
+    {
+      "train_n": 16,
+      "depth": 20,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.37055666751013494,
+      "c_typ": 0.41338717684131526,
+      "measured_gap_slope": 0.04282975384687927,
+      "skew_slope": 0.003069098070451062,
+      "jensen_slope": 0.0397606557764282,
+      "second_order_slope": 0.05252842263633443,
+      "tail_n_kappa2_X": 0.13966939741615914,
+      "tail_n2_kappa3_X": 0.11597376078540597,
+      "tail_n3_kappa4_X": 0.03476340338402366,
+      "tail_second_order": 0.048405724514758594,
+      "tail_third_order_term": -0.009286657150796136,
+      "tail_fourth_order_term": 0.00048237792974646887,
+      "tail_point_gap": 0.03265671579500882,
+      "tail_jensen_gap": 0.039930233341029596,
+      "tail_skew_gap": -0.00727351754602078,
+      "tail_top1_mass_share": 0.054028785963108936,
+      "tail_top5_mass_share": 0.19776973163994394,
+      "tail_loo_max_abs_shift": 0.0008584638219718999,
+      "decomposition_residual": 1.3877787807814457e-17,
+      "bootstrap_ci": {
+        "gap": [
+          0.026900675072599748,
+          0.058995676191857596
+        ],
+        "jensen": [
+          0.030902179780295806,
+          0.04819193185943715
+        ],
+        "skew": [
+          -0.009598460220174618,
+          0.017471963863025446
+        ]
+      }
+    },
+    {
+      "train_n": 16,
+      "depth": 50,
+      "ns": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "tail_ns": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "c_ann": 0.27991947812654794,
+      "c_typ": 0.34967718252952107,
+      "measured_gap_slope": 0.06975773658915341,
+      "skew_slope": 0.006594139142391913,
+      "jensen_slope": 0.06316359744676149,
+      "second_order_slope": 0.08984309891123746,
+      "tail_n_kappa2_X": 0.19435290592309007,
+      "tail_n2_kappa3_X": 0.2955052668589029,
+      "tail_n3_kappa4_X": 0.4534453975565419,
+      "tail_second_order": 0.06735758438711109,
+      "tail_third_order_term": -0.02366273268184372,
+      "tail_fourth_order_term": 0.00629202065488538,
+      "tail_point_gap": 0.033244467888355514,
+      "tail_jensen_gap": 0.049222474376805256,
+      "tail_skew_gap": -0.015978006488449742,
+      "tail_top1_mass_share": 0.04911310234905301,
+      "tail_top5_mass_share": 0.1955408756897039,
+      "tail_loo_max_abs_shift": 0.0007130477674657132,
+      "decomposition_residual": 0.0,
+      "bootstrap_ci": {
+        "gap": [
+          0.05267665993478178,
+          0.08362901444918418
+        ],
+        "jensen": [
+          0.0522465622630482,
+          0.07456285295706062
+        ],
+        "skew": [
+          -0.010045722434006992,
+          0.02044589276000235
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "mechanism_png": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/04_asymptotic_gap_certificate.png",
+    "mechanism_pdf": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/04_asymptotic_gap_certificate.pdf",
+    "diagnostics_png": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/05_cumulant_tail_diagnostics.png",
+    "diagnostics_pdf": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/05_cumulant_tail_diagnostics.pdf",
+    "theory_note": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/04_asymptotic_gap_theory.md"
+  }
+}

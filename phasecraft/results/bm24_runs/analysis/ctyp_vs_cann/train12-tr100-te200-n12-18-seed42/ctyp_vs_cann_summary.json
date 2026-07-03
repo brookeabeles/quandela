@@ -1,0 +1,84 @@
+{
+  "source": "/Users/b/Quandela/phasecraft/results/bm24_runs/multi_seed_ctyp_cann/06-24/run2/train12-tr100-te200-n12-18-seed42.json",
+  "config": {
+    "k": 8,
+    "r": 176.54,
+    "seed": 42,
+    "train_n": 12,
+    "train_size": 100,
+    "n_min": 12,
+    "n_max": 18,
+    "test_size": 200,
+    "cobyla_maxiter": 160,
+    "cobyla_restarts": 8,
+    "cobyla_perturb_scale": 0.2,
+    "grid_top_k": 5,
+    "skip_grid": false,
+    "skip_grid_if_warm_start": true,
+    "lr_beta_schedule": "decreasing",
+    "eval_train_retries": 3,
+    "training_modes": [
+      "bm24_mean_p_fixed_n",
+      "median_runtime_fixed_n"
+    ],
+    "walksat_p_noise": 0.5,
+    "max_flips": 100000
+  },
+  "rows": [
+    {
+      "mode": "bm24_mean_p_fixed_n",
+      "mode_label": "mean_p train",
+      "depth": 2,
+      "delta_gamma": -1.774539707846086,
+      "delta_beta": 1.2953706782324326,
+      "c_typ_stored": 0.6766242252757205,
+      "c_typ": 0.6766242252757205,
+      "c_emp_mean": -0.6864768907877645,
+      "c_ann": NaN,
+      "c_ann_rt": NaN,
+      "c_inv_mean_rt": 0.6864768907877645,
+      "gap_mean_vs_ann": NaN,
+      "gap_typ_vs_annrt": NaN,
+      "gap_typ_vs_invmean": -0.009852665512044001,
+      "spread_ratio_mid_n": 0.8936343463730031,
+      "saddle_converged": false,
+      "saddle_residual": NaN,
+      "c_ann_source": "skipped",
+      "c_ann_full": null,
+      "c_ann_fallback": null,
+      "per_n": null
+    },
+    {
+      "mode": "median_runtime_fixed_n",
+      "mode_label": "median_rt train",
+      "depth": 2,
+      "delta_gamma": -2.0,
+      "delta_beta": 1.3144393307389746,
+      "c_typ_stored": 0.6987651330793891,
+      "c_typ": 0.6987651330793891,
+      "c_emp_mean": -0.6953337674964087,
+      "c_ann": NaN,
+      "c_ann_rt": NaN,
+      "c_inv_mean_rt": 0.6953337674964087,
+      "gap_mean_vs_ann": NaN,
+      "gap_typ_vs_annrt": NaN,
+      "gap_typ_vs_invmean": 0.0034313655829804057,
+      "spread_ratio_mid_n": 0.8988263049545694,
+      "saddle_converged": false,
+      "saddle_residual": NaN,
+      "c_ann_source": "skipped",
+      "c_ann_full": null,
+      "c_ann_fallback": null,
+      "per_n": null
+    }
+  ],
+  "pairs": [
+    {
+      "depth": 2,
+      "delta_ctyp_med_minus_mean": 0.02214090780366862,
+      "delta_gap_mean_ann": NaN,
+      "delta_gap_typ_annrt": NaN
+    }
+  ],
+  "rebenchmarked": true
+}

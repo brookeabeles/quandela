@@ -1,0 +1,46 @@
+{
+  "protocol": {
+    "train_n": 12,
+    "train_size": 100,
+    "test_size": 200,
+    "n_min": 12,
+    "n_max": 18,
+    "depths": [
+      10,
+      20,
+      40,
+      50,
+      60,
+      80,
+      100
+    ],
+    "modes": [
+      "bm24_mean_p_fixed_n",
+      "median_runtime_fixed_n"
+    ]
+  },
+  "runs": [
+    {
+      "seed": 0,
+      "stem": "train12-tr100-te200-n12-18-seed0",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_s": 9115.43743109703,
+      "json": "/Users/b/Quandela/phasecraft/results/bm24_runs/multi_seed_ctyp_cann/06-24/run1/train12-tr100-te200-n12-18-seed0.json"
+    },
+    {
+      "seed": 42,
+      "stem": "train12-tr100-te200-n12-18-seed42",
+      "status": "ok",
+      "returncode": 0,
+      "elapsed_s": 8993.408076047897,
+      "json": "/Users/b/Quandela/phasecraft/results/bm24_runs/multi_seed_ctyp_cann/06-24/run2/train12-tr100-te200-n12-18-seed42.json"
+    },
+    {
+      "seed": 27,
+      "stem": "train12-tr100-te200-n12-18",
+      "status": "baseline",
+      "json": "/Users/b/Quandela/phasecraft/results/bm24_runs/06-09/run1/train12-tr100-te200-n12-18.json"
+    }
+  ]
+}
