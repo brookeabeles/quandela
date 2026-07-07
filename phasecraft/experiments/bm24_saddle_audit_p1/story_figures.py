@@ -300,6 +300,14 @@ def figure_3_pair_identity() -> str:
 
 
 def figure_4_decoy_filter() -> str:
+    paper_style = {
+        "font.size": 14,
+        "axes.labelsize": 16,
+        "xtick.labelsize": 13,
+        "ytick.labelsize": 13,
+        "legend.fontsize": 12,
+    }
+    lw = 2.5
     comp = load_json(
         RESULTS
         / "run_seed_branch_g-2pi"
@@ -326,21 +334,82 @@ def figure_4_decoy_filter() -> str:
     delta, gap, immod = arr[:, 0], arr[:, 1], arr[:, 2]
     decoy = (delta > 0.25) & (gap > 0.1)
     good = gap < 0.02
+    other = (~decoy) & (~good)
+    # Conjugate pairs share the same Re Phi, so they project to one point here.
+    good_unique = np.array(
+        sorted({(round(d, 8), round(g, 12)) for d, g in zip(delta[good], gap[good])})
+    )
 
-    fig, ax = plt.subplots(figsize=(8.5, 6.5))
-    ax.scatter(delta[~decoy & ~good], gap[~decoy & ~good], s=14, color="0.72", alpha=0.6, label="other certified roots")
-    ax.scatter(delta[decoy], gap[decoy], s=28, color=RED, alpha=0.8, label=f"high-Re decoys ({int(decoy.sum())})")
-    ax.scatter(delta[good], gap[good], s=55, color=GREEN, edgecolor="k", linewidth=0.4, label=f"exact-explanatory roots ({int(good.sum())})")
-    ax.axvline(0, color="black", lw=1)
-    ax.axhline(0.02, color=GREEN, ls="--", lw=1.3)
-    ax.set_yscale("log")
-    ax.set_xlabel(r"algebraic advantage: $Re\Phi_{comp}-Re\Phi_{seed}$")
-    ax.set_ylabel(r"physical test: $|E_{comp}-\lambda_{exact}|$")
-    ax.set_title("Why max Re Phi is not the answer")
-    ax.text(0.55, 2.0, "certified roots with larger Re\nbut wrong exponent", color=RED, fontsize=11)
-    ax.text(-8.5, 0.03, "good physical match\nrequires small exact gap", color=GREEN, fontsize=10)
-    ax.legend(fontsize=8, loc="lower left")
-    ax.grid(True, alpha=0.22)
+    with plt.rc_context(paper_style):
+        fig, ax = plt.subplots(figsize=(7.0, 4.5))
+        ax.scatter(
+            delta[other],
+            gap[other],
+            s=14,
+            color="0.72",
+            alpha=0.6,
+            label=f"other certified roots ({int(other.sum())})",
+        )
+        ax.scatter(
+            delta[decoy],
+            gap[decoy],
+            s=28,
+            color=RED,
+            alpha=0.8,
+            label=f"high-Re decoys ({int(decoy.sum())})",
+        )
+        ax.scatter(
+            good_unique[:, 0],
+            good_unique[:, 1],
+            s=55,
+            color=GREEN,
+            edgecolor="k",
+            linewidth=0.4,
+            label=f"exact-explanatory roots ({len(good_unique)})",
+        )
+        ax.axvline(0, color="black", lw=lw)
+        ax.axhline(0.02, color=GREEN, ls="--", lw=lw)
+        ax.set_yscale("log")
+        x_lo, x_hi = float(delta.min()), float(delta.max())
+        x_span = x_hi - x_lo
+        x_pad_right = 0.35 * x_span
+        xlim_left = x_lo - 0.04 * x_span
+        xlim_right = x_hi + x_pad_right
+        ax.set_xlim(xlim_left, xlim_right)
+        ax.set_xlabel(r"$Re\,\phi_{\mathrm{competitor}} - Re\,\Phi_{\mathrm{seed}}$")
+        ax.set_ylabel(r"$\lambda_{\mathrm{competitor}} - \lambda_{\mathrm{exact}}$")
+        ax.text(
+            xlim_right - 0.04 * x_span,
+            0.13,
+            "certified roots with larger Re\nbut wrong exponent",
+            ha="right",
+            va="center",
+            color=RED,
+            fontsize=10.5,
+        )
+        ax.text(
+            xlim_left + 0.03 * x_span,
+            0.022,
+            "good physical match\nrequires small exact gap",
+            ha="left",
+            va="bottom",
+            color=GREEN,
+            fontsize=10.5,
+        )
+        handles, labels = ax.get_legend_handles_labels()
+        ax.grid(True, alpha=0.22)
+        ax.legend(
+            handles,
+            labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.005),
+            ncol=3,
+            frameon=False,
+            columnspacing=0.9,
+            handletextpad=0.35,
+            prop={"size": 10},
+        )
+        fig.tight_layout(rect=[0, 0, 1, 0.98])
     return savefig(fig, "story_04_decoy_filter.png")
 
 

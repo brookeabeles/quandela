@@ -1,0 +1,222 @@
+{
+  "created_date": "2026-07-03",
+  "output_dir": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings",
+  "parameters": {
+    "q": 3,
+    "K_clause": 8,
+    "r": 176.54,
+    "beta": 0.5433996420760803,
+    "phi_pref_conv2": -0.6896093750000001,
+    "strict_exact_gap_threshold": 0.02,
+    "loose_exact_gap_threshold": 0.05,
+    "near_real_phase_mod_2pi_threshold": 0.05
+  },
+  "source_files": {
+    "seed_branch_continuation": "results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/seed_branch_continuation.json",
+    "competitor_dominance_summary": "results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/archive/competitor_dominance/competitor_dominance_summary.json",
+    "resolved_robust_z": "results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/archive/competitor_dominance/z_robust_full/resolved_robust_z.json",
+    "sweep_beta_gamma_full": "results/bm24_saddle_audit_p1/sweep_beta_gamma_full/sweep_beta_gamma_full.json"
+  },
+  "funnel": {
+    "certified_competitor_points_anchor_scan": 965,
+    "physically_feasible_full_exponent_nonpositive": 901,
+    "positive_full_impossible_if_physical": 64,
+    "positive_full_and_bad_exact_match": 64,
+    "high_re_bad_exact_match": 85,
+    "loose_exact_match_gap_le_0p05": 13,
+    "strict_exact_match_gap_le_0p02": 3,
+    "near_real_phase": 23,
+    "strict_exact_and_near_real_phase": 1
+  },
+  "per_gamma_counts": [
+    {
+      "gamma": -0.3,
+      "total_competitors": 87,
+      "positive_full_impossible": 2,
+      "physically_feasible": 85,
+      "strict_exact_match": 0,
+      "strict_exact_and_near_real": 0,
+      "high_re_bad_match": 5,
+      "best_physical_gap": 0.07162595848524922,
+      "best_physical_full": -0.6292710114943157
+    },
+    {
+      "gamma": -0.6,
+      "total_competitors": 121,
+      "positive_full_impossible": 6,
+      "physically_feasible": 115,
+      "strict_exact_match": 2,
+      "strict_exact_and_near_real": 0,
+      "high_re_bad_match": 7,
+      "best_physical_gap": 0.018637488240213884,
+      "best_physical_full": -0.4717529050172954
+    },
+    {
+      "gamma": -0.83,
+      "total_competitors": 145,
+      "positive_full_impossible": 10,
+      "physically_feasible": 135,
+      "strict_exact_match": 0,
+      "strict_exact_and_near_real": 0,
+      "high_re_bad_match": 11,
+      "best_physical_gap": 0.09193626966401292,
+      "best_physical_full": -0.5675667564368394
+    },
+    {
+      "gamma": -1.0,
+      "total_competitors": 147,
+      "positive_full_impossible": 12,
+      "physically_feasible": 135,
+      "strict_exact_match": 0,
+      "strict_exact_and_near_real": 0,
+      "high_re_bad_match": 12,
+      "best_physical_gap": 0.023663526349039787,
+      "best_physical_full": -0.5052856947194639
+    },
+    {
+      "gamma": -1.6,
+      "total_competitors": 207,
+      "positive_full_impossible": 9,
+      "physically_feasible": 198,
+      "strict_exact_match": 0,
+      "strict_exact_and_near_real": 0,
+      "high_re_bad_match": 12,
+      "best_physical_gap": 0.02208645661715236,
+      "best_physical_full": -0.6150149712357691
+    },
+    {
+      "gamma": -2.0,
+      "total_competitors": 258,
+      "positive_full_impossible": 25,
+      "physically_feasible": 233,
+      "strict_exact_match": 1,
+      "strict_exact_and_near_real": 1,
+      "high_re_bad_match": 38,
+      "best_physical_gap": 0.002844319337558021,
+      "best_physical_full": -0.6818286400488831
+    }
+  ],
+  "best_by_gamma_anchor_scan": [
+    {
+      "gamma": -0.3,
+      "winner": "seed",
+      "full_conv2_exponent": -0.5510853896157685,
+      "abs_gap_to_exact": 0.006559663393298054,
+      "lambda_exact_interp": -0.5576450530090665,
+      "re_phi_m": 0.1385239853842315,
+      "im_mod_abs": 0.0,
+      "classification": "seed_baseline"
+    },
+    {
+      "gamma": -0.6,
+      "winner": "seed",
+      "full_conv2_exponent": -0.4810288218057909,
+      "abs_gap_to_exact": 0.009361571451718398,
+      "lambda_exact_interp": -0.49039039325750927,
+      "re_phi_m": 0.2085805531942091,
+      "im_mod_abs": 0.0,
+      "classification": "seed_baseline"
+    },
+    {
+      "gamma": -0.83,
+      "winner": "seed",
+      "full_conv2_exponent": -0.4666308438281276,
+      "abs_gap_to_exact": 0.008999642944698905,
+      "lambda_exact_interp": -0.4756304867728265,
+      "re_phi_m": 0.22297853117187239,
+      "im_mod_abs": 0.0,
+      "classification": "seed_baseline"
+    },
+    {
+      "gamma": -1.0,
+      "winner": "seed",
+      "full_conv2_exponent": -0.4734747355371837,
+      "abs_gap_to_exact": 0.008147432833240431,
+      "lambda_exact_interp": -0.48162216837042415,
+      "re_phi_m": 0.21613463946281625,
+      "im_mod_abs": 4.440892098500626e-16,
+      "classification": "seed_baseline"
+    },
+    {
+      "gamma": -1.6,
+      "winner": "seed",
+      "full_conv2_exponent": -0.5919844062901881,
+      "abs_gap_to_exact": 0.0009441083284286167,
+      "lambda_exact_interp": -0.5929285146186167,
+      "re_phi_m": 0.09762496870981185,
+      "im_mod_abs": 0.0,
+      "classification": "seed_baseline"
+    },
+    {
+      "gamma": -2.0,
+      "winner": "competitor_anchor_scan",
+      "full_conv2_exponent": -0.6818286400488831,
+      "abs_gap_to_exact": 0.002844319337558021,
+      "lambda_exact_interp": -0.6789843207113251,
+      "re_phi_m": 0.007780734951116863,
+      "im_mod_abs": 4.440892098500626e-16,
+      "classification": "strict_exact_and_near_real"
+    }
+  ],
+  "branch_43_46": {
+    "branch_stats": {
+      "43": {
+        "num_points": 220,
+        "gamma_min": -6.28,
+        "gamma_max": -1.08,
+        "re_phi_m_min": -0.22870611088289117,
+        "re_phi_m_max": 0.10152805699962109,
+        "full_exponent_min": -0.9183154858828912,
+        "full_exponent_max": -0.588081318000379,
+        "num_positive_full": 0,
+        "median_im_mod_abs": 8.881784197001252e-16,
+        "max_im_mod_abs": 1.448711093104218
+      },
+      "46": {
+        "num_points": 231,
+        "gamma_min": -6.283185,
+        "gamma_max": -1.27,
+        "re_phi_m_min": -5.576753442673027e-05,
+        "re_phi_m_max": 0.10068679090636978,
+        "full_exponent_min": -0.6896651425344268,
+        "full_exponent_max": -0.5889225840936303,
+        "num_positive_full": 0,
+        "median_im_mod_abs": 8.881784197001252e-16,
+        "max_im_mod_abs": 0.15472844891229043
+      }
+    },
+    "merged_pair_count": 148,
+    "merged_num_positive_full": 0,
+    "merged_num_strict_exact_match": 144,
+    "merged_num_loose_exact_match": 147,
+    "primary_re_crossing_gamma": -1.8307819280448874,
+    "all_re_crossings_gamma": [
+      -1.8307819280448874
+    ],
+    "large_gamma_rmse_merged_43_46": 0.0007342859710746564,
+    "large_gamma_rmse_seed": 1.311160954440803,
+    "median_abs_re43_minus_re46": 1.4796196838606258e-08,
+    "median_abs_im43_plus_im46": 1.3598291930290117e-15
+  },
+  "sweep_grid_support": {
+    "num_ok_rows": 600,
+    "num_rows_with_high_re_warning_delta_gt_0p25": 498,
+    "num_high_re_warning_rows_where_seed_still_best_exact_match": 275,
+    "num_rows_where_nonseed_best_exact_match": 227
+  },
+  "plots": {
+    "filter_funnel": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/01_legitimacy_filter_funnel.png",
+    "per_gamma_counts": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/02_per_gamma_legitimacy_counts.png",
+    "full_exponent_vs_exact": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/03_full_exponent_vs_exact_anchor_competitors.png",
+    "seed_vs_branch_43_46": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/04_seed_vs_branch_43_46_legitimate_story.png"
+  },
+  "tables": {
+    "anchor_competitors": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/anchor_competitor_legitimacy_table.csv",
+    "branch_43_46_merged": "results/bm24_saddle_audit_p1/2026-07-03_legitimate_findings/branch_43_46_merged_legitimacy_table.csv"
+  },
+  "interpretation": {
+    "positive_full_exponent_rule": "Any candidate with phi_pref + Re Phi_M > 0 cannot be the physical asymptotic exponent for E[p_succ], since E[p_succ] <= 1.",
+    "main_surviving_claim": "The robust physical story is not max algebraic Re Phi. It is seed dominance in the QAOA-relevant window followed by a branch 43/46 physical pair at larger |gamma|.",
+    "status_of_high_re_roots": "Certified high-Re roots should be retained as algebraic roots but excluded or flagged for physical p_succ dominance claims unless contour/intersection data proves otherwise and the full exponent remains feasible."
+  }
+}

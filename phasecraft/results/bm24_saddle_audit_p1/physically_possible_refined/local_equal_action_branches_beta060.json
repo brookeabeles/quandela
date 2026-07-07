@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "betas": [
+      0.575,
+      0.58,
+      0.585,
+      0.59,
+      0.595,
+      0.6,
+      0.605,
+      0.61,
+      0.615,
+      0.62,
+      0.625
+    ],
+    "Gamma_range": [
+      1.75,
+      1.92
+    ],
+    "status": "unresolved_local_structure_after_beta060_branch_checks",
+    "note": "Intermediate beta slices are left open because beta=0.60 failed branch-safe two-sided refinement."
+  },
+  "branches": {
+    "branch_left": [
+      {
+        "beta": 0.575,
+        "status": "cached_left_anchor",
+        "roots": [
+          {
+            "branch_id": "branch_left",
+            "beta": 0.575,
+            "Gamma_lo": 1.825,
+            "Gamma_hi": 1.85,
+            "midpoint": 1.844015794607653,
+            "width": 0.025000000000000133,
+            "f_AS_lo": -0.00391842294310929,
+            "f_AS_hi": 0.0012331142710289011,
+            "certification": "cached PL endpoints Krawczyk-certified",
+            "branch_safe": true
+          }
+        ]
+      },
+      {
+        "beta": 0.58,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.585,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.59,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.595,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.6,
+        "status": "partial_beta060_bracket",
+        "roots": [
+          {
+            "branch_id": "branch_left",
+            "beta": 0.6,
+            "Gamma_lo": 1.8575,
+            "Gamma_hi": 1.86,
+            "midpoint": 1.8587500000000001,
+            "width": 0.0025000000000001688,
+            "f_AS_lo": -0.00032986323175521193,
+            "f_AS_hi": 0.0001674165369629499,
+            "certification": "partial",
+            "branch_safe": false,
+            "iterations": 2,
+            "failures": [
+              {
+                "Gamma": 1.8587500000000001,
+                "z_left_right_inf": 1.1724467276042316,
+                "reason": "two_sided_midpoints_do_not_match"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "beta": 0.605,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.61,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.615,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.62,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.625,
+        "status": "unresolved_not_connected",
+        "roots": []
+      }
+    ],
+    "branch_right": [
+      {
+        "beta": 0.575,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.58,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.585,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.59,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.595,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.6,
+        "status": "partial_beta060_bracket",
+        "roots": [
+          {
+            "branch_id": "branch_right",
+            "beta": 0.6,
+            "Gamma_lo": 1.8587500000000001,
+            "Gamma_hi": 1.859375,
+            "midpoint": 1.8590625,
+            "width": 0.0006249999999998757,
+            "f_AS_lo": -8.248855559322976e-05,
+            "f_AS_hi": 4.215734989876374e-05,
+            "certification": "partial",
+            "branch_safe": false,
+            "iterations": 3,
+            "failures": []
+          }
+        ]
+      },
+      {
+        "beta": 0.605,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.61,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.615,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.62,
+        "status": "unresolved_not_connected",
+        "roots": []
+      },
+      {
+        "beta": 0.625,
+        "status": "cached_right_anchor",
+        "roots": [
+          {
+            "branch_id": "branch_right",
+            "beta": 0.625,
+            "Gamma_lo": 1.85,
+            "Gamma_hi": 1.875,
+            "midpoint": 1.8677671451237425,
+            "width": 0.02499999999999991,
+            "f_AS_lo": -0.0033325772994088343,
+            "f_AS_hi": 0.0013566641012192626,
+            "certification": "cached PL endpoints Krawczyk-certified",
+            "branch_safe": true
+          }
+        ]
+      }
+    ]
+  }
+}

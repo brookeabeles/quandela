@@ -19,13 +19,12 @@ z-variables are auxiliary saddle variables, not the original integration variabl
 the true Gaussian correction requires knowledge of the full BM24 generating function
 measure. The empirical fitting approach here is coordinate-free and correct.
 
-Results: phasecraft/results/bm24_saddle_audit_p1/paper_results/prefactor_*.{json,png}
+Results: experiments/bm24_saddle_audit_p1/results/PAPER-RESULTS/prefactor_*.{json,png}
 """
 
 from __future__ import annotations
 
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -58,7 +57,16 @@ PHI_PREF = conv2_pref(K_CLAUSE, R)
 DPS = 80
 MIN_RESIDUAL = 1e-10
 
-OUT_DIR = REPO_ROOT / "phasecraft" / "results" / "bm24_saddle_audit_p1" / "paper_results"
+HERE = Path(__file__).resolve().parent
+OUT_DIR = HERE / "results" / "PAPER-RESULTS"
+JSON_DIR = OUT_DIR / "json"
+
+# Canonical seed-dominant point for the finite-size discrepancy figure.
+FIG1_BETA = 0.5434
+FIG1_GAMMA = -1.00
+
+BLUE = "#2b6cb0"
+GRAY = "#4a5568"
 
 # (beta, gamma, label, color) — seed-dominant zone at several beta/gamma values
 ANALYSIS_POINTS = [
@@ -124,6 +132,106 @@ def fit_gap(n_arr, gap_arr):
         return float("nan"), float("nan"), gap_arr * 0
 
 
+def pick_fig1_point(results: list[dict]) -> dict:
+    """Return the canonical seed-dominant analysis point for fig. 1."""
+    for row in results:
+        if abs(float(row["beta"]) - FIG1_BETA) < 1e-4 and abs(float(row["gamma"]) - FIG1_GAMMA) < 1e-4:
+            return row
+    raise ValueError(f"fig1 point (beta={FIG1_BETA}, gamma={FIG1_GAMMA}) not found in results")
+
+
+def plot_fig1_finite_size_discrepancy(row: dict, out_path: Path) -> None:
+    """Single-panel paper figure: δ_n vs 1/n extrapolates to zero."""
+    ns = np.array(row["n_values"], dtype=float)
+    inv_n = 1.0 / ns
+    # δ_n = e_n^exact - e^saddle = λ_abs - (φ_pref + Re Φ*).
+    delta_n = -np.array(row["gap_n"], dtype=float)
+    gap_c0, gap_c1 = float(row["fit_c0"]), float(row["fit_c1"])
+    delta_c0, delta_c1 = -gap_c0, -gap_c1
+    delta_inf = delta_c0
+
+    fig, ax = plt.subplots(figsize=(6.4, 4.6))
+    ax.axhline(0.0, color="k", lw=0.9, zorder=1)
+    ax.axvline(0.0, color=GRAY, lw=0.8, ls=":", zorder=1)
+
+    ax.plot(
+        inv_n,
+        delta_n,
+        "o",
+        color=BLUE,
+        ms=5.5,
+        mfc="white",
+        mew=1.6,
+        zorder=3,
+        label=r"exact $\delta_n(\gamma)$",
+    )
+    x_ext = np.linspace(0.0, inv_n.max() * 1.02, 120)
+    ax.plot(
+        x_ext,
+        delta_c0 + delta_c1 * x_ext,
+        "--",
+        color=BLUE,
+        lw=1.8,
+        alpha=0.85,
+        zorder=2,
+        label=rf"fit $\delta_n \approx c_0 + c_1/n$",
+    )
+    ax.plot(0.0, delta_inf, "D", color=BLUE, ms=7, zorder=4)
+    ax.annotate(
+        rf"$n\to\infty$: $c_0={delta_inf:+.4f}$",
+        xy=(0.0, delta_inf),
+        xytext=(0.012, delta_inf + 0.55 * (delta_n.min() - delta_inf)),
+        fontsize=10,
+        ha="left",
+        arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.0),
+    )
+
+    n24 = 24
+    if n24 in row["n_values"]:
+        i24 = row["n_values"].index(n24)
+        d24 = float(delta_n[i24])
+        ax.annotate(
+            rf"$\delta_{{24}}={d24:+.4f}$",
+            xy=(1.0 / n24, d24),
+            xytext=(1.0 / n24 + 0.006, d24 + 0.35 * (delta_n.min() - delta_inf)),
+            fontsize=10,
+            ha="left",
+            arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.0),
+        )
+
+    ax.set_xlim(-0.002, inv_n.max() * 1.05)
+    ax.set_xlabel(r"$1/n$")
+    ax.set_ylabel(
+        r"$\delta_n(\gamma)=\frac{1}{n}\log S_n(\gamma)-e^{\mathrm{saddle}}(\gamma)$"
+    )
+    ax.set_title(
+        r"Finite-$n$ saddle discrepancy vanishes as $n\to\infty$"
+        "\n"
+        rf"$\beta_{{\rm opt}}={FIG1_BETA:.4f}$, $\gamma={FIG1_GAMMA:.2f}$; "
+        r"$q{=}3$, $k{=}8$, Krawczyk-certified seed",
+        fontsize=11,
+    )
+    ax.legend(loc="lower left", frameon=True, fontsize=9.5)
+    ax.grid(True, alpha=0.22)
+    ax.text(
+        0.98,
+        0.97,
+        r"$\frac{1}{n}\log S_n = \Phi^* + O\!\left(\frac{\log n}{n}\right)$"
+        "\n"
+        r"$\Rightarrow$ one finite $n$ is inconclusive",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=9.5,
+        bbox=dict(boxstyle="round,pad=0.35", fc="white", ec=GRAY, alpha=0.92),
+    )
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    fig.savefig(out_path.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     n_vals_step = list(range(18, 25))
@@ -145,15 +253,11 @@ def main():
         full_L0 = PHI_PREF + re_phi
         ok, _ = certify_z(sys_, z, dps=DPS)
 
-        # Exact lambda_abs for n=18..40
         fn = finite_n_exponent_grid(K_CLAUSE, Q, R, beta, gamma, N_EXACT)
         lam_exact = np.array([float(fn["lambda_abs"][str(n)]) for n in N_EXACT])
         n_arr = np.array(N_EXACT, dtype=float)
 
-        # Gap vs n
         gap_arr = full_L0 - lam_exact
-
-        # Fit gap = c0 + c1/n
         c0, c1, gap_fit = fit_gap(n_arr, gap_arr)
 
         gap_24 = float(full_L0 - lam_exact[N_EXACT.index(24)])
@@ -169,67 +273,18 @@ def main():
             "gap_fit_n": gap_fit.tolist(),
         })
 
-    out_json = OUT_DIR / "prefactor_convergence.json"
+    out_json = JSON_DIR / "prefactor_convergence.json"
+    JSON_DIR.mkdir(parents=True, exist_ok=True)
     with open(out_json, "w") as f:
         json.dump({"phi_pref": PHI_PREF, "results": results}, f, indent=2)
     print(f"\nWrote {out_json}")
 
     ns = np.array(N_EXACT, dtype=float)
 
-    # -----------------------------------------------------------------------
-    # Figure 1: Gap vs n (linear scale) + fitted lines
-    # -----------------------------------------------------------------------
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    # Figure 1 is produced by paper_finite_size_discrepancy.py (extended analysis).
+    print("Skip prefactor_fig1 here; run paper_finite_size_discrepancy.py")
 
-    for r in results:
-        c = r["color"]
-        lb = r["label"]
-        gap = np.array(r["gap_n"])
-        gfit = np.array(r["gap_fit_n"])
-        axes[0].plot(ns, gap, "o-", color=c, label=lb, lw=1.5, ms=4)
-        axes[0].plot(ns, gfit, "--", color=c, alpha=0.6, lw=1.0)
-
-    axes[0].axhline(0, color="k", lw=0.8)
-    axes[0].set_xlabel(r"$n$")
-    axes[0].set_ylabel(r"gap$(n) = $ (phi\_pref + Re$\Phi$) $- \lambda_{\rm abs}(n)$")
-    axes[0].set_title(r"Convergence of seed saddle approximation: gap$(n)$")
-    axes[0].legend(fontsize=7, ncol=1)
-    axes[0].grid(True, alpha=0.3)
-
-    # Gap vs 1/n to show linearity
-    for r in results:
-        c = r["color"]
-        lb = r["label"]
-        gap = np.array(r["gap_n"])
-        axes[1].plot(1 / ns, gap, "o-", color=c, label=lb, lw=1.5, ms=4)
-        # Fitted line: extrapolate to 1/n=0
-        c0, c1 = r["fit_c0"], r["fit_c1"]
-        x_line = np.linspace(0, 1/18, 100)
-        axes[1].plot(x_line, c0 + c1 * x_line, "--", color=c, alpha=0.6, lw=1.0)
-
-    axes[1].axhline(0, color="k", lw=0.8)
-    axes[1].axvline(0, color="gray", lw=0.5, ls=":")
-    axes[1].set_xlabel(r"$1/n$")
-    axes[1].set_ylabel(r"gap$(n)$")
-    axes[1].set_title(r"Gap vs $1/n$: linear $\Rightarrow$ gap $= c_0 + c_1/n$")
-    axes[1].legend(fontsize=7, ncol=1)
-    axes[1].grid(True, alpha=0.3)
-
-    fig.suptitle(
-        r"Gaussian prefactor convergence: $\mathrm{gap}(n) = c_0 + c_1/n$ fit"
-        "\n" + r"$q=3, k=8, r=176.54$; dashed = fitted $c_0 + c_1/n$",
-        fontsize=12,
-    )
-    fig.tight_layout()
-    fig.savefig(OUT_DIR / "prefactor_fig1_gap_vs_n.png", dpi=150)
-    plt.close(fig)
-    print("Saved prefactor_fig1_gap_vs_n.png")
-
-    # -----------------------------------------------------------------------
-    # Figure 2: log-log gap vs n — check O(1/n) scaling
-    # -----------------------------------------------------------------------
     fig, ax = plt.subplots(figsize=(9, 5))
-
     for r in results:
         gap = np.array(r["gap_n"])
         abs_gap = np.abs(gap)
@@ -238,7 +293,6 @@ def main():
             ax.loglog(ns[valid], abs_gap[valid], "o-", color=r["color"],
                       label=r["label"], lw=1.5, ms=4)
 
-    # Reference lines
     n_ref = np.array([18, 40], dtype=float)
     ax.loglog(n_ref, 0.1 / n_ref, "k--", lw=0.8, label=r"$\propto 1/n$")
     ax.loglog(n_ref, 0.5 / n_ref**1.5, "k:", lw=0.8, label=r"$\propto 1/n^{1.5}$")
@@ -253,17 +307,13 @@ def main():
     plt.close(fig)
     print("Saved prefactor_fig2_loglog.png")
 
-    # -----------------------------------------------------------------------
-    # Figure 3: c1 coefficient bar chart (shows convergence speed variation)
-    # -----------------------------------------------------------------------
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
     labels = [f"β={r['beta']:.2f}\nγ={r['gamma']:.2f}" for r in results]
     c1_vals = [r["fit_c1"] for r in results]
     c0_vals = [r["fit_c0"] for r in results]
     colors = [r["color"] for r in results]
 
-    bars1 = axes[0].bar(range(len(results)), c1_vals, color=colors, alpha=0.8)
+    axes[0].bar(range(len(results)), c1_vals, color=colors, alpha=0.8)
     axes[0].set_xticks(range(len(results)))
     axes[0].set_xticklabels(labels, fontsize=8)
     axes[0].axhline(0, color="k", lw=0.8)
@@ -271,7 +321,7 @@ def main():
     axes[0].set_title(r"Convergence speed $c_1$: gap$(n) \approx c_0 + c_1/n$")
     axes[0].grid(True, alpha=0.3, axis="y")
 
-    bars2 = axes[1].bar(range(len(results)), np.abs(c0_vals), color=colors, alpha=0.8)
+    axes[1].bar(range(len(results)), np.abs(c0_vals), color=colors, alpha=0.8)
     axes[1].set_xticks(range(len(results)))
     axes[1].set_xticklabels(labels, fontsize=8)
     axes[1].set_ylabel(r"$|c_0|$ (residual at $n\to\infty$, should $\to 0$)")
@@ -284,22 +334,15 @@ def main():
     plt.close(fig)
     print("Saved prefactor_fig3_coefficients.png")
 
-    # -----------------------------------------------------------------------
-    # Figure 4: Corrected estimate using empirical c1 vs uncorrected
-    # -----------------------------------------------------------------------
     fig, ax = plt.subplots(figsize=(9, 5))
-
     n_corr = np.linspace(18, 80, 200)
     for r in results:
         c = r["color"]
         lb = r["label"]
         c0, c1 = r["fit_c0"], r["fit_c1"]
-        # Uncorrected (L0): flat line at full_L0
         ax.axhline(r["full_L0"], color=c, lw=0.8, ls="--", alpha=0.5)
-        # Corrected: L0 - c1/n (subtracts the fitted O(1/n) error)
         lam_corrected = r["full_L0"] - c1 / n_corr
         ax.plot(n_corr, lam_corrected, "-", color=c, lw=1.5, label=f"{lb}: L0 − c₁/n")
-        # Exact dots
         ax.plot(N_EXACT, r["lam_exact_n"], "o", color=c, ms=3, alpha=0.5)
 
     ax.set_xlabel(r"$n$")
@@ -315,9 +358,6 @@ def main():
     plt.close(fig)
     print("Saved prefactor_fig4_corrected_estimate.png")
 
-    # -----------------------------------------------------------------------
-    # Summary table
-    # -----------------------------------------------------------------------
     print("\n=== Convergence Summary ===")
     print(f"{'beta':>7} {'gamma':>7} | {'Re Phi':>8} | {'gap(n=24)':>10} | {'c0 (inf)':>10} | {'c1 (1/n)':>10}")
     print("-" * 67)

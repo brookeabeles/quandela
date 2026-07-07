@@ -29,6 +29,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
 
 
 HERE = Path(__file__).resolve().parent
@@ -335,7 +337,7 @@ def plot_finite_n_crossing_drift() -> dict[str, Any]:
     }
 
 
-def plot_algebraic_vs_physical_scatter(phi_pref: float) -> dict[str, Any]:
+def load_algebraic_vs_physical_rows(phi_pref: float) -> list[dict[str, Any]]:
     comp = load_json(
         RESULTS
         / "run_seed_branch_g-2pi"
@@ -344,7 +346,7 @@ def plot_algebraic_vs_physical_scatter(phi_pref: float) -> dict[str, Any]:
         / "competitor_dominance_summary.json"
     )
     seed = load_seed_continuation()
-    rows = []
+    rows: list[dict[str, Any]] = []
     for pg in comp["per_gamma"]:
         g = float(pg["gamma"])
         lam = interp(g, seed["gamma"], seed["exact"])
@@ -361,23 +363,119 @@ def plot_algebraic_vs_physical_scatter(phi_pref: float) -> dict[str, Any]:
                     "z_distance": float(c.get("z_distance_from_seed", float("nan"))),
                 }
             )
+    return rows
 
-    delta = np.array([r["delta_re"] for r in rows])
-    gap = np.array([r["abs_gap_to_exact"] for r in rows])
-    immod = np.array([r["im_mod_abs"] for r in rows])
-    gamma = np.array([r["gamma"] for r in rows])
 
-    fig, ax = plt.subplots(figsize=(9, 6))
-    sc = ax.scatter(delta, gap, c=immod, s=18, cmap="magma_r", alpha=0.68, edgecolors="none")
+def _add_gamma_curve_traces(
+    ax: plt.Axes,
+    rows_by_gamma: dict[float, list[dict[str, Any]]],
+    *,
+    cmap: str,
+    norm: Normalize,
+    linewidth: float = 1.4,
+    marker_size: float = 14.0,
+    alpha: float = 0.9,
+) -> LineCollection | None:
+    """Draw one sorted competitor locus per gamma with segment colors from |Im Phi| mod 2pi."""
+    last_lc: LineCollection | None = None
+    for subset in rows_by_gamma.values():
+        ordered = sorted(subset, key=lambda r: r["delta_re"])
+        xs = np.array([r["delta_re"] for r in ordered], dtype=float)
+        ys = np.array([r["abs_gap_to_exact"] for r in ordered], dtype=float)
+        cs = np.array([r["im_mod_abs"] for r in ordered], dtype=float)
+        if len(xs) < 2:
+            ax.scatter(xs, ys, c=cs, s=marker_size, cmap=cmap, norm=norm, edgecolors="none", alpha=alpha)
+            continue
+        pts = np.column_stack([xs, ys])
+        segs = np.stack([pts[:-1], pts[1:]], axis=1)
+        seg_colors = 0.5 * (cs[:-1] + cs[1:])
+        lc = LineCollection(
+            segs,
+            cmap=cmap,
+            norm=norm,
+            linewidths=linewidth,
+            alpha=alpha,
+            capstyle="round",
+            joinstyle="round",
+        )
+        lc.set_array(seg_colors)
+        ax.add_collection(lc)
+        ax.scatter(xs, ys, c=cs, s=marker_size, cmap=cmap, norm=norm, edgecolors="none", alpha=alpha, zorder=3)
+        last_lc = lc
+    return last_lc
+
+
+def _style_algebraic_vs_physical_axes(ax: plt.Axes, *, title: str) -> None:
     ax.axvline(0, color="k", lw=0.8)
     ax.axhline(0.02, color="C2", ls="--", lw=1, label="0.02 exact-exponent gap")
     ax.set_yscale("log")
     ax.set_xlabel(r"$Re\Phi_{\rm comp}-Re\Phi_{\rm seed}$")
     ax.set_ylabel(r"$|(\phi_{\rm pref}+Re\Phi_{\rm comp})-\lambda_{\rm exact}|$")
-    ax.set_title("Certified roots: algebraic dominance versus physical explanation")
+    ax.set_title(title)
     ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.2)
+
+
+def plot_algebraic_vs_physical_scatter(phi_pref: float) -> dict[str, Any]:
+    rows = load_algebraic_vs_physical_rows(phi_pref)
+
+    delta = np.array([r["delta_re"] for r in rows])
+    gap = np.array([r["abs_gap_to_exact"] for r in rows])
+    immod = np.array([r["im_mod_abs"] for r in rows])
+    gamma = np.array([r["gamma"] for r in rows])
+    rows_by_gamma: dict[float, list[dict[str, Any]]] = {}
+    for row in rows:
+        rows_by_gamma.setdefault(float(row["gamma"]), []).append(row)
+    gamma_values = sorted(rows_by_gamma, reverse=True)
+    im_norm = Normalize(vmin=0.0, vmax=float(math.pi))
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    sc = ax.scatter(delta, gap, c=immod, s=18, cmap="magma_r", alpha=0.68, edgecolors="none", norm=im_norm)
+    _style_algebraic_vs_physical_axes(
+        ax,
+        title="Certified roots: algebraic dominance versus physical explanation",
+    )
     fig.colorbar(sc, ax=ax, label=r"$|Im\Phi|$ mod $2\pi$")
     path = savefig(fig, "algebraic_vs_physical_saddles_scatter.png")
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
+    for ax, g in zip(axes.ravel(), gamma_values):
+        lc = _add_gamma_curve_traces(
+            ax,
+            {g: rows_by_gamma[g]},
+            cmap="magma_r",
+            norm=im_norm,
+            linewidth=1.8,
+            marker_size=10.0,
+        )
+        _style_algebraic_vs_physical_axes(
+            ax,
+            title=rf"$\gamma={g:.2f}$: competitor locus sorted by $\Delta Re\Phi$",
+        )
+        if lc is not None:
+            fig.colorbar(lc, ax=ax, label=r"$|Im\Phi|$ mod $2\pi$", fraction=0.046, pad=0.04)
+    fig.suptitle("Per-gamma competitor curves (color = phase distance to real)", y=1.01, fontsize=12)
+    curves_by_gamma_path = savefig(fig, "algebraic_vs_physical_saddles_curves_by_gamma.png")
+
+    fig, ax = plt.subplots(figsize=(10, 6.5))
+    lc = _add_gamma_curve_traces(
+        ax,
+        rows_by_gamma,
+        cmap="magma_r",
+        norm=im_norm,
+        linewidth=1.2,
+        marker_size=8.0,
+        alpha=0.82,
+    )
+    _style_algebraic_vs_physical_axes(
+        ax,
+        title="All certified competitors: sorted loci per gamma (color = $|Im\\Phi|$ mod $2\\pi$)",
+    )
+    ax.set_xlim(float(delta.min()) - 0.3, float(delta.max()) + 0.3)
+    ax.set_ylim(max(5e-3, float(gap.min()) * 0.7), float(gap.max()) * 1.2)
+    if lc is not None:
+        fig.colorbar(lc, ax=ax, label=r"$|Im\Phi|$ mod $2\pi$")
+    curves_path = savefig(fig, "algebraic_vs_physical_saddles_curves.png")
 
     dangerous = [
         r
@@ -391,10 +489,12 @@ def plot_algebraic_vs_physical_scatter(phi_pref: float) -> dict[str, Any]:
     ]
     return {
         "path": str(path),
+        "curves_path": str(curves_path),
+        "curves_by_gamma_path": str(curves_by_gamma_path),
         "num_competitor_points": len(rows),
         "num_high_re_bad_exact_match": len(dangerous),
         "num_low_gap_near_real_phase": len(explanatory),
-        "gamma_values": sorted(set(float(x) for x in gamma), reverse=True),
+        "gamma_values": gamma_values,
     }
 
 

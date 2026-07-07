@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -58,6 +59,26 @@ RED = "#c53030"
 PURPLE = "#6b46c1"
 GRAY = "#4a5568"
 
+# Sparse exact-n curves shown on the rate-overlay figure (same color, distinct linestyles).
+RATE_OVERLAY_EXACT_NS = [20, 100]
+FULL_GAMMA_LO = -2.25
+CROSSOVER_GAMMA_LO = -1.95
+CROSSOVER_GAMMA_HI = -1.70
+
+
+def crossover_gammas() -> list[float]:
+    vals = (
+        frange(CROSSOVER_GAMMA_LO, CROSSOVER_GAMMA_HI, 0.01)
+        + frange(-1.875, -1.795, 0.0025)
+        + [-1.830842334140663]
+    )
+    return sorted(set(round(float(v), 10) for v in vals))
+
+
+def default_gammas() -> list[float]:
+    vals = frange(FULL_GAMMA_LO, -1.96, 0.03) + crossover_gammas() + frange(-1.68, -0.05, 0.03)
+    return sorted(set(round(float(v), 10) for v in vals), reverse=True)
+
 
 def frange(start: float, stop: float, step: float) -> list[float]:
     vals = []
@@ -66,15 +87,6 @@ def frange(start: float, stop: float, step: float) -> list[float]:
         vals.append(round(x, 10))
         x += step
     return vals
-
-
-def default_gammas() -> list[float]:
-    vals = (
-        frange(-1.95, -1.70, 0.01)
-        + frange(-1.875, -1.795, 0.0025)
-        + [-1.830842334140663]
-    )
-    return sorted(set(round(float(v), 10) for v in vals))
 
 
 def default_n_values() -> list[int]:
@@ -136,7 +148,7 @@ def build_dense_rows(gammas: list[float], n_values: list[int], resume: bool) -> 
         key = gamma_key(gamma)
         cached = cache.get(key)
         if cached is not None and all(str(n) in cached.get("lambda_abs", {}) for n in n_values):
-            rows.append(cache[key])
+            rows.append(cached)
             print(f"{i:3d}/{len(gammas)} gamma={gamma:+.6f}: cached", flush=True)
             continue
         print(f"{i:3d}/{len(gammas)} gamma={gamma:+.6f}: exact finite-n", flush=True)
@@ -150,7 +162,9 @@ def build_dense_rows(gammas: list[float], n_values: list[int], resume: bool) -> 
                 "rows": sorted(merged.values(), key=lambda r: float(r["gamma"])),
             },
         )
-    rows_by_key = {gamma_key(float(r["gamma"])): r for r in rows}
+    rows_by_key = dict(cache) if resume else {}
+    for r in rows:
+        rows_by_key[gamma_key(float(r["gamma"]))] = r
     out = [rows_by_key[gamma_key(g)] for g in gammas]
     save_json(RAW, {"metadata": metadata(gammas, n_values), "rows": out})
     return out
@@ -256,7 +270,15 @@ def fit_drift(crossings: list[dict[str, Any]], anti_gamma: float) -> dict[str, A
     x = np.array([1.0 / float(c["n"]) for c in usable])
     y = np.array([float(c["gamma_cross"]) for c in usable])
     if len(usable) < 3:
-        return {"linear_gamma_infinity": float("nan"), "quadratic_gamma_infinity": float("nan")}
+        return {
+            "linear_gamma_infinity": float("nan"),
+            "quadratic_gamma_infinity": float("nan"),
+            "anti_stokes_gamma": float(anti_gamma),
+            "linear_offset_from_anti_stokes": float("nan"),
+            "quadratic_offset_from_anti_stokes": float("nan"),
+            "linear_slope": float("nan"),
+            "quadratic_coefficients": [float("nan"), float("nan"), float("nan")],
+        }
     lin = np.polyfit(x, y, 1)
     quad = np.polyfit(x, y, 2) if len(usable) >= 4 else [float("nan"), float("nan"), float("nan")]
     return {
@@ -395,27 +417,170 @@ def plot_gamma_cross_vs_inverse_n(crossings: list[dict[str, Any]], fit: dict[str
     return str(path)
 
 
-def plot_rate_overlay(data: dict[str, Any], n_values: list[int]) -> str:
-    gamma = data["gamma"]
-    order = np.argsort(gamma)
-    g = gamma[order]
-    fig, ax = plt.subplots(figsize=(10, 5.8))
-    ax.plot(g, data["seed_exp"][order], color=BLUE, lw=2.2, label="seed exponent")
-    ax.plot(g, data["pair_exp"][order], color=ORANGE, lw=2.2, label="merged 43/46 exponent")
-    for n, color in [(12, "#a0aec0"), (24, "#718096"), (40, "#4a5568"), (80, "#1a202c")]:
-        if n in n_values:
-            ax.plot(g, data["lambda_abs"][n][order], lw=1.3, color=color, alpha=0.9, label=f"exact n={n}")
-    ax.axvline(float(data["anti_stokes_gamma"]), color=PURPLE, ls="--", lw=1.5)
-    ax.set_xlabel(r"$\gamma$")
-    ax.set_ylabel("conv2 exponent")
-    ax.set_title("Exact finite-n rate slides from seed to branch 43/46")
-    ax.grid(True, alpha=0.25)
-    ax.legend(fontsize=8, ncol=2)
-    fig.tight_layout()
-    path = OUT / "rate_overlay_seed_pair_exact_n.png"
-    fig.savefig(path, dpi=190, bbox_inches="tight")
+def _auto_ylim(
+    *series,
+    pad_lo: float = 0.06,
+    pad_hi: float = 0.05,
+) -> tuple[float, float]:
+    ys = np.concatenate([np.asarray(s, dtype=float).ravel() for s in series])
+    ys = ys[np.isfinite(ys)]
+    lo, hi = float(np.min(ys)), float(np.max(ys))
+    span = max(hi - lo, 1e-3)
+    return lo - pad_lo * span, hi + pad_hi * span
+
+
+def _plot_rate_overlay(
+    data: dict[str, Any],
+    n_values: list[int],
+    *,
+    gamma_lo: float,
+    gamma_hi: float,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float] | None,
+    filename_stem: str,
+    figsize: tuple[float, float] = (7.0, 5.25),
+    x_abs_gamma: bool = False,
+) -> list[str]:
+    plt.rcParams.update(
+        {
+            "font.size": 14,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 13,
+            "ytick.labelsize": 13,
+            "legend.fontsize": 11,
+        }
+    )
+    lw = 2.5
+    gamma = np.asarray(data["gamma"], dtype=float)
+    mask = (gamma >= gamma_lo) & (gamma <= gamma_hi)
+    if x_abs_gamma:
+        order = np.argsort(np.abs(gamma[mask]))
+    else:
+        order = np.argsort(gamma[mask])
+    g = gamma[mask][order]
+    x = np.abs(g) if x_abs_gamma else g
+    seed_y = np.asarray(data["seed_exp"])[mask][order]
+    pair_y = np.asarray(data["pair_exp"])[mask][order]
+    exact_ns = [n for n in RATE_OVERLAY_EXACT_NS if n in n_values]
+    exact_ys = [np.asarray(data["lambda_abs"][n])[mask][order] for n in exact_ns]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(x, seed_y, color=BLUE, lw=lw, ls="--", label="seed exponent")
+    ax.plot(x, pair_y, color=ORANGE, lw=lw, ls="-", label="merged 43/46 exponent")
+    exact_linestyles = ["-", "--"]
+    exact_lw = lw * 0.55 if x_abs_gamma else lw
+    for i, (n, y) in enumerate(zip(exact_ns, exact_ys)):
+        ls = exact_linestyles[i % len(exact_linestyles)]
+        ax.plot(x, y, lw=exact_lw, color=GRAY, ls=ls, alpha=0.95, label=f"exact $n={n}$")
+
+    anti = float(data["anti_stokes_gamma"])
+    if gamma_lo <= anti <= gamma_hi:
+        anti_x = abs(anti) if x_abs_gamma else anti
+        ax.axvline(
+            anti_x,
+            color=RED,
+            ls=":",
+            lw=lw * 0.95,
+            alpha=0.9,
+            zorder=1,
+            label="anti-Stokes crossing",
+        )
+        y_seed = interpolate_series(anti, gamma, data["seed_exp"])
+        y_pair = interpolate_series(anti, gamma, data["pair_exp"])
+        y_star = 0.5 * (y_seed + y_pair)
+        ax.plot(
+            anti_x,
+            y_star,
+            marker="*",
+            markersize=16,
+            color="gold",
+            markeredgecolor="black",
+            markeredgewidth=0.6,
+            zorder=8,
+            linestyle="none",
+        )
+
+    if ylim is None:
+        ylim = _auto_ylim(seed_y, pair_y, *exact_ys)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_xlabel(r"$|\gamma|$" if x_abs_gamma else r"$\gamma$")
+    ax.set_ylabel("Exponent" if x_abs_gamma else r"Rate exponent")
+    ax.grid(True, alpha=0.2)
+    if x_abs_gamma:
+        ax.legend(
+            loc="lower left",
+            bbox_to_anchor=(0.0, 1.01, 1.0, 0.18),
+            mode="expand",
+            ncol=2,
+            frameon=False,
+            columnspacing=1.0,
+            handletextpad=0.45,
+            borderaxespad=0.0,
+        )
+        fig.tight_layout(rect=[0, 0, 1, 0.86])
+    else:
+        ax.legend(
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            frameon=False,
+            columnspacing=1.1,
+            handletextpad=0.5,
+            borderaxespad=0.0,
+        )
+        fig.tight_layout(rect=[0, 0, 1, 0.90])
+
+    paths: list[str] = []
+    for suffix in (".png", ".pdf"):
+        path = OUT / f"{filename_stem}{suffix}"
+        fig.savefig(path, dpi=190 if suffix == ".png" else None, bbox_inches="tight")
+        paths.append(str(path))
     plt.close(fig)
-    return str(path)
+    return paths
+
+
+def plot_rate_overlay_crossover(data: dict[str, Any], n_values: list[int]) -> list[str]:
+    """Original crossover zoom: gamma in [-1.95, -1.70]."""
+    return _plot_rate_overlay(
+        data,
+        n_values,
+        gamma_lo=CROSSOVER_GAMMA_LO,
+        gamma_hi=CROSSOVER_GAMMA_HI,
+        xlim=(CROSSOVER_GAMMA_LO - 0.02, CROSSOVER_GAMMA_HI + 0.02),
+        ylim=None,
+        filename_stem="rate_overlay_seed_pair_exact_n",
+        figsize=(6.8, 5.0),
+    )
+
+
+def plot_rate_overlay_full_gamma(data: dict[str, Any], n_values: list[int]) -> list[str]:
+    """Extended view: |gamma| from 0 to the data edge (gamma from -2.25 up to 0)."""
+    gamma = np.asarray(data["gamma"], dtype=float)
+    mask = (gamma >= FULL_GAMMA_LO) & (gamma <= float(np.max(gamma)))
+    x_hi = float(np.max(np.abs(gamma[mask]))) + 0.02
+    return _plot_rate_overlay(
+        data,
+        n_values,
+        gamma_lo=FULL_GAMMA_LO,
+        gamma_hi=float(np.max(gamma)),
+        xlim=(0.0, x_hi),
+        ylim=None,
+        filename_stem="rate_overlay_seed_pair_exact_n_full_gamma",
+        figsize=(7.0, 5.25),
+        x_abs_gamma=True,
+    )
+
+
+def publish_paper_results(paths: list[str]) -> list[str]:
+    paper_dir = RESULTS / "PAPER-RESULTS"
+    paper_dir.mkdir(parents=True, exist_ok=True)
+    published: list[str] = []
+    for src in paths:
+        dst = paper_dir / Path(src).name
+        shutil.copy2(src, dst)
+        published.append(str(dst))
+    return published
 
 
 def residual_convergence(data: dict[str, Any], n_values: list[int]) -> list[dict[str, Any]]:
@@ -580,11 +745,16 @@ def run(args: argparse.Namespace) -> None:
     fit = fit_drift(crossings, float(data["anti_stokes_gamma"]))
 
     OUT.mkdir(parents=True, exist_ok=True)
+    rate_crossover = plot_rate_overlay_crossover(data, n_values)
+    rate_full = plot_rate_overlay_full_gamma(data, n_values)
+    paper_copies = publish_paper_results([*rate_crossover, *rate_full])
     figures = [
         plot_anti_stokes_window(data, n_values, crossings),
         plot_finite_size_drift(crossings, fit),
         plot_gamma_cross_vs_inverse_n(crossings, fit),
-        plot_rate_overlay(data, n_values),
+        *rate_crossover,
+        *rate_full,
+        *paper_copies,
     ]
     residuals = residual_convergence(data, n_values)
     figures.append(plot_residual_convergence(residuals, n_values))

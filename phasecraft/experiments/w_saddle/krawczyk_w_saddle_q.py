@@ -12,16 +12,16 @@ auxiliary field u.  See the module docstring section "WHY core.py WAS q = 1
 ONLY" below.
 
 ------------------------------------------------------------------------
-The parent action (memo Eq. 14; d := 2q):
+The parent action (BM24 clause arity k = 2^q; write m := 2^q):
 
-    Phi(u, w) = sum_a c_a u_a^{2q} + i sum_a w_a u_a + log Delta(w),
+    Phi(u, w) = sum_a c_a u_a^m + i sum_a w_a u_a + log Delta(w),
 
     Delta(w) = sum_s b_s exp(i sum_a w_a A_{a,s})        (q-independent).
 
 Saddle equations:
 
-    (I)   dPhi/du_a = 2q c_a u_a^{2q-1} + i w_a       = 0
-    (II)  dPhi/dw_a = i u_a + g_a(w)                   = 0,
+    (I)   dPhi/du_a = m c_a u_a^{m-1} + i w_a       = 0
+    (II)  dPhi/dw_a = i u_a + g_a(w)                = 0,
           with g_a(w) := d/dw_a log Delta(w).
 
 ------------------------------------------------------------------------
@@ -30,11 +30,11 @@ WHY core.py WAS q = 1 ONLY
 core.py certifies a *reduced* system in w alone.  It built that reduction by
 solving (I) for u:
 
-    u_a = ( -i w_a / (2q c_a) )^{1/(2q-1)}                 [FRACTIONAL ROOT]
+    u_a = ( -i w_a / (m c_a) )^{1/(m-1)}                   [FRACTIONAL ROOT]
 
-For q = 1 the exponent is 1/(2q-1) = 1 and the root is trivial, so the reduced
+For q = 1 the exponent is 1/(m-1) = 1 and the root is trivial, so the reduced
 equation w_a + 2 c_a g_a(w) = 0 is rational/holomorphic.  For q >= 2 that
-1/(2q-1) power is a genuine branch -- exactly the "fractional 2q-root" pain the
+1/(m-1) power is a genuine branch -- exactly the fractional k-th root pain the
 memo set out to avoid -- and the reduction stops being single-valued.
 
 THE FIX (this module).  Eliminate u via the *other* equation (II), which is
@@ -45,18 +45,18 @@ LINEAR in u and therefore root-free:
 Substituting into (I) and dividing by i gives a w-only system whose only
 w-dependence is through INTEGER powers of g_a:
 
-    F_tilde_a(w) = w_a + kappa_q c_a g_a(w)^{2q-1} = 0,
-    kappa_q := 2q (-1)^{q-1}     (kappa_1=2, kappa_2=-4, kappa_3=6, ...).
+    F_tilde_a(w) = w_a + kappa_q c_a g_a(w)^{m-1} = 0,
+    kappa_q := -m i^m.
 
 For q = 1 this is exactly core.py's w + 2 C g.  For q = 3 it is
-w + 6 c g^5 -- no fractional root anywhere.  g_a is holomorphic wherever
+w - 8 c g^7 -- no fractional root anywhere.  g_a is holomorphic wherever
 Delta(w) != 0, certified on the box by the divisor-separation bound
 |Delta| >= delta > 0.  This realises the memo's stated advantage verbatim.
 
 Nondegeneracy transfer.  The reduced root w* corresponds bijectively to the
 full saddle (u*, w*) = (i g(w*), w*) because (II) is linear in u.  The full
 Jacobian [[A, iI],[iI, H]] (A = d_uF^u, H = d_wF^w = Hess log Delta) is
-invertible iff the reduced Jacobian I + kappa_q c (2q-1) g^{2q-2} H is
+invertible iff the reduced Jacobian I + kappa_q c (m-1) g^{m-2} H is
 (Schur complement w.r.t. the always-invertible iI block).  So a Krawczyk
 certificate of the reduced system certifies existence/uniqueness/nondegeneracy
 of the full saddle.  ``FullUWSaddleSystem`` below certifies the full 2|A|
@@ -198,9 +198,18 @@ def moment_vec(beta: float = SLICE_BETA, p: int = SLICE_P) -> np.ndarray:
     return grad_log_Delta(np.zeros(4, dtype=complex), beta=beta, p=p) / 1j
 
 
-def kappa_q(q: int) -> float:
-    """kappa_q = 2q (-1)^{q-1}: the reduced-equation coupling prefactor."""
-    return 2.0 * q * ((-1.0) ** (q - 1))
+def bm24_degree(q: int) -> int:
+    """BM24 clause arity / parent-action degree m = 2^q."""
+    q_int = int(q)
+    if q_int < 1:
+        raise ValueError("q must be >= 1")
+    return 2 ** q_int
+
+
+def kappa_q(q: int) -> complex:
+    """Reduced-equation prefactor kappa_q = -m i^m, m = 2^q."""
+    m = bm24_degree(q)
+    return -float(m) * (1j ** m)
 
 
 # =====================================================================
@@ -351,7 +360,7 @@ def _delta_and_grad_duals(w_dual: List[DualIV], terms, n: int):
 
 # =====================================================================
 # 4. REDUCED w-only system, general q
-#       F_tilde_a(w) = w_a + kappa_q c_a g_a(w)^{2q-1}
+#       F_tilde_a(w) = w_a + kappa_q c_a g_a(w)^{m-1}, m=2^q
 # =====================================================================
 @dataclass
 class WSaddleSystem:
@@ -377,22 +386,29 @@ class WSaddleSystem:
         return couplings(self.r, self.gamma)
 
     @property
-    def kappa(self) -> float:
+    def kappa(self) -> complex:
         return kappa_q(self.q)
 
+    @property
+    def degree(self) -> int:
+        return bm24_degree(self.q)
+
     def leading_seed(self) -> np.ndarray:
-        """w_a = -2q i c_a m_a^{2q-1} + O(c^2)  (general-q leading saddle)."""
-        m = moment_vec(beta=self.beta, p=self.p)
-        return -2.0 * self.q * 1j * self.c * m ** (2 * self.q - 1)
+        """w_a = -i m c_a mu_a^{m-1} + O(c^2), m=2^q."""
+        mu = moment_vec(beta=self.beta, p=self.p)
+        m = self.degree
+        return -1j * m * self.c * mu ** (m - 1)
 
     def F_complex(self, w: np.ndarray) -> np.ndarray:
         g = grad_log_Delta(w, beta=self.beta, p=self.p)
-        return w + self.kappa * self.c * g ** (2 * self.q - 1)
+        m = self.degree
+        return w + self.kappa * self.c * g ** (m - 1)
 
     def J_complex(self, w: np.ndarray) -> np.ndarray:
         g = grad_log_Delta(w, beta=self.beta, p=self.p)
         Dg = hess_log_Delta(w, beta=self.beta, p=self.p)
-        pref = self.kappa * self.c * (2 * self.q - 1) * g ** (2 * self.q - 2)  # length-4
+        m = self.degree
+        pref = self.kappa * self.c * (m - 1) * g ** (m - 2)  # length-4
         return np.eye(4, dtype=complex) + np.diag(pref) @ Dg
 
     def F_real(self, x: np.ndarray) -> np.ndarray:
@@ -404,11 +420,11 @@ class WSaddleSystem:
         """Phi(u*,w*) with u eliminated; equals sum w^2/(4c)+log Delta only at q=1.
 
         For general q the on-shell action is
-            Phi = sum_a [ c_a u_a^{2q} + i w_a u_a ] + log Delta,  u_a = i g_a(w).
+            Phi = sum_a [ c_a u_a^m + i w_a u_a ] + log Delta,  u_a = i g_a(w), m=2^q.
         """
         g = grad_log_Delta(w, beta=self.beta, p=self.p)
         u = 1j * g
-        poly = np.sum(self.c * u ** (2 * self.q) + 1j * w * u)
+        poly = np.sum(self.c * u ** self.degree + 1j * w * u)
         return poly + np.log(Delta(w, beta=self.beta, p=self.p))
 
 
@@ -421,7 +437,7 @@ def _F_J_delta_iv_reduced(w_box, sys: WSaddleSystem):
     g_dual = [dDelta[a] / Delta_d for a in range(n)]      # g_a and dg_a/dw_b
     c_iv = _couplings_iv(sys.r, sys.gamma)
     kappa_iv = _to_iv_complex(sys.kappa)
-    m = 2 * sys.q - 1
+    m = sys.degree - 1
     F_dual = []
     for a in range(n):
         coef = DualIV.const(kappa_iv * c_iv[a], n)
@@ -433,7 +449,7 @@ def _F_J_delta_iv_reduced(w_box, sys: WSaddleSystem):
 
 # =====================================================================
 # 5. FULL (u,w) system, general q  -- independent cross-check
-#       F^u_a = 2q c_a u_a^{2q-1} + i w_a
+#       F^u_a = m c_a u_a^{m-1} + i w_a, m=2^q
 #       F^w_a = i u_a + g_a(w)
 #    variables x = (u_0..u_3, w_0..w_3), n = 8.
 # =====================================================================
@@ -454,6 +470,10 @@ class FullUWSaddleSystem:
     def c(self) -> np.ndarray:
         return couplings(self.r, self.gamma)
 
+    @property
+    def degree(self) -> int:
+        return bm24_degree(self.q)
+
     def uw_from_w(self, w: np.ndarray) -> np.ndarray:
         """Map a reduced-system w to the full (u,w) vector via u = i g(w)."""
         u = 1j * grad_log_Delta(w, beta=self.beta, p=self.p)
@@ -463,7 +483,8 @@ class FullUWSaddleSystem:
         u = x[:4]
         w = x[4:]
         g = grad_log_Delta(w, beta=self.beta, p=self.p)
-        Fu = 2 * self.q * self.c * u ** (2 * self.q - 1) + 1j * w
+        m = self.degree
+        Fu = m * self.c * u ** (m - 1) + 1j * w
         Fw = 1j * u + g
         return np.concatenate([Fu, Fw])
 
@@ -472,8 +493,9 @@ class FullUWSaddleSystem:
         w = x[4:]
         Dg = hess_log_Delta(w, beta=self.beta, p=self.p)
         J = np.zeros((8, 8), dtype=complex)
-        # dF^u/du = 2q(2q-1) c u^{2q-2}  (diagonal)
-        diagA = 2 * self.q * (2 * self.q - 1) * self.c * u ** (2 * self.q - 2)
+        # dF^u/du = m(m-1) c u^{m-2}  (diagonal), m=2^q
+        m = self.degree
+        diagA = m * (m - 1) * self.c * u ** (m - 2)
         J[:4, :4] = np.diag(diagA)
         J[:4, 4:] = 1j * np.eye(4)            # dF^u/dw
         J[4:, :4] = 1j * np.eye(4)            # dF^w/du
@@ -488,7 +510,7 @@ class FullUWSaddleSystem:
     def Phi(self, x: np.ndarray) -> complex:
         u = x[:4]
         w = x[4:]
-        return np.sum(self.c * u ** (2 * self.q) + 1j * w * u) + np.log(
+        return np.sum(self.c * u ** self.degree + 1j * w * u) + np.log(
             Delta(w, beta=self.beta, p=self.p)
         )
 
@@ -502,12 +524,12 @@ def _F_J_delta_iv_full(x_box, sys: FullUWSaddleSystem):
     Delta_d, dDelta = _delta_and_grad_duals(w_dual, terms, n)
     g_dual = [dDelta[a] / Delta_d for a in range(4)]
     c_iv = _couplings_iv(sys.r, sys.gamma)
-    twoq = _to_iv_complex(2 * sys.q)
+    degree_iv = _to_iv_complex(sys.degree)
     i_iv = iv.mpc(iv.mpf(0), iv.mpf([1.0, 1.0]))
-    m = 2 * sys.q - 1
+    m = sys.degree - 1
     F_dual = []
     for a in range(4):
-        coef = DualIV.const(twoq * c_iv[a], n)
+        coef = DualIV.const(degree_iv * c_iv[a], n)
         F_dual.append(coef * u_dual[a].pow_int(m) + DualIV.const(i_iv, n) * w_dual[a])
     for a in range(4):
         F_dual.append(DualIV.const(i_iv, n) * u_dual[a] + g_dual[a])
@@ -813,21 +835,22 @@ def selftest() -> None:
     assert roots1, "no q=1 root found"
     ok1, info1 = krawczyk_certify_reduced(s1, roots1[0], dps=60)
     print(f"  q=1 reduced Krawczyk certified: {ok1}  "
-          f"(kappa={info1.get('contraction_bound'):.3e}, rho={info1.get('box_radius'):.2e}, "
+          f"(contraction={info1.get('contraction_bound'):.3e}, rho={info1.get('box_radius'):.2e}, "
           f"|Delta|>={info1.get('delta_lower'):.3e})")
     assert ok1
 
     # --- q = 3 certification (the point of this module) -----------------
     for (rr, gg) in [(1.0, -0.05), (1.0, -0.15), (50.0, -0.05)]:
         s3 = WSaddleSystem(r=rr, gamma=gg, q=3)
-        assert abs(s3.kappa - 6.0) < 1e-15
+        assert s3.degree == 8
+        assert abs(s3.kappa + 8.0) < 1e-15
         roots3 = discover_w_roots(s3, num_starts=60, seed=1)
         assert roots3, f"no q=3 root found for r={rr}, gamma={gg}"
         w3 = roots3[0]
         res3 = float(np.linalg.norm(s3.F_complex(w3), ord=np.inf))
         ok3, info3 = krawczyk_certify_reduced_escalate(s3, w3, dps_start=60)
         print(f"  q=3 r={rr}, gamma={gg}: root residual {res3:.2e}, certified={ok3}, "
-              f"kappa={info3.get('contraction_bound'):.3e}, rho={info3.get('box_radius'):.2e}, "
+              f"contraction={info3.get('contraction_bound'):.3e}, rho={info3.get('box_radius'):.2e}, "
               f"|Delta|>={info3.get('delta_lower'):.3e}")
         assert ok3, info3
 
@@ -845,7 +868,7 @@ def selftest() -> None:
         phi_red = complex(info3["Phi_real"], info3["Phi_imag"])
         phi_full = sf.Phi(xf)
         dphi = abs(phi_red - phi_full)
-        print(f"        full (u,w) certified={okf}, kappa={infof.get('contraction_bound', float('nan')):.3e}; "
+        print(f"        full (u,w) certified={okf}, contraction={infof.get('contraction_bound', float('nan')):.3e}; "
               f"|Phi_reduced - Phi_full|={dphi:.2e}")
         assert okf, infof
         assert dphi < 1e-6, f"action mismatch {dphi}"

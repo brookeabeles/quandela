@@ -437,6 +437,9 @@ def _sweep_row_at_gamma_wu(
         "Phi_eff_im_unwrapped": float(phi.imag),
         "residual": float(res),
         "residual_F_norm": float(res),
+        "delta_lower": float(info.get("delta_lower", 0.0)) if ok_cert else 0.0,
+        "contraction_bound": float(info.get("contraction_bound", math.inf)),
+        "krawczyk_contraction_bound": float(info.get("contraction_bound", math.inf)),
         "krawczyk_certified": bool(ok_cert),
         "krawczyk_info": info,
         "box_radius": float(info.get("box_radius", 0.0)) if ok_cert else 0.0,
@@ -444,6 +447,7 @@ def _sweep_row_at_gamma_wu(
         "num_certified_roots": sweep["num_certified_roots"],
         "num_certified_competitors": sweep.get("num_certified_competitors", 0),
         "min_certified_gap_re": sweep["min_certified_gap_re"],
+        "min_positive_gap_re": sweep.get("min_positive_gap_re"),
         "seed_dominates_all": sweep.get("seed_dominates_all"),
         "closest_competitor": sweep.get("closest_competitor"),
     }

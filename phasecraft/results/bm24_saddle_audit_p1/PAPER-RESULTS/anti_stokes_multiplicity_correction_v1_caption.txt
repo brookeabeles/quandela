@@ -1,0 +1,7 @@
+Finite-size multiplicity correction at the certified anti-Stokes crossing.
+
+The certified crossing used here is gamma_AS = -1.830842334140663. The finite-n corrected seed baseline is lambda_seed_corr(n)=lambda_seed - c1/n, with c1=0.141998762660 determined at the off-crossing seed-controlled point beta=0.5434, gamma=-1.0; no crossing data are used to fit this correction. The seed saddle underestimates lambda_abs(n) at the crossing.
+
+At the certified equal-real-action crossing, the exact finite-size rate lies above the continued seed-saddle prediction. After removing the ordinary single-saddle prefactor correction, the remaining discrepancy is compared with the parameter-free log(2)/n and log(3)/n corrections expected from two and three equal-magnitude saddle channels. Agreement with one of these corrections provides numerical evidence for a multi-saddle contribution, although the unknown contour coefficients prevent identification of the exact Picard-Lefschetz decomposition.
+
+The effective two-channel model is seed plus a combined competitor-pair channel. The explicit seed+43+46 model uses D_model(n)=log|1+rho_43 exp(i n Delta theta_43)+rho_46 exp(i n Delta theta_46)| with rho_43=rho_46=1 for this equal-prefactor candidate. Replacing these rho values requires Gaussian-prefactor ratios and contour coefficients.

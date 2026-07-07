@@ -1,0 +1,7 @@
+Finite-size evidence for competing saddle contributions near the anti-Stokes crossing.
+
+If the relevant contour decomposes into the certified seed and competitor thimbles with nonzero coefficients, standard saddle-point asymptotics imply that the subdominant contribution is exponentially suppressed away from the equal-real-action crossing, while both contributions occur at the same exponential order at the crossing. The unknown intersection numbers prevent this conditional expansion from being promoted to a proof of the contour decomposition.
+
+Away from the anti-Stokes crossing, the exact finite-size exponent is accurately described by the continued seed saddle. Near the crossing, neither bare saddle action individually explains the exact rate. Candidate combinations of the certified saddle contributions provide a closer finite-size description. This supports a multi-saddle interpretation of the discrepancy, but does not determine the contributing thimbles or their intersection numbers.
+
+Krawczyk certification proves local existence, uniqueness within the certification box, and nonsingularity; it does not prove that the saddle contributes to the original integration contour. The contour coefficients remain unknown. The phase-aligned log-sum-exp and signed finite-set curves are diagnostic equal-prefactor models with fixed candidate coefficients, not fitted independently at each n. All comparisons use exact finite-n p=1 values.

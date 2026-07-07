@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_asymptotic_persistence_protocol",
+  "objective": "Test whether the median-runtime versus mean-success exponent gap persists as n -> infinity.",
+  "core_observables": {
+    "X_n": "-(1/n) log2(p_succ)",
+    "point_gap_Delta_n": "median(X_n) - c_ann(n) = (1/n) log2(mean_p(n)/median_p(n))",
+    "window_gap": "slope_n log2(mean_p(n)/median_p(n))",
+    "skew_piece": "median(X_n) - mean(X_n)",
+    "jensen_piece": "mean(X_n) - c_ann(n)",
+    "tilted_variance_integral": "n ln(2) integral_0^1 (1-lambda) Var_lambda(X_n) d lambda"
+  },
+  "gates": {
+    "A_stable_positive_gap": {
+      "description": "Later n-windows have positive window_gap with uncertainty excluding zero and no trend toward zero.",
+      "recommended_threshold": {
+        "lower_95_bootstrap_CI_gap": 0.01,
+        "required_late_windows": 2
+      }
+    },
+    "B_stable_positive_jensen": {
+      "description": "Jensen slope remains positive and explains most of the total gap.",
+      "recommended_threshold": {
+        "lower_95_bootstrap_CI_jensen": 0.0,
+        "jensen_fraction_of_gap_min": 0.5
+      }
+    },
+    "C_stable_tilted_integral": {
+      "description": "The exact tilted-variance integral remains positive and does not decrease toward zero in late windows.",
+      "recommended_threshold": {
+        "late_window_mean_tilted_J_min": 0.02,
+        "late_window_trend": "statistically consistent with zero or positive"
+      }
+    },
+    "D_scaled_cumulants_monitored": {
+      "description": "Track n kappa2, n^2 kappa3, n^3 kappa4 instead of assuming Gaussian truncation.",
+      "required_metrics": [
+        "n_kappa2_X",
+        "n2_kappa3_X",
+        "n3_kappa4_X"
+      ]
+    },
+    "E_tail_robustness": {
+      "description": "Mean success estimates should not be dominated by a tiny number of easiest observed instances.",
+      "warning_thresholds": {
+        "top1_mass_share": 0.25,
+        "top5_mass_share": 0.5,
+        "leave_one_out_delta_shift": 0.005
+      }
+    },
+    "F_multiseed_replication": {
+      "description": "Repeat across independent training and evaluation seeds.",
+      "minimum_seed_families": 3,
+      "preferred_seed_families": 5
+    }
+  },
+  "recommended_run_stages": [
+    {
+      "stage": 1,
+      "name": "feasible_extension",
+      "n_values": "12..24",
+      "N": 500,
+      "depths": [
+        20,
+        50
+      ],
+      "train_n": [
+        12,
+        16
+      ],
+      "seed_families": "current",
+      "purpose": "Check whether n=21..24 continues or breaks the current trend."
+    },
+    {
+      "stage": 2,
+      "name": "late_window_confirmation",
+      "n_values": "16..28",
+      "N": "500 or 1000",
+      "depths": [
+        20,
+        50
+      ],
+      "train_n": [
+        12,
+        16
+      ],
+      "seed_families": "at least 3 evaluation roots",
+      "purpose": "Form later windows with less overlap with n=12..20."
+    },
+    {
+      "stage": 3,
+      "name": "multi_seed_robustness",
+      "n_values": "12..24 or 16..28",
+      "N": 500,
+      "depths": [
+        20,
+        50
+      ],
+      "train_n": [
+        12,
+        16
+      ],
+      "training_seeds": [
+        0,
+        27,
+        42
+      ],
+      "evaluation_roots": "independent per training seed",
+      "purpose": "Separate intrinsic behavior from angle/training/evaluation seed effects."
+    },
+    {
+      "stage": 4,
+      "name": "tail_aware_check",
+      "trigger": "top-tail warning thresholds are exceeded",
+      "actions": [
+        "increase N",
+        "use tail-aware or importance-sampled estimates of E[p_succ]"
+      ]
+    }
+  ],
+  "minimal_decision_table_columns": [
+    "window",
+    "train_n",
+    "depth",
+    "gap",
+    "gap_ci",
+    "jensen",
+    "skew",
+    "tilted_J",
+    "var1_over_var0",
+    "top1",
+    "top5",
+    "leave_one_out"
+  ],
+  "current_status": {
+    "satisfied": [
+      "finite-window positive gap for p=20,50",
+      "gap mostly explained by Jensen piece",
+      "exact tilted-variance integral explains Jensen piece",
+      "lambda=0 variance has right scale but overpredicts",
+      "top-tail mass and leave-one-out checks are not catastrophic"
+    ],
+    "not_satisfied": [
+      "large enough n range",
+      "multi-seed replication of tilted-variance diagnostic",
+      "evidence that tilted-variance integral stabilizes at large n",
+      "evidence that scaled cumulants converge"
+    ],
+    "conclusion": "Current result identifies the finite-window mechanism but does not establish asymptotic persistence."
+  }
+}

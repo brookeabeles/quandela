@@ -39,6 +39,9 @@ from plot_compare_run1_run4 import (  # noqa: E402
 _DEFAULT_MANIFEST = bm24_runs_dir() / "multi_seed_ctyp_cann" / "manifest.json"
 _BASELINE = bm24_runs_dir() / "06-09/run1/train12-tr100-te200-n12-18.json"
 FAIR_WINDOW: Tuple[int, int] = (14, 18)
+# BM24 random k-SAT median-runtime exponent scaling (k=8): c ≈ A p^{-B}
+_K8_ANALYTIC_AMP = 0.69
+_K8_ANALYTIC_EXP = 0.32
 
 
 def _traces(payload: dict) -> Dict[str, List[dict]]:
@@ -748,6 +751,7 @@ def plot_dual_exponent_convergence(
     eval_window: Tuple[int, int] = (12, 18),
     classical: Optional[dict] = None,
     png_name: str = "multi_seed_exponent_convergence.png",
+    thesis_style: bool = False,
 ) -> Path:
     """c_typ and inverse-mean-success exponents on one true-depth axis."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -790,15 +794,26 @@ def plot_dual_exponent_convergence(
         if np.isfinite(v):
             all_vals.append(v)
 
+    color_typ = "#DD8452" if thesis_style else "#4C72B0"
+    color_inv = "#2C7BB6" if thesis_style else "#DD8452"
+    analytic_label = (
+        "BM24 analytic mean success probability"
+        if thesis_style
+        else rf"$k{{=}}8$ analytic (${_K8_ANALYTIC_AMP}\,p^{{-{_K8_ANALYTIC_EXP}}}$)"
+    )
+    analytic_legend_key = "BM24 analytic" if thesis_style else "k=8 analytic"
+    if thesis_style and png_name == "multi_seed_exponent_convergence.png":
+        png_name = "multi_seed_exponent_convergence_thesis.png"
+
     fig, ax = plt.subplots(figsize=(7.6, 4.7))
     ax.errorbar(
         depths,
         typ_mean,
         yerr=typ_sem,
         fmt="o-",
-        color="#4C72B0",
+        color=color_typ,
         mfc="white",
-        mec="#4C72B0",
+        mec=color_typ,
         mew=1.2,
         lw=2.0,
         ms=7,
@@ -821,7 +836,7 @@ def plot_dual_exponent_convergence(
             ax.plot(
                 p_line,
                 y_fit,
-                color="#4C72B0",
+                color=color_typ,
                 lw=1.6,
                 ls=":",
                 alpha=0.85,
@@ -838,9 +853,9 @@ def plot_dual_exponent_convergence(
             inv_mean,
             yerr=inv_sem,
             fmt="s-",
-            color="#DD8452",
+            color=color_inv,
             mfc="white",
-            mec="#DD8452",
+            mec=color_inv,
             mew=1.2,
             lw=2.0,
             ms=6,
@@ -863,7 +878,7 @@ def plot_dual_exponent_convergence(
                 ax.plot(
                     p_line,
                     y_fit,
-                    color="#DD8452",
+                    color=color_inv,
                     lw=1.6,
                     ls=":",
                     alpha=0.95,
@@ -871,7 +886,29 @@ def plot_dual_exponent_convergence(
                     label="_nolegend_",
                 )
                 all_vals.extend(y_fit.tolist())
-    _draw_baseline_refs(ax, ws_slope, lm_slope, label_in_axes=True)
+    p_k8 = np.linspace(1.0, p_max, 400)
+    y_k8 = _K8_ANALYTIC_AMP * p_k8 ** (-_K8_ANALYTIC_EXP)
+    ax.plot(
+        p_k8,
+        y_k8,
+        color="#2C7BB6",
+        lw=2.0,
+        ls="--",
+        alpha=0.9,
+        zorder=2,
+        label=analytic_label,
+    )
+    all_vals.extend(y_k8.tolist())
+    baseline_label_offsets = (
+        ((0.012, "bottom"), (-0.012, "top")) if thesis_style else None
+    )
+    _draw_baseline_refs(
+        ax,
+        ws_slope,
+        lm_slope,
+        label_in_axes=True,
+        label_offsets=baseline_label_offsets,
+    )
 
     y_min = float(np.nanmin(all_vals))
     y_max = float(np.nanmax(all_vals))
@@ -889,6 +926,7 @@ def plot_dual_exponent_convergence(
         "Median runtime",
         "Inverse mean success",
         "Power-law fit",
+        analytic_legend_key,
     ]
     ordered: List[int] = []
     for key in legend_order:
@@ -899,7 +937,7 @@ def plot_dual_exponent_convergence(
         [labels[i] for i in ordered],
         fontsize=8.2,
         loc="upper center",
-        ncol=3,
+        ncol=2,
         bbox_to_anchor=(0.5, 0.99),
         columnspacing=1.2,
         handlelength=2.2,

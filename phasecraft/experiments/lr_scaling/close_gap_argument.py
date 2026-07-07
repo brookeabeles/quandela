@@ -334,28 +334,16 @@ def plot_log2_ratio_vs_n(results: List[dict], out: Path) -> None:
                     legend_handles.append(eb.lines[0])
                     legend_labels.append(label)
 
-            ax.axhline(0, color="0.25", linewidth=0.7, alpha=0.38, zorder=1)
             ax.set_xlim(n_min - 0.55, n_max + 0.55)
+            ax.set_ylim(bottom=0)
             ax.set_xticks(sorted({n for r in sub for n in r["ns"] if n % 2 == 0}))
             ax.set_xlabel("System size $n$")
-            ax.text(
-                0.035,
-                0.95,
-                rf"trained at $n={tn}$",
-                transform=ax.transAxes,
-                ha="left",
-                va="top",
-                fontsize=8,
-                color="0.25",
-            )
             ax.grid(True, axis="y")
             ax.grid(False, axis="x")
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
 
-        axes[0, 0].set_ylabel(
-            r"$\log_2(\mathrm{mean}\,p_{\mathrm{succ}} / \mathrm{median}\,p_{\mathrm{succ}})$"
-        )
+        axes[0, 0].set_ylabel(r"$\log_2(\mathrm{mean}/\mathrm{median})$")
         fig.legend(
             legend_handles,
             legend_labels,
@@ -395,6 +383,8 @@ def plot_log2_ratio_vs_n_pt2(
         n_min = min(min(r["ns"]) for r in sub)
         n_max = max(max(r["ns"]) for r in sub)
 
+        legend_handles, legend_labels = [], []
+
         for r in sub:
             ns = np.array(r["ns"], dtype=float)
             lr = np.array(r["log2_ratio"])
@@ -404,9 +394,8 @@ def plot_log2_ratio_vs_n_pt2(
             if finite.sum() < 2:
                 continue
 
-            n_inst = int(round(np.mean(r["Ns"])))
             delta_c = r["spread_slope"]
-            ax.errorbar(
+            eb = ax.errorbar(
                 ns[finite],
                 lr[finite],
                 yerr=ci_sigma * bs[finite],
@@ -430,40 +419,24 @@ def plot_log2_ratio_vs_n_pt2(
                 alpha=0.74,
                 zorder=2,
             )
-            label_y = float(np.polyval(fit, n_max + 0.1))
-            if r["depth"] == 20:
-                label_y += 0.025
-            elif r["depth"] == 50:
-                label_y += 0.055
-            elif r["depth"] == 10:
-                label_y -= 0.01
-            ax.text(
-                n_max + 0.32,
-                label_y,
-                rf"$p={r['depth']}$, $\Delta c={delta_c:.3f}$",
-                color=col,
-                fontsize=7.7,
-                va="center",
-                ha="left",
-                clip_on=False,
-            )
+            legend_handles.append(eb.lines[0])
+            legend_labels.append(rf"$p={r['depth']}$" + "\n" + rf"$\Delta c={delta_c:.3f}$")
 
-        ax.axhline(0, color="0.25", linewidth=0.7, linestyle="-", alpha=0.45, zorder=1)
-        ax.set_xlim(n_min - 0.6, n_max + 1.9)
+        ax.set_xlim(n_min - 0.6, n_max + 0.6)
+        ax.set_ylim(bottom=0)
         ax.set_xticks(sorted({n for r in sub for n in r["ns"]}))
         ax.set_xlabel("System size $n$")
-        ax.set_ylabel(
-            r"$\log_2(\mathrm{mean}\,p_{\mathrm{succ}} / \mathrm{median}\,p_{\mathrm{succ}})$"
-        )
-        ax.text(
-            0.03,
-            0.96,
-            rf"trained at $n={train_n}$; $N={n_inst}$ per $n$",
-            transform=ax.transAxes,
-            ha="left",
-            va="top",
-            fontsize=7.7,
-            color="0.3",
+        ax.set_ylabel(r"$\log_2(\mathrm{mean}/\mathrm{median})$")
+        ax.legend(
+            legend_handles,
+            legend_labels,
+            loc="upper center",
+            ncol=len(legend_labels),
+            frameon=False,
+            bbox_to_anchor=(0.5, 1.2),
+            handlelength=1.1,
+            columnspacing=1.25,
+            handletextpad=0.45,
         )
         ax.grid(True, axis="y")
         ax.grid(False, axis="x")

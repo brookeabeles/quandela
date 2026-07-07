@@ -22,7 +22,7 @@ with k = 2^q, but approach the problem differently:
   w,u-saddle (WSaddleSystem, krawczyk_w_saddle_q.py)
     Variables  : w ∈ C^4  (nontrivial-index chart, p=1)
     Reduction  : u eliminated via eq(II): u = i g(w)  — NO fractional root.
-    Action     : Phi_wu = Σ_a [c_a u_a^{2q} + i w_a u_a] + log Δ(w)
+    Action     : Phi_wu = Σ_a [c_a u_a^{2^q} + i w_a u_a] + log Δ(w)
     Note       : Phi_wu ≠ Phi_z in general (different parent actions, different
                  scales); the wu action covers the NONTRIVIAL-INDEX orbit subspace.
 

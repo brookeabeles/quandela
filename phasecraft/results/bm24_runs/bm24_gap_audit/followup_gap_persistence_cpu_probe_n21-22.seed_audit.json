@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_gap_seed_audit",
+  "angles": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/angles_grid_existing.json",
+  "eval_seed": 100027,
+  "train_seed": 27,
+  "train_size": 100,
+  "train_ns": [
+    12,
+    16
+  ],
+  "N": 500,
+  "sat_filter": true,
+  "m_sampling": "notebook",
+  "train_eval_entropy_roots_disjoint": true,
+  "train_eval_seed_overlap": 0,
+  "passed": false,
+  "fail_reasons": [
+    "n=15 missing from audit"
+  ],
+  "per_n": [
+    {
+      "n": 21,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 827,
+      "eval_seed": 100027,
+      "mean_alpha_candidates": 176.46248632463866,
+      "std_alpha_candidates": 2.8891237858600105,
+      "mean_alpha_accepted": 176.0892380952381,
+      "sat_fraction_candidates": 0.6045949214026602,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 3583772,
+      "seed_max": 4284287590
+    }
+  ]
+}

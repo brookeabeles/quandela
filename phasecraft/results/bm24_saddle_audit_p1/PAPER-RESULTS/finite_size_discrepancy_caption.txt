@@ -1,0 +1,32 @@
+Figure caption (finite-size saddle discrepancy)
+
+Exact finite-n exponent from Conv2 all-subsets evaluation using mpmath (dps=80, cross-checked at dps=110 for numerical uncertainty). delta_n = (1/n) log|S_n| - Re[e_saddle] with S_n complex in general.
+
+Panel small_gamma_control (beta=0.5434, gamma=-0.1):
+  locally Krawczyk-certified stationary point: True
+  certification box radius: 5.360e-16
+  residual norm ||G||_inf: 4.996e-16
+  Jacobian certified nonsingular: True (cond=1.584e+00)
+  max |Im((1/n) log S_n)| over range: 4.705e-22
+
+  Model comparison (n_min=18, n_max=100):
+    saddle (a log n + b)/n: RSS=7.414e-09, AIC=-1916.51, BIC=-1911.67, LOO-RMSE=1.038e-05
+    general c0 + (a log n + b)/n: RSS=2.270e-09, AIC=-2012.75, BIC=-2005.49, LOO-RMSE=5.940e-06
+    c0 = -0.000074, 95% CI [-0.000085, -0.000063], bootstrap std = 5.300e-06
+    c0=0 compatible with 95% CI: False
+
+Panel gamma_minus_one (beta=0.5434, gamma=-1.0):
+  locally Krawczyk-certified stationary point: True
+  certification box radius: 2.613e-15
+  residual norm ||G||_inf: 2.887e-15
+  Jacobian certified nonsingular: True (cond=4.260e+00)
+  max |Im((1/n) log S_n)| over range: 8.189e-20
+
+  Model comparison (n_min=18, n_max=100):
+    saddle (a log n + b)/n: RSS=6.396e-07, AIC=-1546.54, BIC=-1541.71, LOO-RMSE=9.469e-05
+    general c0 + (a log n + b)/n: RSS=6.631e-08, AIC=-1732.66, BIC=-1725.41, LOO-RMSE=3.190e-05
+    c0 = +0.000779, 95% CI [+0.000720, +0.000838], bootstrap std = 2.871e-05
+    c0=0 compatible with 95% CI: False
+
+Conclusion:
+For the locally Krawczyk-certified stationary point at (beta, gamma) = (0.5434, -1.00), the discrepancy between the exact finite-size rate and the saddle action decreases over the tested range. The data are consistent with saddle-type finite-size corrections, but the present size range does not by itself prove that the discrepancy vanishes asymptotically or that this stationary point is the globally dominant contributing saddle.

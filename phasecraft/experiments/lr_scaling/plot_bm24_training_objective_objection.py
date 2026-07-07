@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Plot the BM24 training-objective objection test.
+
+BM24-style objection:
+    Perhaps the annealed-vs-typical exponent gap appears only because the
+    angles were trained on mean success probability. If the angles were trained
+    on median runtime instead, c_typ and c_ann might agree.
+
+This plot compares the measured gap c_typ - c_ann under both training
+objectives on the same held-out N=500 audit rows.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "phasecraft-mpl"))
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+from plot_asymptotic_gap_certificate import load_cells, setup_style, summarize_cell  # noqa: E402
+
+
+def parse_ints(spec: str) -> list[int]:
+    return [int(x) for x in str(spec).split(",") if x.strip()]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--csv",
+        type=Path,
+        default=Path("results/bm24_runs/bm24_gap_audit/N500_n12-20_all.csv"),
+    )
+    parser.add_argument("--train-ns", default="12,16")
+    parser.add_argument("--depths", default="2,5,10,20,50")
+    parser.add_argument("--tail-n-min", type=int, default=16)
+    parser.add_argument(
+        "--output-png",
+        type=Path,
+        default=Path(
+            "results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/"
+            "08_bm24_training_objective_objection.png"
+        ),
+    )
+    parser.add_argument(
+        "--output-pdf",
+        type=Path,
+        default=Path(
+            "results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/"
+            "08_bm24_training_objective_objection.pdf"
+        ),
+    )
+    args = parser.parse_args()
+
+    train_ns = parse_ints(args.train_ns)
+    depths = parse_ints(args.depths)
+    objective_labels = {
+        "mean_p": "trained on mean success",
+        "median_rt": "trained on median runtime",
+    }
+    colors = {"mean_p": "#4C72B0", "median_rt": "#C44E52"}
+    markers = {"mean_p": "o", "median_rt": "s"}
+
+    summaries = {}
+    for objective in ("mean_p", "median_rt"):
+        cells = load_cells(args.csv, objective)
+        summaries[objective] = {
+            key: summarize_cell(by_n, int(args.tail_n_min))
+            for key, by_n in cells.items()
+            if int(key[0]) in set(train_ns) and int(key[1]) in set(depths)
+        }
+
+    setup_style()
+    fig, axes = plt.subplots(1, len(train_ns), figsize=(10.8, 4.15), sharey=True)
+    if len(train_ns) == 1:
+        axes = [axes]
+
+    for ax, train_n in zip(axes, train_ns):
+        for objective in ("mean_p", "median_rt"):
+            ys = []
+            xs = []
+            for depth in depths:
+                row = summaries[objective].get((int(train_n), int(depth)))
+                if row is None:
+                    continue
+                xs.append(int(depth))
+                ys.append(float(row["measured_gap_slope"]))
+            ax.plot(
+                xs,
+                ys,
+                marker=markers[objective],
+                color=colors[objective],
+                linewidth=2.0,
+                markersize=6.5,
+                label=objective_labels[objective],
+            )
+        ax.axhline(0.0, color="0.2", linewidth=1.0)
+        ax.set_xscale("log")
+        ax.set_xticks(depths)
+        ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.set_xlabel("QAOA depth p")
+        ax.set_title(f"angles trained at n={train_n}")
+        ax.text(
+            0.03,
+            0.95,
+            "BM24 objection would predict\nmedian-runtime curve near 0",
+            transform=ax.transAxes,
+            va="top",
+            fontsize=8.5,
+            bbox={"facecolor": "white", "edgecolor": "0.85", "alpha": 0.9, "pad": 4},
+        )
+    axes[0].set_ylabel(r"exponent gap $c_{\rm typ}-c_{\rm ann}$")
+    axes[-1].legend(loc="lower right", frameon=True, framealpha=0.95)
+    fig.suptitle(
+        "Retraining on median runtime does not close the annealed-vs-typical exponent gap",
+        y=1.02,
+        fontsize=12,
+    )
+    fig.tight_layout()
+
+    args.output_png.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(args.output_png, dpi=190, bbox_inches="tight")
+    fig.savefig(args.output_pdf, bbox_inches="tight")
+    print(args.output_png)
+    print(args.output_pdf)
+
+
+if __name__ == "__main__":
+    main()

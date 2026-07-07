@@ -138,6 +138,8 @@ def choose_anchor_competitor(beta: float, gamma: float, starts: int) -> dict[str
         "full_exponent": best["full_exponent"],
         "exact_gap_abs": best["exact_gap_abs"],
         "lambda_abs": lam,
+        "z_real": best["z"].real.tolist(),
+        "z_imag": best["z"].imag.tolist(),
     }
 
 
@@ -171,7 +173,12 @@ def continue_competitor_to(beta: float, gamma: float, z_prev: np.ndarray) -> tup
 
 def continue_branch(beta: float, anchor_gamma: float, z_anchor: np.ndarray, gammas: list[float]) -> dict[float, dict[str, Any]]:
     by_gamma: dict[float, dict[str, Any]] = {}
-    by_gamma[anchor_gamma] = {"z": z_anchor, "source": "anchor"}
+    by_gamma[anchor_gamma] = {
+        "z": z_anchor,
+        "source": "anchor",
+        "z_real": z_anchor.real.tolist(),
+        "z_imag": z_anchor.imag.tolist(),
+    }
 
     # Toward zero: increasing gamma from anchor to least negative.
     z = z_anchor
@@ -271,8 +278,13 @@ def build_rows(
             }
         )
 
-    finite = np.array([0.0 if np.isnan(x) else x for x in raw_delta_ims], dtype=float)
-    unwrapped = np.unwrap(finite)
+    raw = np.asarray(raw_delta_ims, dtype=float)
+    unwrapped = np.full_like(raw, np.nan)
+    valid = np.flatnonzero(np.isfinite(raw))
+    blocks = np.split(valid, np.where(np.diff(valid) > 1)[0] + 1)
+    for block in blocks:
+        if len(block):
+            unwrapped[block] = np.unwrap(raw[block])
     for row, dim_unwrapped in zip(temp_rows, unwrapped):
         if row.get("competitor_failed"):
             rows.append(row)

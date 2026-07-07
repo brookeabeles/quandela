@@ -1,0 +1,604 @@
+{
+  "definition": {
+    "delta_n": "(1/n) log|S_n(gamma)| - Re[e_saddle(gamma)]",
+    "S_n": "complex Conv2 all-subsets exact amplitude",
+    "log_convention": "log|S_n| used explicitly when S_n is complex"
+  },
+  "n_range": {
+    "min": 18,
+    "max": 100,
+    "count": 83
+  },
+  "n_min_sweep": [
+    18,
+    22,
+    26,
+    30
+  ],
+  "models": {
+    "saddle_log_over_n": "delta_n = (a log n + b) / n",
+    "general_with_c0": "delta_n = c0 + (a log n + b) / n"
+  },
+  "caption_conclusion": "For the locally Krawczyk-certified stationary point at (beta, gamma) = (0.5434, -1.00), the discrepancy between the exact finite-size rate and the saddle action decreases over the tested range. The data are consistent with saddle-type finite-size corrections, but the present size range does not by itself prove that the discrepancy vanishes asymptotically or that this stationary point is the globally dominant contributing saddle.",
+  "asymptotic_vanishing_claim_permitted": false,
+  "points": [
+    {
+      "label": "small_gamma_control",
+      "beta": 0.5434,
+      "gamma": -0.1,
+      "e_saddle": -0.6403854411171113,
+      "certification": {
+        "locally_krawczyk_certified": true,
+        "box_radius": 5.360492057145145e-16,
+        "residual_inf_norm": 4.996003610813204e-16,
+        "jacobian_condition_number": 1.5842416442232161,
+        "jacobian_certified_nonsingular": true,
+        "contraction_bound": 5.015709058526582e-06,
+        "G_inf": 5.36049202688126e-16,
+        "e_saddle_re": -0.6403854411171113,
+        "re_phi": 0.04922393388288876,
+        "phi_pref": -0.689609375,
+        "disclaimer": "Local Krawczyk certification of a stationary point only; does not prove global saddle dominance or contour contribution."
+      },
+      "log_abs_convention": "delta_n uses (1/n) log|S_n| with S_n the complex Conv2 all-subsets amplitude.",
+      "max_abs_im_log_S_over_n": 4.704910044004531e-22,
+      "best_model_by_bic_nmin18": "general_with_c0",
+      "asymptotic_claim_allowed": false,
+      "fits": [
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 18,
+          "n_max": 100,
+          "n_points": 83,
+          "params": {
+            "a": -0.0030902876410120986,
+            "b": 0.024990517648563654
+          },
+          "param_stderr": {
+            "a": 9.397417858220438e-05,
+            "b": 0.00033128992234601
+          },
+          "param_ci95": {
+            "a": [
+              -0.003277266778895207,
+              -0.00290330850312899
+            ],
+            "b": [
+              0.0243313546209727,
+              0.02564968067615461
+            ]
+          },
+          "rss": 7.414432133664081e-09,
+          "aic": -1916.5102786100758,
+          "bic": -1911.6725973944826,
+          "loo_rmse": 1.037657560246147e-05,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 18,
+          "n_max": 100,
+          "n_points": 83,
+          "params": {
+            "c0": -7.383001483547301e-05,
+            "a": -7.380571466810325e-05,
+            "b": 0.017186105156948225
+          },
+          "param_stderr": {
+            "c0": 5.483257982877927e-06,
+            "a": 0.0002300589017992249,
+            "b": 0.0006082647513197092
+          },
+          "param_ci95": {
+            "c0": [
+              -8.47420459764998e-05,
+              -6.291798369444622e-05
+            ],
+            "a": [
+              -0.0005316375198727092,
+              0.0003840260905365027
+            ],
+            "b": [
+              0.015975619724908442,
+              0.01839659058898801
+            ]
+          },
+          "rss": 2.2700472182527816e-09,
+          "aic": -2012.7513824353105,
+          "bic": -2005.4948606119206,
+          "loo_rmse": 5.939946048455514e-06,
+          "bootstrap_c0_std": 5.299763779068742e-06,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 22,
+          "n_max": 100,
+          "n_points": 79,
+          "params": {
+            "a": -0.003659912731656618,
+            "b": 0.02720909084384785
+          },
+          "param_stderr": {
+            "a": 5.3625109458648975e-05,
+            "b": 0.0001969500813096007
+          },
+          "param_ci95": {
+            "a": [
+              -0.003766693966569336,
+              -0.0035531314967439
+            ],
+            "b": [
+              0.026816913128768008,
+              0.027601268558927694
+            ]
+          },
+          "rss": 1.4284871370114024e-09,
+          "aic": -1950.1517223532949,
+          "bic": -1945.4128266483608,
+          "loo_rmse": 4.6459968131452e-06,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 22,
+          "n_max": 100,
+          "n_points": 79,
+          "params": {
+            "c0": -3.9716511551471366e-05,
+            "a": -0.0018505756601620486,
+            "b": 0.022282987315559683
+          },
+          "param_stderr": {
+            "c0": 3.5800898991236077e-06,
+            "a": 0.00016647065414575633,
+            "b": 0.00046062894058761754
+          },
+          "param_ci95": {
+            "c0": [
+              -4.684687854362138e-05,
+              -3.258614455932135e-05
+            ],
+            "a": [
+              -0.0021821307023337814,
+              -0.0015190206179903159
+            ],
+            "b": [
+              0.021365565271381688,
+              0.02320040935973768
+            ]
+          },
+          "rss": 5.453593900912783e-10,
+          "aic": -2024.2228928164186,
+          "bic": -2017.1145492590176,
+          "loo_rmse": 2.956038147387244e-06,
+          "bootstrap_c0_std": 3.562451663350503e-06,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 26,
+          "n_max": 100,
+          "n_points": 75,
+          "params": {
+            "a": -0.003961458189167652,
+            "b": 0.02841350791566525
+          },
+          "param_stderr": {
+            "a": 2.931830585573638e-05,
+            "b": 0.00011115885000264811
+          },
+          "param_ci95": {
+            "a": [
+              -0.004019889488474094,
+              -0.00390302688986121
+            ],
+            "b": [
+              0.02819196864709275,
+              0.02863504718423775
+            ]
+          },
+          "rss": 2.624070634697243e-10,
+          "aic": -1974.395919053479,
+          "bic": -1969.7609428264063,
+          "loo_rmse": 2.0402999385337076e-06,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 26,
+          "n_max": 100,
+          "n_points": 75,
+          "params": {
+            "c0": -1.8809117891855833e-05,
+            "a": -0.003024237824234817,
+            "b": 0.025759364038796136
+          },
+          "param_stderr": {
+            "c0": 2.4124140662579033e-06,
+            "a": 0.00012215543949014579,
+            "b": 0.00035024946173730205
+          },
+          "param_ci95": {
+            "c0": [
+              -2.3618177440643582e-05,
+              -1.4000058343068083e-05
+            ],
+            "a": [
+              -0.0032677502423279917,
+              -0.0027807254061416424
+            ],
+            "b": [
+              0.025061154497579893,
+              0.02645757358001238
+            ]
+          },
+          "rss": 1.4227945225529238e-10,
+          "aic": -2018.303709911852,
+          "bic": -2011.351245571243,
+          "loo_rmse": 1.5414979095208096e-06,
+          "bootstrap_c0_std": 2.4198833332106638e-06,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 30,
+          "n_max": 100,
+          "n_points": 71,
+          "params": {
+            "a": -0.004116295949345941,
+            "b": 0.029044272589207044
+          },
+          "param_stderr": {
+            "a": 1.5331382122884e-05,
+            "b": 5.9642109710222334e-05
+          },
+          "param_ci95": {
+            "a": [
+              -0.004146881219819246,
+              -0.004085710678872636
+            ],
+            "b": [
+              0.028925289835893313,
+              0.029163255342520775
+            ]
+          },
+          "rss": 4.514614254384994e-11,
+          "aic": -1989.949526878361,
+          "bic": -1985.4241671242783,
+          "loo_rmse": 8.638905939780815e-07,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 30,
+          "n_max": 100,
+          "n_points": 71,
+          "params": {
+            "c0": -5.4005426591513e-06,
+            "a": -0.003825916643582952,
+            "b": 0.028195437015539976
+          },
+          "param_stderr": {
+            "c0": 1.6603442505228294e-06,
+            "a": 9.042286509248641e-05,
+            "b": 0.0002668836673920688
+          },
+          "param_ci95": {
+            "c0": [
+              -8.713708026547774e-06,
+              -2.0873772917548245e-06
+            ],
+            "a": [
+              -0.0040063526615658806,
+              -0.003645480625600023
+            ],
+            "b": [
+              0.027662878948953046,
+              0.028727995082126905
+            ]
+          },
+          "rss": 3.9067758957703023e-11,
+          "aic": -1998.216644610461,
+          "bic": -1991.428604979337,
+          "loo_rmse": 8.281475580268503e-07,
+          "bootstrap_c0_std": 1.57127455917408e-06,
+          "c0_compatible_with_zero": false
+        }
+      ]
+    },
+    {
+      "label": "gamma_minus_one",
+      "beta": 0.5434,
+      "gamma": -1.0,
+      "e_saddle": -0.47347469272559617,
+      "certification": {
+        "locally_krawczyk_certified": true,
+        "box_radius": 2.612976560431157e-15,
+        "residual_inf_norm": 2.886579864025407e-15,
+        "jacobian_condition_number": 4.260203702109196,
+        "jacobian_certified_nonsingular": true,
+        "contraction_bound": 6.2420187698881694e-06,
+        "G_inf": 3.0927234722497852e-15,
+        "e_saddle_re": -0.47347469272559617,
+        "re_phi": 0.2161346822744038,
+        "phi_pref": -0.689609375,
+        "disclaimer": "Local Krawczyk certification of a stationary point only; does not prove global saddle dominance or contour contribution."
+      },
+      "log_abs_convention": "delta_n uses (1/n) log|S_n| with S_n the complex Conv2 all-subsets amplitude.",
+      "max_abs_im_log_S_over_n": 8.189099067152388e-20,
+      "best_model_by_bic_nmin18": "general_with_c0",
+      "asymptotic_claim_allowed": false,
+      "fits": [
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 18,
+          "n_max": 100,
+          "n_points": 83,
+          "params": {
+            "a": -0.030509499706648357,
+            "b": -0.08542824618347866
+          },
+          "param_stderr": {
+            "a": 0.0008728269868045677,
+            "b": 0.0030770025239118645
+          },
+          "param_ci95": {
+            "a": [
+              -0.0322461516250375,
+              -0.028772847788259212
+            ],
+            "b": [
+              -0.09155051602254848,
+              -0.07930597634440885
+            ]
+          },
+          "rss": 6.396128041070146e-07,
+          "aic": -1546.5432059395273,
+          "bic": -1541.705524723934,
+          "loo_rmse": 9.468704680663792e-05,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 18,
+          "n_max": 100,
+          "n_points": 83,
+          "params": {
+            "c0": 0.0007793958201375038,
+            "a": -0.06235336984743078,
+            "b": -0.0030399859596510017
+          },
+          "param_stderr": {
+            "c0": 2.9635507976046748e-05,
+            "a": 0.0012434053696764155,
+            "b": 0.0032875044263049862
+          },
+          "param_ci95": {
+            "c0": [
+              0.0007204192797440788,
+              0.0008383723605309288
+            ],
+            "a": [
+              -0.06482782539141517,
+              -0.059878914303446384
+            ],
+            "b": [
+              -0.009582328265652636,
+              0.0035023563463506325
+            ]
+          },
+          "rss": 6.63104970480286e-08,
+          "aic": -1732.6639333860812,
+          "bic": -1725.4074115626913,
+          "loo_rmse": 3.18990956262436e-05,
+          "bootstrap_c0_std": 2.871145431406602e-05,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 22,
+          "n_max": 100,
+          "n_points": 79,
+          "params": {
+            "a": -0.025663612437599244,
+            "b": -0.10431119815697242
+          },
+          "param_stderr": {
+            "a": 0.0006639729752093179,
+            "b": 0.0024385876835494526
+          },
+          "param_ci95": {
+            "a": [
+              -0.0269857515429039,
+              -0.024341473332294587
+            ],
+            "b": [
+              -0.10916704660038024,
+              -0.0994553497135646
+            ]
+          },
+          "rss": 2.1899830686230295e-07,
+          "aic": -1552.5883255770852,
+          "bic": -1547.8494298721512,
+          "loo_rmse": 5.6339443452369535e-05,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 22,
+          "n_max": 100,
+          "n_points": 79,
+          "params": {
+            "c0": 0.0005986790298649483,
+            "a": -0.052937210252389705,
+            "b": -0.030056064306437105
+          },
+          "param_stderr": {
+            "c0": 2.0757974302940472e-05,
+            "a": 0.0009652253597869754,
+            "b": 0.0026708054773286927
+          },
+          "param_ci95": {
+            "c0": [
+              0.0005573359410140739,
+              0.0006400221187158226
+            ],
+            "a": [
+              -0.05485962316361184,
+              -0.05101479734116757
+            ],
+            "b": [
+              -0.03537543442132161,
+              -0.024736694191552604
+            ]
+          },
+          "rss": 1.833432268523317e-08,
+          "aic": -1746.5311675428263,
+          "bic": -1739.4228239854253,
+          "loo_rmse": 1.7024465336816516e-05,
+          "bootstrap_c0_std": 2.0742580752659584e-05,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 26,
+          "n_max": 100,
+          "n_points": 75,
+          "params": {
+            "a": -0.022360036315717507,
+            "b": -0.11751263711220508
+          },
+          "param_stderr": {
+            "a": 0.000524860427494308,
+            "b": 0.001989981338596011
+          },
+          "param_ci95": {
+            "a": [
+              -0.023406081639206985,
+              -0.02131399099222803
+            ],
+            "b": [
+              -0.12147866420060138,
+              -0.11354661002380878
+            ]
+          },
+          "rss": 8.40979556239429e-08,
+          "aic": -1541.6578769502767,
+          "bic": -1537.022900723204,
+          "loo_rmse": 3.565323462875744e-05,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 26,
+          "n_max": 100,
+          "n_points": 75,
+          "params": {
+            "c0": 0.00048074772790380294,
+            "a": -0.04631472486500512,
+            "b": -0.04967459996076647
+          },
+          "param_stderr": {
+            "c0": 1.5163494415744928e-05,
+            "a": 0.0007678214741281772,
+            "b": 0.002201531582598335
+          },
+          "param_ci95": {
+            "c0": [
+              0.0004505198542427347,
+              0.0005109756015648712
+            ],
+            "a": [
+              -0.04784534899938025,
+              -0.04478410073062999
+            ],
+            "b": [
+              -0.054063272961531704,
+              -0.04528592696000124
+            ]
+          },
+          "rss": 5.621303989316908e-09,
+          "aic": -1742.564271519171,
+          "bic": -1735.611807178562,
+          "loo_rmse": 9.615059408232469e-06,
+          "bootstrap_c0_std": 1.5163955860029102e-05,
+          "c0_compatible_with_zero": false
+        },
+        {
+          "model": "saddle_log_over_n",
+          "n_min": 30,
+          "n_max": 100,
+          "n_points": 71,
+          "params": {
+            "a": -0.01997488744973896,
+            "b": -0.12723441600223065
+          },
+          "param_stderr": {
+            "a": 0.0004277062104623807,
+            "b": 0.00166386177864975
+          },
+          "param_ci95": {
+            "a": [
+              -0.02082813799331378,
+              -0.019121636906164145
+            ],
+            "b": [
+              -0.13055372942892013,
+              -0.12391510257554116
+            ]
+          },
+          "rss": 3.513574324851459e-08,
+          "aic": -1517.2976010597733,
+          "bic": -1512.7722413056906,
+          "loo_rmse": 2.3615390514661214e-05,
+          "bootstrap_c0_std": null,
+          "c0_compatible_with_zero": null
+        },
+        {
+          "model": "general_with_c0",
+          "n_min": 30,
+          "n_max": 100,
+          "n_points": 71,
+          "params": {
+            "c0": 0.00039951516693989314,
+            "a": -0.04145623555483439,
+            "b": -0.06444022895085211
+          },
+          "param_stderr": {
+            "c0": 1.1491171057225124e-05,
+            "a": 0.0006258127553577871,
+            "b": 0.0018470903690099958
+          },
+          "param_ci95": {
+            "c0": [
+              0.00037658489210945457,
+              0.0004224454417703317
+            ],
+            "a": [
+              -0.04270502546504336,
+              -0.04020744564462542
+            ],
+            "b": [
+              -0.06812604039575484,
+              -0.06075441750594938
+            ]
+          },
+          "rss": 1.8713317816393963e-09,
+          "aic": -1723.5099701274764,
+          "bic": -1716.7219304963526,
+          "loo_rmse": 5.681978043460396e-06,
+          "bootstrap_c0_std": 1.0870661380859272e-05,
+          "c0_compatible_with_zero": false
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,16 @@
     "beta": 0.5433996420760803,
     "phi_pref_conv2": -0.6896093750000001,
     "gamma_grid": [
+      -2.25,
+      -2.22,
+      -2.19,
+      -2.16,
+      -2.13,
+      -2.1,
+      -2.07,
+      -2.04,
+      -2.01,
+      -1.98,
       -1.95,
       -1.94,
       -1.93,
@@ -57,54 +67,74 @@
       -1.73,
       -1.72,
       -1.71,
-      -1.7
+      -1.7,
+      -1.68,
+      -1.65,
+      -1.62,
+      -1.59,
+      -1.56,
+      -1.53,
+      -1.5,
+      -1.47,
+      -1.44,
+      -1.41,
+      -1.38,
+      -1.35,
+      -1.32,
+      -1.29,
+      -1.26,
+      -1.23,
+      -1.2,
+      -1.17,
+      -1.14,
+      -1.11,
+      -1.08,
+      -1.05,
+      -1.02,
+      -0.99,
+      -0.96,
+      -0.93,
+      -0.9,
+      -0.87,
+      -0.84,
+      -0.81,
+      -0.78,
+      -0.75,
+      -0.72,
+      -0.69,
+      -0.66,
+      -0.63,
+      -0.6,
+      -0.57,
+      -0.54,
+      -0.51,
+      -0.48,
+      -0.45,
+      -0.42,
+      -0.39,
+      -0.36,
+      -0.33,
+      -0.3,
+      -0.27,
+      -0.24,
+      -0.21,
+      -0.18,
+      -0.15,
+      -0.12,
+      -0.09,
+      -0.06
     ],
     "n_values": [
-      12,
-      16,
       20,
-      24,
-      30,
-      36,
-      40
+      100
     ],
-    "timestamp": "2026-06-26T12:16:41Z"
+    "timestamp": "2026-07-06T16:15:54Z"
   },
   "anti_stokes_gamma": -1.830842334140663,
   "anti_stokes_all_crossings": [
     -1.830842334140663
   ],
   "finite_size_crossings": [
-    {
-      "n": 12,
-      "gamma_cross": -1.8307871379838043,
-      "bracket": [
-        -1.8308423341,
-        -1.83
-      ],
-      "num_crossings": 1,
-      "all_crossings": [
-        -1.8307871379838043
-      ],
-      "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.017761116613186134,
-      "min_pair_gap": 0.019490051760870042
-    },
-    {
-      "n": 16,
-      "gamma_cross": -1.8307871379838043,
-      "bracket": [
-        -1.8308423341,
-        -1.83
-      ],
-      "num_crossings": 1,
-      "all_crossings": [
-        -1.8307871379838043
-      ],
-      "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.00782947965941394,
-      "min_pair_gap": 0.007656423371456222
-    },
     {
       "n": 20,
       "gamma_cross": -1.8307871379838043,
@@ -117,11 +147,11 @@
         -1.8307871379838043
       ],
       "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.004177275689510651,
-      "min_pair_gap": 0.0054944857621145315
+      "min_seed_gap": 0.00014240774580775994,
+      "min_pair_gap": 0.00039597767195342914
     },
     {
-      "n": 24,
+      "n": 100,
       "gamma_cross": -1.8307871379838043,
       "bracket": [
         -1.8308423341,
@@ -132,67 +162,22 @@
         -1.8307871379838043
       ],
       "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.0032024767635977502,
-      "min_pair_gap": 0.006421179235336472
-    },
-    {
-      "n": 30,
-      "gamma_cross": -1.8307871379838043,
-      "bracket": [
-        -1.8308423341,
-        -1.83
-      ],
-      "num_crossings": 1,
-      "all_crossings": [
-        -1.8307871379838043
-      ],
-      "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.0030408553584485576,
-      "min_pair_gap": 0.006305741007016086
-    },
-    {
-      "n": 36,
-      "gamma_cross": -1.8307871379838043,
-      "bracket": [
-        -1.8308423341,
-        -1.83
-      ],
-      "num_crossings": 1,
-      "all_crossings": [
-        -1.8307871379838043
-      ],
-      "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.002836151796460129,
-      "min_pair_gap": 0.006101037445027657
-    },
-    {
-      "n": 40,
-      "gamma_cross": -1.8307871379838043,
-      "bracket": [
-        -1.8308423341,
-        -1.83
-      ],
-      "num_crossings": 1,
-      "all_crossings": [
-        -1.8307871379838043
-      ],
-      "drift_from_anti_stokes": 5.5196156858672296e-05,
-      "min_seed_gap": 0.0025719465463381885,
-      "min_pair_gap": 0.005298112300542779
+      "min_seed_gap": 3.213883422681363e-05,
+      "min_pair_gap": 7.043805889483945e-05
     }
   ],
   "drift_fit": {
-    "linear_gamma_infinity": -1.8307871379838048,
-    "linear_slope": 7.951627891958725e-15,
-    "quadratic_gamma_infinity": -1.8307871379838048,
-    "quadratic_coefficients": [
-      -6.26164682390021e-14,
-      -1.3391877900955422e-14,
-      -1.8307871379838048
-    ],
+    "linear_gamma_infinity": NaN,
+    "quadratic_gamma_infinity": NaN,
     "anti_stokes_gamma": -1.830842334140663,
-    "linear_offset_from_anti_stokes": 5.519615685822821e-05,
-    "quadratic_offset_from_anti_stokes": 5.519615685822821e-05
+    "linear_offset_from_anti_stokes": NaN,
+    "quadratic_offset_from_anti_stokes": NaN,
+    "linear_slope": NaN,
+    "quadratic_coefficients": [
+      NaN,
+      NaN,
+      NaN
+    ]
   },
   "residual_convergence": [
     {
@@ -203,16 +188,11 @@
       "pair_exp": -0.6628401352353497,
       "envelope_exp": -0.6565814188022937,
       "residual_by_n": {
-        "12": 0.02800480858408072,
-        "16": 0.016272990547943178,
         "20": 0.012340371221194912,
-        "24": 0.01164206986296501,
-        "30": 0.01164011184422964,
-        "36": 0.011014779624325177,
-        "40": 0.010312110711038547
+        "100": 0.004617226016436327
       },
-      "power_law_slope_loglog": -0.7103435042764895,
-      "residual_ratio_nmax_to_nmin": 0.3682264308316125
+      "power_law_slope_loglog": -0.6108231934662446,
+      "residual_ratio_nmax_to_nmin": 0.37415616869824136
     },
     {
       "label": "anti_stokes",
@@ -222,16 +202,11 @@
       "pair_exp": -0.6671127301278227,
       "envelope_exp": -0.6671127301278227,
       "residual_by_n": {
-        "12": 0.0317001211561071,
-        "16": 0.019628356168671646,
         "20": 0.015818020038994796,
-        "24": 0.01534534277429822,
-        "30": 0.015468633654268649,
-        "36": 0.014724026386630062,
-        "40": 0.013894693323613372
+        "100": 0.007437384004989722
       },
-      "power_law_slope_loglog": -0.5705560037265069,
-      "residual_ratio_nmax_to_nmin": 0.4383167261471658
+      "power_law_slope_loglog": -0.4688783694801436,
+      "residual_ratio_nmax_to_nmin": 0.47018425736312025
     },
     {
       "label": "pair_side",
@@ -241,16 +216,11 @@
       "pair_exp": -0.6709652239305985,
       "envelope_exp": -0.6709652239305985,
       "residual_by_n": {
-        "12": 0.03141575295740118,
-        "16": 0.019205055626515533,
         "20": 0.0155330037471757,
-        "24": 0.015235573403510783,
-        "30": 0.015453163666337089,
-        "36": 0.014644774257798976,
-        "40": 0.013749542545726134
+        "100": 0.007078316688555741
       },
-      "power_law_slope_loglog": -0.5626039711542994,
-      "residual_ratio_nmax_to_nmin": 0.43766395045091244
+      "power_law_slope_loglog": -0.48832633094448114,
+      "residual_ratio_nmax_to_nmin": 0.4556952926662856
     },
     {
       "label": "deeper_pair_side",
@@ -260,16 +230,11 @@
       "pair_exp": -0.6755101043937345,
       "envelope_exp": -0.6755101043937345,
       "residual_by_n": {
-        "12": 0.02564672737487783,
-        "16": 0.013378445008805584,
         "20": 0.010303027868386994,
-        "24": 0.010571258568631947,
-        "30": 0.011074401299337566,
-        "36": 0.010153418119805524,
-        "40": 0.009156869400615997
+        "100": 0.003043300965767881
       },
-      "power_law_slope_loglog": -0.6650837163514806,
-      "residual_ratio_nmax_to_nmin": 0.3570385128195958
+      "power_law_slope_loglog": -0.7577148767902424,
+      "residual_ratio_nmax_to_nmin": 0.2953792811825452
     }
   ],
   "figures": [
@@ -277,6 +242,13 @@
     "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/finite_size_drift_to_anti_stokes.png",
     "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/gamma_cross_vs_inverse_n_misidentification.png",
     "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/rate_overlay_seed_pair_exact_n.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/rate_overlay_seed_pair_exact_n.pdf",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/rate_overlay_seed_pair_exact_n_full_gamma.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/rate_overlay_seed_pair_exact_n_full_gamma.pdf",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/PAPER-RESULTS/rate_overlay_seed_pair_exact_n.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/PAPER-RESULTS/rate_overlay_seed_pair_exact_n.pdf",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/PAPER-RESULTS/rate_overlay_seed_pair_exact_n_full_gamma.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/PAPER-RESULTS/rate_overlay_seed_pair_exact_n_full_gamma.pdf",
     "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/finite_size_residual_convergence.png"
   ],
   "report": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/anti_stokes_finite_size_push/anti_stokes_finite_size_report.md"

@@ -19,27 +19,22 @@ The gamma_cross-vs-1/n figure overlays the older sparse apparent crossover point
 
 | n | gamma_cross(n) | bracket | drift from anti-Stokes | crossings in window |
 |---:|---:|---:|---:|---:|
-| 12 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
-| 16 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
 | 20 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
-| 24 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
-| 30 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
-| 36 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
-| 40 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
+| 100 | -1.830787138 | -1.830842 to -1.830000 | +0.000055 | 1 |
 
-- linear 1/n extrapolated gamma_infinity: -1.830787138
-- linear extrapolation offset from anti-Stokes: +0.000055
-- quadratic-guide gamma_infinity: -1.830787138
-- quadratic-guide offset from anti-Stokes: +0.000055
+- linear 1/n extrapolated gamma_infinity: nan
+- linear extrapolation offset from anti-Stokes: +nan
+- quadratic-guide gamma_infinity: nan
+- quadratic-guide offset from anti-Stokes: +nan
 
 ## Finite-size residual convergence
 
 | probe | gamma | controller | residual n_min | residual n_max | n_max/n_min ratio | log-log slope |
 |---|---:|---|---:|---:|---:|---:|
-| seed_side | -1.800000000 | seed | 0.0280048 | 0.0103121 | 0.368 | -0.710 |
-| anti_stokes | -1.830842334 | 43/46 | 0.0317001 | 0.0138947 | 0.438 | -0.571 |
-| pair_side | -1.850000000 | 43/46 | 0.0314158 | 0.0137495 | 0.438 | -0.563 |
-| deeper_pair_side | -1.900000000 | 43/46 | 0.0256467 | 0.00915687 | 0.357 | -0.665 |
+| seed_side | -1.800000000 | seed | 0.0123404 | 0.00461723 | 0.374 | -0.611 |
+| anti_stokes | -1.830842334 | 43/46 | 0.015818 | 0.00743738 | 0.470 | -0.469 |
+| pair_side | -1.850000000 | 43/46 | 0.015533 | 0.00707832 | 0.456 | -0.488 |
+| deeper_pair_side | -1.900000000 | 43/46 | 0.010303 | 0.0030433 | 0.295 | -0.758 |
 
 ## Decoy filter
 
@@ -52,4 +47,11 @@ The refined transition scan separates algebraic high-Re competitors from physica
 - `finite_size_drift_to_anti_stokes.png`
 - `gamma_cross_vs_inverse_n_misidentification.png`
 - `rate_overlay_seed_pair_exact_n.png`
+- `rate_overlay_seed_pair_exact_n.pdf`
+- `rate_overlay_seed_pair_exact_n_full_gamma.png`
+- `rate_overlay_seed_pair_exact_n_full_gamma.pdf`
+- `rate_overlay_seed_pair_exact_n.png`
+- `rate_overlay_seed_pair_exact_n.pdf`
+- `rate_overlay_seed_pair_exact_n_full_gamma.png`
+- `rate_overlay_seed_pair_exact_n_full_gamma.pdf`
 - `finite_size_residual_convergence.png`

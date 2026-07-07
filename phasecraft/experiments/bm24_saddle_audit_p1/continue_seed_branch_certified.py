@@ -63,9 +63,14 @@ LABEL_SEED_SADDLE_EXPONENT = (
     r"Krawczyk-certified seed-saddle exponent ($\mathrm{Re}\,\Phi_M + \mathrm{BM24}$ A41 prefactor)"
 )
 LABEL_EXACT_FINITE_N_EXPONENT = r"Exact finite-n exponent at $n_{\max}$"
+LABEL_SEED_SADDLE_PAPER = r"Krawczyk-certified seed saddle"
+LABEL_EXACT_FINITE_N_PAPER = r"Exact finite-$n$"
 TITLE_GAMMA_VS_EXPONENTS = (
     r"Seed-saddle exponent vs exact finite-$n$ exponent (BM24 $q{=}3$, $p{=}1$)"
 )
+
+GAMMA_ABS_AXIS_RIGHT = 2.0 * math.pi
+ZOOM_INSET_ABS_GAMMA_MAX = 0.75
 
 
 def _gamma_pi_tick_label(gamma: float) -> str:
@@ -84,6 +89,35 @@ def _gamma_pi_tick_label(gamma: float) -> str:
     return rf"${gamma:.3g}$"
 
 
+def _abs_gamma_pi_tick_label(abs_gamma: float) -> str:
+    if abs(abs_gamma) < 1e-12:
+        return r"$0$"
+    k = abs_gamma / math.pi
+    for den in (1, 2, 4):
+        num = round(k * den)
+        if num == 0 or abs(k - num / den) >= 1e-6:
+            continue
+        if den == 1:
+            return r"$\pi$" if num == 1 else rf"${num}\pi$"
+        if num == 1:
+            return rf"$\pi/{den}$"
+        return rf"${num}\pi/{den}$"
+    return rf"${abs_gamma:.3g}$"
+
+
+def _style_abs_gamma_axis(ax) -> None:
+    """X-axis: |γ| = 0 (left) → 2π (right); major ticks at π/4 multiples."""
+    ax.set_xlim(0.0, GAMMA_ABS_AXIS_RIGHT)
+    ticks = []
+    g = 0.0
+    while g <= GAMMA_ABS_AXIS_RIGHT + 1e-12:
+        ticks.append(g)
+        g += GAMMA_PI_TICK_STEP
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([_abs_gamma_pi_tick_label(t) for t in ticks])
+    ax.set_xlabel(r"$|\gamma|$")
+
+
 def _style_gamma_axis_reading_zero_to_negative(ax) -> None:
     """X-axis: γ = 0 on the left, −2π on the right; major ticks at π/4 multiples."""
     ax.set_xlim(GAMMA_AXIS_LEFT, GAMMA_AXIS_RIGHT)
@@ -97,23 +131,166 @@ def _style_gamma_axis_reading_zero_to_negative(ax) -> None:
     ax.set_xlabel(r"$\gamma$")
 
 
+def _plot_exponent_curves(
+    ax,
+    abs_gammas: list[float],
+    seed_saddle_exp: list[float],
+    exact_finite_n_exp: list[float],
+    *,
+    lw: float,
+    ms: float,
+    markevery: int,
+    with_labels: bool = False,
+    markers: bool = True,
+) -> None:
+    label_seed = LABEL_SEED_SADDLE_PAPER if with_labels else None
+    label_exact = LABEL_EXACT_FINITE_N_PAPER if with_labels else None
+    x = np.asarray(abs_gammas, dtype=float)
+    seed = np.asarray(seed_saddle_exp, dtype=float)
+    exact = np.asarray(exact_finite_n_exp, dtype=float)
+    marker_kw = {"ms": ms, "mew": 0.5} if markers else {"marker": ""}
+    me = markevery if markers else None
+    ax.plot(
+        x,
+        exact,
+        "s-" if markers else "-",
+        **marker_kw,
+        lw=lw,
+        markevery=me,
+        color="C1",
+        zorder=2,
+        label=label_exact,
+    )
+    ax.plot(
+        x,
+        seed,
+        "o--" if markers else "--",
+        **marker_kw,
+        lw=lw,
+        markevery=me,
+        color="C0",
+        zorder=3,
+        label=label_seed,
+    )
+
+
+def _inset_ylim_for_separation(
+    seed: np.ndarray,
+    exact: np.ndarray,
+) -> tuple[float, float]:
+    """Tight y-limits (g0.75-style) so the band between curves reads clearly."""
+    y_lo_d = float(min(seed.min(), exact.min()))
+    y_hi_d = float(max(seed.max(), exact.max()))
+    span = y_hi_d - y_lo_d
+    max_gap = float(np.max(np.abs(seed - exact)))
+    # Minimal margin: ~2% of span, but at least half the peak gap.
+    pad = max(0.004, 0.02 * span, 0.55 * max_gap)
+    return y_lo_d - pad, y_hi_d + pad
+
+
+def _add_small_gamma_inset(
+    ax,
+    abs_gammas: list[float],
+    seed_saddle_exp: list[float],
+    exact_finite_n_exp: list[float],
+    *,
+    lw: float,
+    ms: float,
+) -> None:
+    """Inset zoom like g0.75 crop: |γ|∈[0,0.75], matched line weights."""
+    x_hi_lim = ZOOM_INSET_ABS_GAMMA_MAX
+    mask = [g <= x_hi_lim + 1e-9 for g in abs_gammas]
+    if sum(mask) < 3:
+        return
+    zoom_abs = [g for g, m in zip(abs_gammas, mask) if m]
+    zoom_seed = np.asarray([v for v, m in zip(seed_saddle_exp, mask) if m], dtype=float)
+    zoom_exact = np.asarray([v for v, m in zip(exact_finite_n_exp, mask) if m], dtype=float)
+
+    x_lo = 0.0
+    y_lo, y_hi = _inset_ylim_for_separation(zoom_seed, zoom_exact)
+
+    axins = ax.inset_axes([0.14, 0.14, 0.34, 0.34])
+    inset_markevery = max(1, len(zoom_abs) // 8)
+    _plot_exponent_curves(
+        axins,
+        zoom_abs,
+        zoom_seed.tolist(),
+        zoom_exact.tolist(),
+        lw=1.5,
+        ms=2.5,
+        markevery=inset_markevery,
+        markers=True,
+    )
+    axins.set_xlim(x_lo, x_hi_lim)
+    axins.set_ylim(y_lo, y_hi)
+    axins.set_xticks([0.0, 0.25, 0.5, 0.75])
+    axins.yaxis.tick_right()
+    axins.yaxis.set_label_position("right")
+    axins.tick_params(axis="y", left=False, labelleft=False, labelsize=8, pad=1)
+    axins.tick_params(axis="x", labelsize=8, pad=1)
+    axins.grid(True, alpha=0.2)
+    ax.indicate_inset_zoom(
+        axins,
+        edgecolor="0.35",
+        linewidth=1.0,
+        alpha=0.95,
+    )
+
+
 def _save_gamma_vs_exponents_plot(
     gammas: list[float],
     seed_saddle_exp: list[float],
     exact_finite_n_exp: list[float],
     out_dir: Path,
+    *,
+    stem: str = "gamma_vs_exponents",
 ) -> None:
-    fig, ax = plt.subplots(figsize=(9, 5))
-    ax.plot(gammas, seed_saddle_exp, "o-", label=LABEL_SEED_SADDLE_EXPONENT)
-    ax.plot(gammas, exact_finite_n_exp, "s--", label=LABEL_EXACT_FINITE_N_EXPONENT)
-    ax.set_ylabel("exponent (natural log)")
-    ax.set_title(TITLE_GAMMA_VS_EXPONENTS)
-    _style_gamma_axis_reading_zero_to_negative(ax)
-    ax.legend(loc="best", fontsize=9)
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(out_dir / "gamma_vs_exponents.png", dpi=150)
-    plt.close(fig)
+    paper_style = {
+        "font.size": 14,
+        "axes.labelsize": 16,
+        "xtick.labelsize": 13,
+        "ytick.labelsize": 13,
+        "legend.fontsize": 12,
+    }
+    lw = 2.5
+    ms = 3.0
+    abs_gammas = [abs(g) for g in gammas]
+    markevery = max(1, len(abs_gammas) // 25) if len(abs_gammas) > 80 else 1
+    show_inset = max(abs_gammas) > ZOOM_INSET_ABS_GAMMA_MAX + 0.05
+    with plt.rc_context(paper_style):
+        fig, ax = plt.subplots(figsize=(7.0, 4.5))
+        _plot_exponent_curves(
+            ax,
+            abs_gammas,
+            seed_saddle_exp,
+            exact_finite_n_exp,
+            lw=lw,
+            ms=ms,
+            markevery=markevery,
+            with_labels=True,
+        )
+        ax.set_ylabel("Exponent")
+        _style_abs_gamma_axis(ax)
+        if show_inset:
+            _add_small_gamma_inset(
+                ax,
+                abs_gammas,
+                seed_saddle_exp,
+                exact_finite_n_exp,
+                lw=lw,
+                ms=ms,
+            )
+        ax.legend(
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=2,
+            frameon=False,
+        )
+        ax.grid(True, alpha=0.2)
+        fig.tight_layout(rect=[0, 0, 1, 0.98])
+        for suffix, dpi in ((".png", 190), (".pdf", None)):
+            fig.savefig(out_dir / f"{stem}{suffix}", dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
 
 
 @dataclass
@@ -386,6 +563,8 @@ def discover_competitors_at_gamma(
                 "full_conv2_exponent": full,
                 "re_action_gap_vs_seed_branch": float(full - seed_full),
                 "z_distance_from_seed_branch": z_dist_seed,
+                "z_real": z_pol.real.tolist(),
+                "z_imag": z_pol.imag.tolist(),
                 "krawczyk_contraction": float(proof.get("contraction_bound", math.inf)),
                 "label": "certified_competitor" if ok else "uncertified_competitor",
                 "note": "largest_algebraic_re_phi is not physical dominance without PL data",
@@ -407,6 +586,31 @@ def selected_competitor_gammas(gamma_start: float, gamma_end: float, every: floa
     if not out or abs(out[-1] - g_end) > 1e-9:
         out.append(g_end)
     return sorted(set(out))
+
+
+def replot_gamma_vs_exponents_from_json(
+    continuation_json: Path,
+    out_dir: Optional[Path] = None,
+    *,
+    stem: str = "gamma_vs_exponents",
+) -> Path:
+    """Regenerate gamma_vs_exponents.{png,pdf} from an existing continuation JSON."""
+    continuation_json = Path(continuation_json)
+    data = json.loads(continuation_json.read_text(encoding="utf-8"))
+    ok_rows = [
+        r for r in data["continuation"]
+        if r.get("certified") and not r.get("failed")
+    ]
+    if not ok_rows:
+        raise ValueError(f"No certified rows in {continuation_json}")
+    ok_rows.sort(key=lambda r: abs(float(r["gamma"])))
+    gammas = [float(r["gamma"]) for r in ok_rows]
+    full = [float(r["full_conv2_exponent"]) for r in ok_rows]
+    lam = [float(r["lambda_abs_n_max"]) for r in ok_rows]
+    target = Path(out_dir) if out_dir else continuation_json.parent
+    target.mkdir(parents=True, exist_ok=True)
+    _save_gamma_vs_exponents_plot(gammas, full, lam, target, stem=stem)
+    return target
 
 
 def plot_continuation(rows: list[ContinuationRow], competitors_by_gamma: dict, out_dir: Path) -> None:
@@ -688,7 +892,27 @@ def main() -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out-dir", type=str, default="")
     p.add_argument("--quick", action="store_true", help="Coarser step/end for smoke test")
+    p.add_argument(
+        "--plot-only",
+        type=str,
+        metavar="CONTINUATION_JSON",
+        help="Regenerate gamma_vs_exponents.{png,pdf} from existing seed_branch_continuation.json",
+    )
+    p.add_argument(
+        "--plot-stem",
+        type=str,
+        default="gamma_vs_exponents",
+        help="Output filename stem when using --plot-only (default: gamma_vs_exponents)",
+    )
     args = p.parse_args()
+
+    if args.plot_only:
+        replot_gamma_vs_exponents_from_json(
+            Path(args.plot_only),
+            Path(args.out_dir) if args.out_dir else None,
+            stem=args.plot_stem,
+        )
+        return
 
     kwargs = dict(
         q=args.q,

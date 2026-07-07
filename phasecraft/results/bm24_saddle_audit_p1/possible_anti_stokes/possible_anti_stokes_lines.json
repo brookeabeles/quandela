@@ -1,0 +1,496 @@
+{
+  "metadata": {
+    "source": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/physically_possible_refined/physically_possible_refined.json",
+    "criterion": "Delta E = E_max_possible_competitor - E_seed = 0, with E_comp <= 0",
+    "caveat": "Envelope anti-Stokes candidates, not branch intersection proofs."
+  },
+  "fixed_beta_candidates": [
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.35,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4527910648753242,
+      "delta_low": -0.03278302423019175,
+      "delta_high": 0.5545022180446428
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.4,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4550217196582031,
+      "delta_low": -0.0418049405364469,
+      "delta_high": 0.37443634115435054
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.45,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4538631398621928,
+      "delta_low": -0.04773634184342268,
+      "delta_high": 0.5701074788087968
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.5,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4931164658037999,
+      "delta_low": 0.28838011368618344,
+      "delta_high": -0.04603982114619298
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.5,
+      "Gamma_low": 1.5,
+      "Gamma_high": 1.55,
+      "Gamma_est": 1.5130438170032272,
+      "delta_low": -0.04603982114619298,
+      "delta_high": 0.13044157664864686
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.5433996421,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4658163252870533,
+      "delta_low": -0.05685952497015612,
+      "delta_high": 0.12288995519733592
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.5433996421,
+      "Gamma_low": 1.6,
+      "Gamma_high": 1.65,
+      "Gamma_est": 1.6493619824941042,
+      "delta_low": 0.23398527590248452,
+      "delta_high": -0.0030243254951417553
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.5433996421,
+      "Gamma_low": 1.65,
+      "Gamma_high": 1.7,
+      "Gamma_est": 1.6507567146346616,
+      "delta_low": -0.0030243254951417553,
+      "delta_high": 0.19680830338576794
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.575,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.4951550172892476,
+      "delta_low": 0.49074765024931666,
+      "delta_high": -0.05265558565883899
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.575,
+      "Gamma_low": 1.55,
+      "Gamma_high": 1.6,
+      "Gamma_est": 1.5536378424569437,
+      "delta_low": -0.04551557565068487,
+      "delta_high": 0.5800691794533819
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.6,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.490558492147181,
+      "delta_low": 0.2346244776752735,
+      "delta_high": -0.054617633229459006
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.6,
+      "Gamma_low": 1.65,
+      "Gamma_high": 1.7,
+      "Gamma_est": 1.6512345914899473,
+      "delta_low": -0.015197444919058167,
+      "delta_high": 0.6002873143233068
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.625,
+      "Gamma_low": 1.55,
+      "Gamma_high": 1.6,
+      "Gamma_est": 1.5571222342325977,
+      "delta_low": -0.04926657250536748,
+      "delta_high": 0.29659801784944206
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.65,
+      "Gamma_low": 1.45,
+      "Gamma_high": 1.5,
+      "Gamma_est": 1.45952149418341,
+      "delta_low": -0.06532394432439381,
+      "delta_high": 0.27771015865396276
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.65,
+      "Gamma_low": 1.5,
+      "Gamma_high": 1.55,
+      "Gamma_est": 1.5422435875833764,
+      "delta_low": 0.27771015865396276,
+      "delta_high": -0.05099080466484163
+    },
+    {
+      "orientation": "fixed_beta",
+      "beta": 0.65,
+      "Gamma_low": 1.6,
+      "Gamma_high": 1.65,
+      "Gamma_est": 1.6033714789504945,
+      "delta_low": -0.042201851934415835,
+      "delta_high": 0.5836637185480364
+    }
+  ],
+  "fixed_Gamma_candidates": [
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.45,
+      "beta_low": 0.45,
+      "beta_high": 0.5,
+      "beta_est": 0.4571011610794548,
+      "delta_low": -0.04773634184342268,
+      "delta_high": 0.28838011368618344
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.45,
+      "beta_low": 0.5,
+      "beta_high": 0.5433996421,
+      "beta_est": 0.5362519025087847,
+      "delta_low": 0.28838011368618344,
+      "delta_high": -0.05685952497015612
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.45,
+      "beta_low": 0.5433996421,
+      "beta_high": 0.575,
+      "beta_est": 0.5466807922024631,
+      "delta_low": -0.05685952497015612,
+      "delta_high": 0.49074765024931666
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.45,
+      "beta_low": 0.6,
+      "beta_high": 0.625,
+      "beta_est": 0.620359305064011,
+      "delta_low": 0.2346244776752735,
+      "delta_high": -0.053480245125428816
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.5,
+      "beta_low": 0.45,
+      "beta_high": 0.5,
+      "beta_est": 0.4962638949201306,
+      "delta_low": 0.5701074788087968,
+      "delta_high": -0.04603982114619298
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.5,
+      "beta_low": 0.5,
+      "beta_high": 0.5433996421,
+      "beta_est": 0.5118280613598251,
+      "delta_low": -0.04603982114619298,
+      "delta_high": 0.12288995519733592
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.5,
+      "beta_low": 0.5433996421,
+      "beta_high": 0.575,
+      "beta_est": 0.565521346517046,
+      "delta_low": 0.12288995519733592,
+      "delta_high": -0.05265558565883899
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.5,
+      "beta_low": 0.625,
+      "beta_high": 0.65,
+      "beta_est": 0.6292254620839141,
+      "delta_low": -0.05648519117248185,
+      "delta_high": 0.27771015865396276
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.55,
+      "beta_low": 0.5433996421,
+      "beta_high": 0.575,
+      "beta_est": 0.5669945552388423,
+      "delta_low": 0.13415070442470056,
+      "delta_high": -0.04551557565068487
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.6,
+      "beta_low": 0.575,
+      "beta_high": 0.6,
+      "beta_est": 0.5986090776073787,
+      "delta_low": 0.5800691794533819,
+      "delta_high": -0.034174618101937004
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.6,
+      "beta_low": 0.6,
+      "beta_high": 0.625,
+      "beta_est": 0.6025829387309838,
+      "delta_low": -0.034174618101937004,
+      "delta_high": 0.29659801784944206
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.6,
+      "beta_low": 0.625,
+      "beta_high": 0.65,
+      "beta_est": 0.6468859306261437,
+      "delta_low": 0.29659801784944206,
+      "delta_high": -0.042201851934415835
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.65,
+      "beta_low": 0.5,
+      "beta_high": 0.5433996421,
+      "beta_est": 0.5431649516693049,
+      "delta_low": 0.5562428065063965,
+      "delta_high": -0.0030243254951417553
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.65,
+      "beta_low": 0.5433996421,
+      "beta_high": 0.575,
+      "beta_est": 0.5443421110572907,
+      "delta_low": -0.0030243254951417553,
+      "delta_high": 0.09837929879749163
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.65,
+      "beta_low": 0.575,
+      "beta_high": 0.6,
+      "beta_est": 0.5966548070446125,
+      "delta_low": 0.09837929879749163,
+      "delta_high": -0.015197444919058167
+    },
+    {
+      "orientation": "fixed_Gamma",
+      "Gamma": 1.65,
+      "beta_low": 0.6,
+      "beta_high": 0.625,
+      "beta_est": 0.6019498770802922,
+      "delta_low": -0.015197444919058167,
+      "delta_high": 0.17965387510338848
+    }
+  ],
+  "contour_segments": [
+    {
+      "n_vertices": 4,
+      "beta_min": 0.35,
+      "beta_max": 0.4571011610794548,
+      "Gamma_min": 1.45,
+      "Gamma_max": 1.4550217196582031,
+      "vertices": [
+        [
+          0.35,
+          1.4527910648753242
+        ],
+        [
+          0.4,
+          1.4550217196582031
+        ],
+        [
+          0.45,
+          1.4538631398621928
+        ],
+        [
+          0.4571011610794548,
+          1.45
+        ]
+      ]
+    },
+    {
+      "n_vertices": 3,
+      "beta_min": 0.5362519025087847,
+      "beta_max": 0.5466807922024631,
+      "Gamma_min": 1.45,
+      "Gamma_max": 1.4658163252870533,
+      "vertices": [
+        [
+          0.5362519025087847,
+          1.45
+        ],
+        [
+          0.5433996421,
+          1.4658163252870533
+        ],
+        [
+          0.5466807922024631,
+          1.45
+        ]
+      ]
+    },
+    {
+      "n_vertices": 14,
+      "beta_min": 0.565521346517046,
+      "beta_max": 0.65,
+      "Gamma_min": 1.45,
+      "Gamma_max": 1.6512345914899473,
+      "vertices": [
+        [
+          0.620359305064011,
+          1.45
+        ],
+        [
+          0.6,
+          1.490558492147181
+        ],
+        [
+          0.575,
+          1.4951550172892476
+        ],
+        [
+          0.565521346517046,
+          1.5
+        ],
+        [
+          0.5669945552388423,
+          1.55
+        ],
+        [
+          0.575,
+          1.5536378424569437
+        ],
+        [
+          0.5986090776073787,
+          1.6
+        ],
+        [
+          0.5966548070446125,
+          1.65
+        ],
+        [
+          0.6,
+          1.6512345914899473
+        ],
+        [
+          0.6019498770802922,
+          1.65
+        ],
+        [
+          0.6025829387309838,
+          1.6
+        ],
+        [
+          0.625,
+          1.5571222342325977
+        ],
+        [
+          0.6468859306261437,
+          1.6
+        ],
+        [
+          0.65,
+          1.6033714789504945
+        ]
+      ]
+    },
+    {
+      "n_vertices": 3,
+      "beta_min": 0.6292254620839141,
+      "beta_max": 0.65,
+      "Gamma_min": 1.45952149418341,
+      "Gamma_max": 1.5422435875833764,
+      "vertices": [
+        [
+          0.65,
+          1.5422435875833764
+        ],
+        [
+          0.6292254620839141,
+          1.5
+        ],
+        [
+          0.65,
+          1.45952149418341
+        ]
+      ]
+    },
+    {
+      "n_vertices": 5,
+      "beta_min": 0.4962638949201306,
+      "beta_max": 0.5118280613598251,
+      "Gamma_min": 1.4931164658037999,
+      "Gamma_max": 1.5130438170032272,
+      "vertices": [
+        [
+          0.5,
+          1.4931164658037999
+        ],
+        [
+          0.4962638949201306,
+          1.5
+        ],
+        [
+          0.5,
+          1.5130438170032272
+        ],
+        [
+          0.5118280613598251,
+          1.5
+        ],
+        [
+          0.5,
+          1.4931164658038
+        ]
+      ]
+    },
+    {
+      "n_vertices": 5,
+      "beta_min": 0.5431649516693049,
+      "beta_max": 0.5443421110572907,
+      "Gamma_min": 1.6493619824941042,
+      "Gamma_max": 1.6507567146346616,
+      "vertices": [
+        [
+          0.5433996421,
+          1.6493619824941042
+        ],
+        [
+          0.5431649516693049,
+          1.65
+        ],
+        [
+          0.5433996421,
+          1.6507567146346616
+        ],
+        [
+          0.5443421110572907,
+          1.65
+        ],
+        [
+          0.5433996421,
+          1.6493619824941042
+        ]
+      ]
+    }
+  ],
+  "figures": [
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/possible_anti_stokes/possible_anti_stokes_envelope.png",
+    "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/possible_anti_stokes/possible_anti_stokes_brackets.png"
+  ],
+  "report": "/Users/b/Quandela/phasecraft/experiments/bm24_saddle_audit_p1/results/possible_anti_stokes/possible_anti_stokes_report.md"
+}

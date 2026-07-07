@@ -790,24 +790,29 @@ def _draw_baseline_refs(
     label_in_axes: bool = False,
     color: str = "0.45",
     linewidth: float = 0.75,
+    label_offsets: Tuple[Tuple[float, str], Tuple[float, str]] | None = None,
 ) -> None:
     from matplotlib.transforms import blended_transform_factory
 
-    for y, ls, name in (
+    entries = (
         (ws_slope, "-", "WalkSAT"),
         (lm_slope, "--", "WalkSATlm"),
-    ):
+    )
+    for i, (y, ls, name) in enumerate(entries):
         if not np.isfinite(y):
             continue
         ax.axhline(y, color=color, linestyle=ls, linewidth=linewidth, zorder=2)
+        dy, va = (0.0, "center")
+        if label_offsets is not None:
+            dy, va = label_offsets[i]
         if label_in_axes:
             trans = blended_transform_factory(ax.transAxes, ax.transData)
             ax.text(
                 0.97,
-                y,
+                y + dy,
                 name,
                 transform=trans,
-                va="center",
+                va=va,
                 ha="right",
                 fontsize=8,
                 color=color,
@@ -816,10 +821,10 @@ def _draw_baseline_refs(
         elif label_right:
             ax.text(
                 1.01,
-                y,
+                y + dy,
                 name,
                 transform=ax.get_yaxis_transform(),
-                va="center",
+                va=va,
                 ha="left",
                 fontsize=8,
                 color=color,

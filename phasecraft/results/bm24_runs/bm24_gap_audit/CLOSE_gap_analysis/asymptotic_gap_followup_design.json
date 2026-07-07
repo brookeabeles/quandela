@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_asymptotic_gap_followup_design",
+  "csv": "results/bm24_runs/bm24_gap_audit/N500_n12-20_all.csv",
+  "scaling_json": "results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/finite_size_scaling_verdict.json",
+  "angles": "results/bm24_runs/bm24_gap_audit/angles_grid_existing.json",
+  "metric": "point_gap",
+  "current_N": 500,
+  "future_ns": [
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    28
+  ],
+  "z_separation": 2.0,
+  "rows": [
+    {
+      "train_n": 12,
+      "depth": 20,
+      "metric": "point_gap",
+      "current_tail_bootstrap_se": 0.003608618552622554,
+      "positive_model": "positive_limit_plus_1_over_n",
+      "zero_model": "curved_zero_limit_decay",
+      "zero_model_delta_aicc": 1.730243392344164,
+      "forecasts": [
+        {
+          "n": 21,
+          "positive_limit_prediction": 0.036613727106038794,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03369981584859541,
+          "absolute_separation": 0.0029139112574433843,
+          "estimated_N_for_z_separation": 3067.321567091878
+        },
+        {
+          "n": 22,
+          "positive_limit_prediction": 0.037253344001096526,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.033315188386069276,
+          "absolute_separation": 0.00393815561502725,
+          "estimated_N_for_z_separation": 1679.2919438423821
+        },
+        {
+          "n": 23,
+          "positive_limit_prediction": 0.037837342035714455,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03286858897634118,
+          "absolute_separation": 0.0049687530593732765,
+          "estimated_N_for_z_separation": 1054.914165265335
+        },
+        {
+          "n": 24,
+          "positive_limit_prediction": 0.03837267356744756,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.032379194371721244,
+          "absolute_separation": 0.005993479195726313,
+          "estimated_N_for_z_separation": 725.0266102030004
+        },
+        {
+          "n": 25,
+          "positive_limit_prediction": 0.03886517857664201,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03186135735638142,
+          "absolute_separation": 0.007003821220260595,
+          "estimated_N_for_z_separation": 530.9356011799987
+        },
+        {
+          "n": 26,
+          "positive_limit_prediction": 0.0393197985851292,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03132585907894281,
+          "absolute_separation": 0.00799393950618639,
+          "estimated_N_for_z_separation": 407.5587635162282
+        },
+        {
+          "n": 28,
+          "positive_limit_prediction": 0.04013162002885631,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.030232328465075564,
+          "absolute_separation": 0.009899291563780749,
+          "estimated_N_for_z_separation": 265.7686310553791
+        }
+      ]
+    },
+    {
+      "train_n": 12,
+      "depth": 50,
+      "metric": "point_gap",
+      "current_tail_bootstrap_se": 0.004030193849387453,
+      "positive_model": "positive_limit_plus_1_over_n",
+      "zero_model": "curved_zero_limit_decay",
+      "zero_model_delta_aicc": 0.0,
+      "forecasts": [
+        {
+          "n": 21,
+          "positive_limit_prediction": 0.04113279208844709,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.0369644358292088,
+          "absolute_separation": 0.004168356259238289,
+          "estimated_N_for_z_separation": 1869.6151022482359
+        },
+        {
+          "n": 22,
+          "positive_limit_prediction": 0.04275556349818576,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03704874654744187,
+          "absolute_separation": 0.00570681695074389,
+          "estimated_N_for_z_separation": 997.4565403713287
+        },
+        {
+          "n": 23,
+          "positive_limit_prediction": 0.04423722435055584,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.036978961166810285,
+          "absolute_separation": 0.007258263183745554,
+          "estimated_N_for_z_separation": 616.6183491845035
+        },
+        {
+          "n": 24,
+          "positive_limit_prediction": 0.04559541346522841,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03679192289153371,
+          "absolute_separation": 0.0088034905736947,
+          "estimated_N_for_z_separation": 419.152499547479
+        },
+        {
+          "n": 25,
+          "positive_limit_prediction": 0.04684494745072719,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.036515879542086724,
+          "absolute_separation": 0.010329067908640466,
+          "estimated_N_for_z_separation": 304.4805826656469
+        },
+        {
+          "n": 26,
+          "positive_limit_prediction": 0.047998363437341436,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03617263586107245,
+          "absolute_separation": 0.011825727576268985,
+          "estimated_N_for_z_separation": 232.28765364622424
+        },
+        {
+          "n": 28,
+          "positive_limit_prediction": 0.05005803484200974,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.035348540942151195,
+          "absolute_separation": 0.014709493899858546,
+          "estimated_N_for_z_separation": 150.13654118659807
+        }
+      ]
+    },
+    {
+      "train_n": 16,
+      "depth": 20,
+      "metric": "point_gap",
+      "current_tail_bootstrap_se": 0.0034331272327010397,
+      "positive_model": "positive_limit_plus_1_over_n",
+      "zero_model": "curved_zero_limit_decay",
+      "zero_model_delta_aicc": 0.15796566927706124,
+      "forecasts": [
+        {
+          "n": 21,
+          "positive_limit_prediction": 0.0341650061181253,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03168746671135868,
+          "absolute_separation": 0.002477539406766621,
+          "estimated_N_for_z_separation": 3840.3309414704013
+        },
+        {
+          "n": 22,
+          "positive_limit_prediction": 0.034618832953357395,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.031252586408880755,
+          "absolute_separation": 0.0033662465444766407,
+          "estimated_N_for_z_separation": 2080.2615983123565
+        },
+        {
+          "n": 23,
+          "positive_limit_prediction": 0.035033196585525825,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.0307718919169894,
+          "absolute_separation": 0.004261304668536425,
+          "estimated_N_for_z_separation": 1298.1492343976947
+        },
+        {
+          "n": 24,
+          "positive_limit_prediction": 0.035413029915013564,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03026112817061892,
+          "absolute_separation": 0.0051519017443946435,
+          "estimated_N_for_z_separation": 888.1261341939181
+        },
+        {
+          "n": 25,
+          "positive_limit_prediction": 0.03576247657814227,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.029731982125544967,
+          "absolute_separation": 0.006030494452597304,
+          "estimated_N_for_z_separation": 648.19242093062
+        },
+        {
+          "n": 26,
+          "positive_limit_prediction": 0.03608504272872262,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.029193147678483293,
+          "absolute_separation": 0.006891895050239329,
+          "estimated_N_for_z_separation": 496.2865237971877
+        },
+        {
+          "n": 28,
+          "positive_limit_prediction": 0.03666105371190182,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.028110619687541992,
+          "absolute_separation": 0.00855043402435983,
+          "estimated_N_for_z_separation": 322.4285369944363
+        }
+      ]
+    },
+    {
+      "train_n": 16,
+      "depth": 50,
+      "metric": "point_gap",
+      "current_tail_bootstrap_se": 0.00412404219607526,
+      "positive_model": "positive_limit_plus_1_over_n",
+      "zero_model": "curved_zero_limit_decay",
+      "zero_model_delta_aicc": 0.2259248667853342,
+      "forecasts": [
+        {
+          "n": 21,
+          "positive_limit_prediction": 0.038952949023368315,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03492598577510015,
+          "absolute_separation": 0.004026963248268164,
+          "estimated_N_for_z_separation": 2097.5912559765934
+        },
+        {
+          "n": 22,
+          "positive_limit_prediction": 0.04044347046406331,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.0349722698164067,
+          "absolute_separation": 0.005471200647656611,
+          "estimated_N_for_z_separation": 1136.3468484923567
+        },
+        {
+          "n": 23,
+          "positive_limit_prediction": 0.04180438134469787,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.034878634131309115,
+          "absolute_separation": 0.006925747213388754,
+          "estimated_N_for_z_separation": 709.1578655556535
+        },
+        {
+          "n": 24,
+          "positive_limit_prediction": 0.04305188298527955,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03467884777740314,
+          "absolute_separation": 0.008373035207876411,
+          "estimated_N_for_z_separation": 485.18834663286316
+        },
+        {
+          "n": 25,
+          "positive_limit_prediction": 0.044199584494614697,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.034398776294569416,
+          "absolute_separation": 0.00980080820004528,
+          "estimated_N_for_z_separation": 354.1215982643943
+        },
+        {
+          "n": 26,
+          "positive_limit_prediction": 0.045259001272462525,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03405836397696386,
+          "absolute_separation": 0.011200637295498667,
+          "estimated_N_for_z_separation": 271.1382122788872
+        },
+        {
+          "n": 28,
+          "positive_limit_prediction": 0.04715081694719078,
+          "zero_limit_model": "curved_zero_limit_decay",
+          "zero_limit_prediction": 0.03325496400136598,
+          "absolute_separation": 0.0138958529458248,
+          "estimated_N_for_z_separation": 176.1593816153003
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "stage": "stage1_cpu_probe",
+      "purpose": "Cheap extension beyond n=20; useful sanity check before committing GPU time.",
+      "command": "python experiments/lr_scaling/evaluate.py --angles results/bm24_runs/bm24_gap_audit/angles_grid_existing.json --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_cpu_probe_n21-22.csv --n-values 21,22 --N 500 --eval-seed 100027 --objectives mean_p --train-ns 12,16 --depths 20,50 --m-sampling notebook"
+    },
+    {
+      "stage": "stage2_gpu_decision_window",
+      "purpose": "First genuinely discriminating window; p=50 and n=24 should already separate positive-limit and curved-decay fits at current N.",
+      "command": "python experiments/lr_scaling/evaluate.py --angles results/bm24_runs/bm24_gap_audit/angles_grid_existing.json --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_gpu_decision_n23-24.csv --n-values 23,24 --N 500 --eval-seed 100027 --objectives mean_p --train-ns 12,16 --depths 20,50 --m-sampling notebook --require-gpu"
+    },
+    {
+      "stage": "stage3_larger_n_if_still_ambiguous",
+      "purpose": "Push to the next window only if n=23..24 remains compatible with both persistence and decay.",
+      "command": "python experiments/lr_scaling/evaluate.py --angles results/bm24_runs/bm24_gap_audit/angles_grid_existing.json --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_larger_n25-28.csv --n-values 25,26,28 --N 500 --eval-seed 100027 --objectives mean_p --train-ns 12,16 --depths 20,50 --m-sampling notebook --require-gpu"
+    },
+    {
+      "stage": "replicate_eval_seed_200027",
+      "purpose": "Check whether the first extension is eval-root stable before spending more GPU time.",
+      "command": "python experiments/lr_scaling/evaluate.py --angles results/bm24_runs/bm24_gap_audit/angles_grid_existing.json --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_replicate_seed200027_n21-22.csv --n-values 21,22 --N 500 --eval-seed 200027 --objectives mean_p --train-ns 12,16 --depths 20,50 --m-sampling notebook"
+    },
+    {
+      "stage": "replicate_eval_seed_300027",
+      "purpose": "Check whether the first extension is eval-root stable before spending more GPU time.",
+      "command": "python experiments/lr_scaling/evaluate.py --angles results/bm24_runs/bm24_gap_audit/angles_grid_existing.json --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_replicate_seed300027_n21-22.csv --n-values 21,22 --N 500 --eval-seed 300027 --objectives mean_p --train-ns 12,16 --depths 20,50 --m-sampling notebook"
+    },
+    {
+      "stage": "merge_current_and_followup_rows",
+      "purpose": "Create the single CSV consumed by the diagnostics.",
+      "command": "python experiments/lr_scaling/merge_gap_audit_csvs.py results/bm24_runs/bm24_gap_audit/N500_n12-20_all.csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_cpu_probe_n21-22.csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_gpu_decision_n23-24.csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_larger_n25-28.csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_replicate_seed200027_n21-22.csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_replicate_seed300027_n21-22.csv --output results/bm24_runs/bm24_gap_audit/followup_gap_persistence_combined_with_current.csv --dedupe --ignore-missing"
+    },
+    {
+      "stage": "reanalyze_combined_rows",
+      "purpose": "Regenerate mechanism, gate, and finite-size scaling diagnostics on the combined data.",
+      "command": "python experiments/lr_scaling/run_gap_persistence_analysis.py --csv results/bm24_runs/bm24_gap_audit/followup_gap_persistence_combined_with_current.csv --output-dir results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/followup_reanalysis --tail-n-min 20 --window-width 9"
+    }
+  ],
+  "interpretation": {
+    "main_obstruction": "The current n-window cannot rule out flexible zero-limit curves. A finite-data claim must pre-register a zero-limit family or bring in theory that lower-bounds the decay exponent.",
+    "decisive_pattern_for_persistence": "Later windows keep Delta_n and the Jensen component positive while the best zero-limit models become AICc-worse across independent eval roots.",
+    "decisive_pattern_against_persistence": "Delta_n, Jensen, tilted integral, or scaled n Var(X_n) trend downward and become well fit by a zero-limit model."
+  }
+}

@@ -312,7 +312,7 @@ def plot_mechanism(
         ax.errorbar(
             x_pred,
             y_meas,
-            yerr=[[y_meas - lo], [hi - y_meas]],
+            yerr=[[max(0.0, y_meas - lo)], [max(0.0, hi - y_meas)]],
             fmt=markers.get(int(train_n), "o"),
             color=color,
             ecolor=color,
@@ -461,6 +461,156 @@ def plot_cumulant_tail_diagnostics(
     plt.close(fig)
 
 
+def weighted_variance(xs: np.ndarray, log_weights: np.ndarray) -> float:
+    shifted = log_weights - float(np.max(log_weights))
+    weights = np.exp(shifted)
+    weights_sum = float(np.sum(weights))
+    if weights_sum <= 0.0 or not math.isfinite(weights_sum):
+        return float("nan")
+    weights = weights / weights_sum
+    mean_x = float(np.sum(weights * xs))
+    return float(np.sum(weights * (xs - mean_x) ** 2))
+
+
+def tilted_curve_for_cell(
+    by_n: Mapping[int, dict],
+    *,
+    lambdas: np.ndarray,
+    tail_n_min: int,
+) -> dict:
+    ns = sorted(by_n)
+    tail_ns = [n for n in ns if n >= tail_n_min] or ns
+    nvar_by_n: Dict[int, List[float]] = {}
+    jensen_integral_points: Dict[int, float] = {}
+    for n in ns:
+        xs = np.asarray(by_n[n]["X"], dtype=float)
+        ps = np.asarray(by_n[n]["p_succ"], dtype=float)
+        log_ps = np.log(ps)
+        nvars = []
+        for lam in lambdas:
+            var_lam = weighted_variance(xs, float(lam) * log_ps)
+            nvars.append(float(n * var_lam))
+        nvars_arr = np.asarray(nvars, dtype=float)
+        # Exact identity: mean(X)-c_ann = ln2 * integral (1-lambda) n Var_lambda(X) dlambda.
+        jensen_integral_points[n] = float(LN2 * np.trapezoid((1.0 - lambdas) * nvars_arr, lambdas))
+        nvar_by_n[n] = [float(v) for v in nvars_arr]
+
+    tail_curve = np.mean(
+        np.asarray([nvar_by_n[n] for n in tail_ns], dtype=float),
+        axis=0,
+    )
+    jensen_y = [float(n * by_n[n]["jensen_gap"]) for n in ns]
+    tilted_y = [float(n * jensen_integral_points[n]) for n in ns]
+    second_y = [float(n * by_n[n]["jensen_second_order"]) for n in ns]
+    return {
+        "ns": ns,
+        "tail_ns": tail_ns,
+        "lambdas": [float(x) for x in lambdas],
+        "tail_nvar_lambda": [float(x) for x in tail_curve],
+        "tail_nvar_lambda0": float(tail_curve[0]),
+        "tail_nvar_lambda1": float(tail_curve[-1]),
+        "tail_nvar_flatness_ratio": float(tail_curve[-1] / tail_curve[0]) if tail_curve[0] else float("nan"),
+        "tilted_integral_slope": slope(ns, tilted_y),
+        "measured_jensen_slope": slope(ns, jensen_y),
+        "second_order_slope": slope(ns, second_y),
+        "tilted_integral_point_tail": float(np.mean([jensen_integral_points[n] for n in tail_ns])),
+        "measured_jensen_point_tail": float(np.mean([by_n[n]["jensen_gap"] for n in tail_ns])),
+        "second_order_point_tail": float(np.mean([by_n[n]["jensen_second_order"] for n in tail_ns])),
+    }
+
+
+def compute_tilted_summaries(
+    *,
+    cells: Mapping[CellKey, Mapping[int, dict]],
+    lambdas: np.ndarray,
+    tail_n_min: int,
+) -> Dict[CellKey, dict]:
+    return {
+        key: tilted_curve_for_cell(by_n, lambdas=lambdas, tail_n_min=tail_n_min)
+        for key, by_n in cells.items()
+    }
+
+
+def plot_tilted_variance_diagnostics(
+    *,
+    tilted: Mapping[CellKey, dict],
+    train_ns: Sequence[int],
+    focus_depths: Sequence[int],
+    out_png: Path,
+    out_pdf: Path | None,
+) -> None:
+    setup_style()
+    colors = {20: "#C44E52", 50: "#8172B2"}
+    markers = {12: "o", 16: "s"}
+    fig, axes = plt.subplots(1, 3, figsize=(13.8, 4.15))
+
+    # A: the actual tilted variance curve behind Jensen.
+    ax = axes[0]
+    for train_n in train_ns:
+        for depth in focus_depths:
+            key = (int(train_n), int(depth))
+            if key not in tilted:
+                continue
+            row = tilted[key]
+            lambdas = np.asarray(row["lambdas"], dtype=float)
+            curve = np.asarray(row["tail_nvar_lambda"], dtype=float)
+            color = colors.get(int(depth), "0.35")
+            ls = "-" if int(train_n) == int(train_ns[0]) else "--"
+            ax.plot(
+                lambdas,
+                curve,
+                color=color,
+                ls=ls,
+                marker=markers.get(int(train_n), "o"),
+                markevery=max(1, len(lambdas) // 5),
+                lw=1.75,
+                ms=4.5,
+                label=rf"$p={depth}$, train $n={train_n}$",
+            )
+    ax.set_xlabel(r"tilt $\lambda$")
+    ax.set_ylabel(r"tail average of $n\,\mathrm{Var}_\lambda(X_n)$")
+    ax.set_title(r"(a) Tilted variance curve")
+    ax.legend(loc="upper right", frameon=True, framealpha=0.9)
+
+    # B: measured Jensen slope versus exact integral and lambda=0 approximation.
+    ax = axes[1]
+    keys = [(tn, d) for tn in train_ns for d in focus_depths if (tn, d) in tilted]
+    x = np.arange(len(keys), dtype=float)
+    width = 0.25
+    measured = np.asarray([tilted[k]["measured_jensen_slope"] for k in keys], dtype=float)
+    integral = np.asarray([tilted[k]["tilted_integral_slope"] for k in keys], dtype=float)
+    second = np.asarray([tilted[k]["second_order_slope"] for k in keys], dtype=float)
+    ax.bar(x - width, measured, width=width, color="#4C72B0", alpha=0.82, label="measured Jensen")
+    ax.bar(x, integral, width=width, color="#55A868", alpha=0.82, label="tilted integral")
+    ax.bar(x + width, second, width=width, color="#DD8452", alpha=0.82, label=r"$\lambda=0$ variance")
+    ax.axhline(0.0, color="0.25", lw=0.8)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"tn={tn}\np={d}" for tn, d in keys])
+    ax.set_ylabel("slope contribution")
+    ax.set_title("(b) Jensen term: exact integral vs approximation")
+    ax.legend(loc="upper left", frameon=True, framealpha=0.9)
+
+    # C: flatness of the tilted-variance curve.
+    ax = axes[2]
+    flatness = np.asarray([tilted[k]["tail_nvar_flatness_ratio"] for k in keys], dtype=float)
+    ax.bar(x, flatness, width=0.58, color="#7B68A6", alpha=0.82)
+    ax.axhline(1.0, color="0.25", lw=1.0, ls="--", label="flat curve")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"tn={tn}\np={d}" for tn, d in keys])
+    ax.set_ylabel(r"$\langle n\,\mathrm{Var}_{\lambda=1}(X)\rangle / \langle n\,\mathrm{Var}_{\lambda=0}(X)\rangle$")
+    ax.set_title("(c) How flat is the curve?")
+    ax.legend(loc="upper right", frameon=False)
+
+    fig.suptitle("Tilted-variance check for the Jensen gap", y=1.03, fontsize=12)
+    fig.tight_layout()
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_png, dpi=180, bbox_inches="tight")
+    if out_pdf is not None:
+        out_pdf.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_pdf, bbox_inches="tight")
+    plt.close(fig)
+
+
 def write_theory_note(path: Path, summary_payload: Mapping[str, object]) -> None:
     rows = summary_payload["rows"]  # type: ignore[index]
     focus = [r for r in rows if r["depth"] in (20, 50)]  # type: ignore[index]
@@ -589,6 +739,23 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--tilted-png",
+        type=Path,
+        default=Path(
+            "results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/"
+            "06_tilted_variance_diagnostics.png"
+        ),
+    )
+    parser.add_argument(
+        "--tilted-pdf",
+        type=Path,
+        default=Path(
+            "results/bm24_runs/bm24_gap_audit/CLOSE_gap_analysis/"
+            "06_tilted_variance_diagnostics.pdf"
+        ),
+    )
+    parser.add_argument("--lambda-grid-size", type=int, default=101)
+    parser.add_argument(
         "--summary",
         type=Path,
         default=Path(
@@ -615,6 +782,8 @@ def main() -> None:
     diagnostics_pdf = (
         args.diagnostics_pdf if args.diagnostics_pdf.is_absolute() else PHASECRAFT / args.diagnostics_pdf
     )
+    tilted_png = args.tilted_png if args.tilted_png.is_absolute() else PHASECRAFT / args.tilted_png
+    tilted_pdf = args.tilted_pdf if args.tilted_pdf.is_absolute() else PHASECRAFT / args.tilted_pdf
     summary_path = args.summary if args.summary.is_absolute() else PHASECRAFT / args.summary
     theory_note = args.theory_note if args.theory_note.is_absolute() else PHASECRAFT / args.theory_note
 
@@ -632,6 +801,12 @@ def main() -> None:
         key: bootstrap_slope_cis(cells[key], n_boot=int(args.bootstrap), rng=rng)
         for key in summaries
     }
+    lambdas = np.linspace(0.0, 1.0, int(args.lambda_grid_size))
+    tilted = compute_tilted_summaries(
+        cells=cells,
+        lambdas=lambdas,
+        tail_n_min=int(args.tail_n_min),
+    )
 
     plot_mechanism(
         cells=cells,
@@ -650,6 +825,13 @@ def main() -> None:
         out_png=diagnostics_png,
         out_pdf=diagnostics_pdf,
     )
+    plot_tilted_variance_diagnostics(
+        tilted=tilted,
+        train_ns=train_ns,
+        focus_depths=focus_depths,
+        out_png=tilted_png,
+        out_pdf=tilted_pdf,
+    )
 
     summary_rows = []
     for key, summary in sorted(summaries.items()):
@@ -659,6 +841,7 @@ def main() -> None:
             "depth": depth,
             **summary,
             "bootstrap_ci": cis[key],
+            "tilted_variance": tilted[key],
         }
         summary_rows.append(row)
     summary_payload = {
@@ -672,6 +855,8 @@ def main() -> None:
             "mechanism_pdf": str(out_pdf),
             "diagnostics_png": str(diagnostics_png),
             "diagnostics_pdf": str(diagnostics_pdf),
+            "tilted_png": str(tilted_png),
+            "tilted_pdf": str(tilted_pdf),
             "theory_note": str(theory_note),
         },
     }
@@ -683,6 +868,8 @@ def main() -> None:
     print(out_pdf)
     print(diagnostics_png)
     print(diagnostics_pdf)
+    print(tilted_png)
+    print(tilted_pdf)
     print(summary_path)
     print(theory_note)
 

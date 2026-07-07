@@ -1,0 +1,20 @@
+For both gamma = -0.30 and gamma = -1.00, the exact finite-size exponent approaches the action of the locally Krawczyk-certified stationary point over n = 18,...,100. The discrepancy is larger at gamma = -1.00 but decreases smoothly in both cases. Visible curvature in n delta_n shows that next-order finite-size corrections remain relevant at the accessible sizes. The decreasing fitted intercept under successive lower fit cutoffs supports, but does not prove, a zero asymptotic discrepancy.
+
+Definition: delta_n(gamma) = n^{-1} log|S_n(gamma)| - Re Phi_saddle(gamma), with S_n from the exact p=1 all-subsets expression.
+
+Parameters: beta=0.5434, q=3, k=8, r=176.54. Finite-n values for n=18,...,100; all logarithms are natural.
+Exact finite-n rates use the exact p=1 expression; when S_n is complex, |S_n| is used.
+Stationary points are locally Krawczyk-certified; local certification does not establish contour contribution or global saddle dominance.
+
+Panel (a): smaller-|gamma| comparison at gamma=-0.30 (not claimed as a rigorously controlled small-gamma point). Panel (b): gamma=-1.00 continuation.
+Panels (a,b): solid = zero-intercept fit delta_n ~ (a log n + b)/n + c/n^2; dashed = leading-order (a log n + b)/n; shaded = model-based 95% regression band.
+Panels (c,d): diagnostic n delta_n vs log n with fitted curve a log n + b + c/n.
+Panel (e): c0 from the deliberately more general diagnostic model delta_n = c0 + (a log n + b)/n. The systematic decrease of c0 with increasing n_min indicates contamination from omitted higher-order finite-size terms.
+
+(beta,gamma)=(0.5434,-0.30): box radius=8.88e-14, ||G||_inf=8.88e-15, Jacobian nonsingular=True (cond J=2.33).
+(beta,gamma)=(0.5434,-1.00): box radius=1.2e-13, ||G||_inf=1.2e-14, Jacobian nonsingular=True (cond J=4.26).
+
+Smaller-|gamma|: next-order RSS=3.503e-10, AIC=-2167.9; leading-order RSS=2.441e-07, AIC=-1626.5; general diagnostic RSS=1.622e-08, c0=+0.000491 [+0.000463, +0.000520].
+gamma=-1.00: next-order RSS=9.815e-10, AIC=-2082.3; leading-order RSS=6.396e-07, AIC=-1546.5; general diagnostic RSS=6.631e-08, c0=+0.000779 [+0.000721, +0.000837].
+
+Numerical uncertainties in delta_n are at machine precision and are reported in the supplementary CSV (delta_uncertainty column), not as plot error bars.
