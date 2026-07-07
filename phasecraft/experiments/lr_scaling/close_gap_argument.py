@@ -225,7 +225,13 @@ def print_spread_table(results: List[dict]) -> None:
 # Figures
 # ---------------------------------------------------------------------------
 
-DEPTH_COLORS = {2: "#1f77b4", 5: "#2ca02c", 10: "#ff7f0e", 20: "#d62728", 50: "#9467bd"}
+DEPTH_COLORS = {
+    2: "#0072B2",
+    5: "#009E73",
+    10: "#E69F00",
+    20: "#D55E00",
+    50: "#CC79A7",
+}
 PAPER_PT2_DEPTHS = (5, 10, 20, 50)  # drop p=2: gap ≈0.03, adds clutter without new physics
 
 # Stable output names (no ".pt2.png" — editors/OS misparsed that as a broken extension).
@@ -239,21 +245,25 @@ DEFAULT_OUT_DIR = "CLOSE_gap_analysis"
 def _apply_paper_rcparams() -> None:
     plt.rcParams.update(
         {
-            "font.family": "serif",
-            "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-            "mathtext.fontset": "dejavuserif",
-            "font.size": 10,
-            "axes.labelsize": 11,
-            "axes.titlesize": 11,
-            "legend.fontsize": 9,
-            "xtick.labelsize": 9,
-            "ytick.labelsize": 9,
+            "font.family": "sans-serif",
+            "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
+            "mathtext.fontset": "dejavusans",
+            "font.size": 8.5,
+            "axes.labelsize": 9,
+            "axes.titlesize": 9,
+            "legend.fontsize": 7.5,
+            "xtick.labelsize": 8,
+            "ytick.labelsize": 8,
             "axes.linewidth": 0.8,
-            "lines.linewidth": 1.8,
-            "lines.markersize": 6,
+            "axes.edgecolor": "0.2",
+            "axes.labelcolor": "0.1",
+            "xtick.color": "0.15",
+            "ytick.color": "0.15",
+            "lines.linewidth": 1.5,
+            "lines.markersize": 4.5,
             "savefig.dpi": 300,
             "axes.grid": True,
-            "grid.alpha": 0.22,
+            "grid.alpha": 0.18,
             "grid.linewidth": 0.45,
         }
     )
@@ -267,55 +277,100 @@ def _reset_rcparams() -> None:
 
 def plot_log2_ratio_vs_n(results: List[dict], out: Path) -> None:
     """Key proof figure: log2(mean_p/median_p) vs n, one panel per train_n group."""
-    train_ns = sorted(set(r["train_n"] for r in results))
-    fig, axes = plt.subplots(1, len(train_ns), figsize=(6.5 * len(train_ns), 5), squeeze=False)
+    _apply_paper_rcparams()
+    try:
+        train_ns = sorted(set(r["train_n"] for r in results))
+        fig, axes = plt.subplots(
+            1,
+            len(train_ns),
+            figsize=(3.35 * len(train_ns), 2.75),
+            sharey=True,
+            squeeze=False,
+        )
+        legend_handles, legend_labels = [], []
 
-    for ax, tn in zip(axes[0], train_ns):
-        sub = [r for r in results if r["train_n"] == tn]
-        for r in sorted(sub, key=lambda x: x["depth"]):
-            ns = np.array(r["ns"], dtype=float)
-            lr = np.array(r["log2_ratio"])
-            bs = np.array(r["bootstrap_se"])
-            col = DEPTH_COLORS.get(r["depth"], "gray")
+        for ax, tn in zip(axes[0], train_ns):
+            sub = [r for r in results if r["train_n"] == tn]
+            n_min = min(min(r["ns"]) for r in sub)
+            n_max = max(max(r["ns"]) for r in sub)
 
-            finite = np.isfinite(lr) & np.isfinite(bs)
-            if finite.sum() < 2:
-                continue
+            for r in sorted(sub, key=lambda x: x["depth"]):
+                ns = np.array(r["ns"], dtype=float)
+                lr = np.array(r["log2_ratio"])
+                bs = np.array(r["bootstrap_se"])
+                col = DEPTH_COLORS.get(r["depth"], "0.35")
 
-            ax.errorbar(
-                ns[finite], lr[finite], yerr=2 * bs[finite],
-                fmt="o", color=col, capsize=3, ms=5, linewidth=1.4,
-                label=f"p={r['depth']} (slope={r['spread_slope']:.3f})",
+                finite = np.isfinite(lr) & np.isfinite(bs)
+                if finite.sum() < 2:
+                    continue
+
+                eb = ax.errorbar(
+                    ns[finite],
+                    lr[finite],
+                    yerr=1.96 * bs[finite],
+                    fmt="o",
+                    color=col,
+                    ecolor=col,
+                    capsize=2.0,
+                    ms=3.7,
+                    mew=0.7,
+                    elinewidth=0.9,
+                    alpha=0.95,
+                    zorder=3,
+                )
+                fit = np.polyfit(ns[finite], lr[finite], 1)
+                x_range = np.linspace(n_min - 0.35, n_max + 0.35, 80)
+                ax.plot(
+                    x_range,
+                    np.polyval(fit, x_range),
+                    "-",
+                    color=col,
+                    linewidth=1.15,
+                    alpha=0.74,
+                    zorder=2,
+                )
+                label = rf"$p={r['depth']}$"
+                if label not in legend_labels:
+                    legend_handles.append(eb.lines[0])
+                    legend_labels.append(label)
+
+            ax.axhline(0, color="0.25", linewidth=0.7, alpha=0.38, zorder=1)
+            ax.set_xlim(n_min - 0.55, n_max + 0.55)
+            ax.set_xticks(sorted({n for r in sub for n in r["ns"] if n % 2 == 0}))
+            ax.set_xlabel("System size $n$")
+            ax.text(
+                0.035,
+                0.95,
+                rf"trained at $n={tn}$",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=8,
+                color="0.25",
             )
-            # Linear fit
-            fit = np.polyfit(ns[finite], lr[finite], 1)
-            x_range = np.linspace(ns[finite].min() - 0.5, ns[finite].max() + 0.5, 50)
-            ax.plot(x_range, np.polyval(fit, x_range), "--", color=col, linewidth=1.0, alpha=0.7)
+            ax.grid(True, axis="y")
+            ax.grid(False, axis="x")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
 
-        ax.axhline(0, color="black", linewidth=0.8, alpha=0.4)
-        ax.set_xlabel("System size $n$", fontsize=12)
-        ax.set_ylabel(r"$\log_2(\mathrm{mean}\,p_{\mathrm{succ}} / \mathrm{median}\,p_{\mathrm{succ}})$", fontsize=11)
-        ax.set_title(f"Angles trained at $n={tn}$", fontsize=11)
-        ax.legend(fontsize=9, loc="upper left", title="QAOA depth")
-        ax.grid(True, alpha=0.3)
-
-    fig.suptitle(
-        "Annealed and typical exponents diverge with system size",
-        fontsize=12,
-        y=1.05,
-    )
-    fig.text(
-        0.5,
-        1.01,
-        r"Mean $p_{\mathrm{succ}}$ exceeds median $p_{\mathrm{succ}}$ across instances"
-        r" (median runtime $\propto 1/\mathrm{median}\,p$); slope $= c_{\mathrm{typ}} - c_{\mathrm{ann}}$",
-        ha="center",
-        fontsize=9,
-        color="0.35",
-    )
-    fig.tight_layout()
-    fig.savefig(out, dpi=160, bbox_inches="tight")
-    plt.close(fig)
+        axes[0, 0].set_ylabel(
+            r"$\log_2(\mathrm{mean}\,p_{\mathrm{succ}} / \mathrm{median}\,p_{\mathrm{succ}})$"
+        )
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="upper center",
+            ncol=len(legend_labels),
+            frameon=False,
+            bbox_to_anchor=(0.5, 1.03),
+            handlelength=1.2,
+            columnspacing=1.0,
+        )
+        fig.tight_layout(rect=(0, 0, 1, 0.94), w_pad=1.3)
+        fig.savefig(out, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    finally:
+        _reset_rcparams()
 
 
 def plot_log2_ratio_vs_n_pt2(
@@ -336,7 +391,7 @@ def plot_log2_ratio_vs_n_pt2(
         if len(sub) < 2:
             raise ValueError(f"need ≥2 depth curves for train_n={train_n}, depths={depths}")
 
-        fig, ax = plt.subplots(figsize=(5.2, 4.0))
+        fig, ax = plt.subplots(figsize=(4.9, 3.15))
         n_min = min(min(r["ns"]) for r in sub)
         n_max = max(max(r["ns"]) for r in sub)
 
@@ -357,57 +412,63 @@ def plot_log2_ratio_vs_n_pt2(
                 yerr=ci_sigma * bs[finite],
                 fmt="o",
                 color=col,
-                capsize=2.5,
-                ms=5.5,
+                ecolor=col,
+                capsize=2.0,
+                ms=4.0,
                 mew=0.8,
-                elinewidth=1.0,
+                elinewidth=0.9,
                 zorder=3,
-                label=rf"$p={r['depth']}$  ($\Delta c={delta_c:.3f}$, $N={n_inst}$)",
             )
             fit = np.polyfit(ns[finite], lr[finite], 1)
-            x_range = np.linspace(n_min - 0.35, n_max + 0.35, 80)
+            x_range = np.linspace(n_min - 0.35, n_max + 0.55, 80)
             ax.plot(
                 x_range,
                 np.polyval(fit, x_range),
-                "--",
+                "-",
                 color=col,
                 linewidth=1.2,
-                alpha=0.75,
+                alpha=0.74,
                 zorder=2,
+            )
+            label_y = float(np.polyval(fit, n_max + 0.1))
+            if r["depth"] == 20:
+                label_y += 0.025
+            elif r["depth"] == 50:
+                label_y += 0.055
+            elif r["depth"] == 10:
+                label_y -= 0.01
+            ax.text(
+                n_max + 0.32,
+                label_y,
+                rf"$p={r['depth']}$, $\Delta c={delta_c:.3f}$",
+                color=col,
+                fontsize=7.7,
+                va="center",
+                ha="left",
+                clip_on=False,
             )
 
         ax.axhline(0, color="0.25", linewidth=0.7, linestyle="-", alpha=0.45, zorder=1)
-        ax.set_xlim(n_min - 0.6, n_max + 0.6)
+        ax.set_xlim(n_min - 0.6, n_max + 1.9)
         ax.set_xticks(sorted({n for r in sub for n in r["ns"]}))
         ax.set_xlabel("System size $n$")
         ax.set_ylabel(
             r"$\log_2(\mathrm{mean}\,p_{\mathrm{succ}} / \mathrm{median}\,p_{\mathrm{succ}})$"
         )
-        ax.legend(frameon=True, framealpha=0.92, edgecolor="0.8", loc="upper left", title="QAOA depth")
         ax.text(
-            0.98,
             0.03,
-            rf"trained at $n={train_n}$",
+            0.96,
+            rf"trained at $n={train_n}$; $N={n_inst}$ per $n$",
             transform=ax.transAxes,
-            ha="right",
-            va="bottom",
-            fontsize=8.5,
-            color="0.35",
+            ha="left",
+            va="top",
+            fontsize=7.7,
+            color="0.3",
         )
-        fig.suptitle(
-            "Annealed and typical exponents diverge with system size",
-            fontsize=12,
-            y=1.08,
-        )
-        fig.text(
-            0.5,
-            1.02,
-            r"Mean $p_{\mathrm{succ}}$ vs median $p_{\mathrm{succ}}$ across instances"
-            r" (median runtime $\propto 1/\mathrm{median}\,p$); slope $= c_{\mathrm{typ}} - c_{\mathrm{ann}}$",
-            ha="center",
-            fontsize=8.5,
-            color="0.35",
-        )
+        ax.grid(True, axis="y")
+        ax.grid(False, axis="x")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
         fig.tight_layout()
         fig.savefig(out, dpi=300, bbox_inches="tight")
         plt.close(fig)

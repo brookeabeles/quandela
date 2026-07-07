@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import curve_fit
 
 _PHASECRAFT = Path(__file__).resolve().parents[2]
 _LR = Path(__file__).resolve().parent
@@ -29,7 +30,6 @@ for _p in (_PHASECRAFT.parent, _PHASECRAFT, _LR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 from phasecraft.lib.paths import bm24_runs_dir  # noqa: E402
-from fit_ctyp_convergence import _MODELS_DEF, _fit_exp_only  # noqa: E402
 from plot_compare_run1_run4 import (  # noqa: E402
     _draw_baseline_refs,
     classical_slopes,
@@ -628,6 +628,116 @@ def _aggregate_seed_series(
     return seed_mean, seed_lo, seed_hi, n_used
 
 
+def _aggregate_seed_mean_sem(
+    rows: List[dict],
+    value_key: str,
+    depths: List[int],
+    seeds: List[int],
+) -> Tuple[List[float], List[float], List[int]]:
+    """Mean and standard error across available seeds for one exponent key."""
+    by_seed: Dict[int, Dict[int, float]] = {s: {} for s in seeds}
+    for r in rows:
+        d = int(r["depth"])
+        v = float(r[value_key])
+        if d in depths and np.isfinite(v):
+            by_seed[int(r["seed"])][d] = v
+
+    means: List[float] = []
+    sems: List[float] = []
+    counts: List[int] = []
+    for d in depths:
+        vals = np.asarray([by_seed[s][d] for s in seeds if d in by_seed[s]], dtype=float)
+        counts.append(int(vals.size))
+        if vals.size:
+            means.append(float(np.mean(vals)))
+            sem = float(np.std(vals, ddof=1) / np.sqrt(vals.size)) if vals.size > 1 else 0.0
+            sems.append(sem)
+        else:
+            means.append(float("nan"))
+            sems.append(float("nan"))
+    return means, sems, counts
+
+
+def _seed_count_label(counts: Sequence[int]) -> str:
+    finite = [int(c) for c in counts if int(c) > 0]
+    if not finite:
+        return "N=0"
+    lo, hi = min(finite), max(finite)
+    return f"N={hi}" if lo == hi else f"N={lo}-{hi}"
+
+
+def _fit_offset_power(ps: np.ndarray, ys: np.ndarray) -> Optional[dict]:
+    """Fit c(p) = c_inf + A p^(-alpha)."""
+    mask = np.isfinite(ps) & np.isfinite(ys) & (ps > 0)
+    if int(mask.sum()) < 3:
+        return None
+    ps_f = ps[mask]
+    ys_f = ys[mask]
+
+    def fn(p, c_inf, amp, alpha):
+        return c_inf + amp * np.asarray(p, dtype=float) ** (-alpha)
+
+    guesses = (
+        [0.20, 0.8, 0.40],
+        [0.25, 0.5, 0.30],
+        [0.15, 1.0, 0.50],
+    )
+    best = None
+    for p0 in guesses:
+        try:
+            popt, pcov = curve_fit(
+                fn,
+                ps_f,
+                ys_f,
+                p0=p0,
+                bounds=([0.0, 0.0, 0.01], [1.0, 10.0, 5.0]),
+                maxfev=20000,
+            )
+        except Exception:
+            continue
+        pred = fn(ps_f, *popt)
+        ssr = float(np.sum((ys_f - pred) ** 2))
+        if best is None or ssr < best["ssr"]:
+            best = {
+                "fn": fn,
+                "params": popt,
+                "param_err": np.sqrt(np.diag(pcov)),
+                "ssr": ssr,
+            }
+    return best
+
+
+def _fit_pure_power(ps: np.ndarray, ys: np.ndarray) -> Optional[dict]:
+    """Fit c(p) = A p^(-alpha)."""
+    mask = np.isfinite(ps) & np.isfinite(ys) & (ps > 0)
+    if int(mask.sum()) < 3:
+        return None
+    ps_f = ps[mask]
+    ys_f = ys[mask]
+
+    def fn(p, amp, alpha):
+        return amp * np.asarray(p, dtype=float) ** (-alpha)
+
+    try:
+        popt, pcov = curve_fit(
+            fn,
+            ps_f,
+            ys_f,
+            p0=[1.0, 0.3],
+            bounds=([0.0, 0.0], [10.0, 5.0]),
+            maxfev=20000,
+        )
+    except Exception:
+        return None
+    pred = fn(ps_f, *popt)
+    return {
+        "fn": fn,
+        "params": popt,
+        "param_err": np.sqrt(np.diag(pcov)),
+        "ssr": float(np.sum((ys_f - pred) ** 2)),
+    }
+
+
 def plot_dual_exponent_convergence(
     ctyp_rows: List[dict],
     mean_rows: List[dict],
@@ -639,7 +749,7 @@ def plot_dual_exponent_convergence(
     classical: Optional[dict] = None,
     png_name: str = "multi_seed_exponent_convergence.png",
 ) -> Path:
-    """c_typ (median runtime) and mean(1/p) exponent on one panel."""
+    """c_typ and inverse-mean-success exponents on one true-depth axis."""
     out_dir.mkdir(parents=True, exist_ok=True)
     depths = focus_depths or sorted(
         {int(r["depth"]) for r in ctyp_rows} | {int(r["depth"]) for r in mean_rows}
@@ -647,9 +757,11 @@ def plot_dual_exponent_convergence(
     seeds = sorted({int(r["seed"]) for r in ctyp_rows})
     n_lo, n_hi = eval_window
 
-    typ_mean, typ_lo, typ_hi, _ = _aggregate_seed_series(ctyp_rows, "c_typ", depths, seeds)
+    typ_mean, typ_sem, typ_counts = _aggregate_seed_mean_sem(
+        ctyp_rows, "c_typ", depths, seeds
+    )
     mean_seeds = sorted({int(r["seed"]) for r in mean_rows if r.get("has_mean_rebenchmark")})
-    inv_mean, inv_lo, inv_hi, n_mean_seeds = _aggregate_seed_series(
+    inv_mean, inv_sem, inv_counts = _aggregate_seed_mean_sem(
         [r for r in mean_rows if r.get("has_mean_rebenchmark")],
         "c_inv_mean",
         depths,
@@ -662,28 +774,27 @@ def plot_dual_exponent_convergence(
         ws_slope, lm_slope = classical_slopes(classical, n_lo, n_hi)
 
     p_max = float(max(depths))
-    depths_arr = np.asarray(depths, dtype=float)
-    x_eq = np.arange(len(depths), dtype=float)
-
-    def _p_to_x(ps: np.ndarray) -> np.ndarray:
-        return np.interp(ps, depths_arr, x_eq)
-
     all_vals = [
         v
-        for v in typ_mean + typ_lo + typ_hi + inv_mean + inv_lo + inv_hi
+        for v in (
+            typ_mean
+            + [m - e for m, e in zip(typ_mean, typ_sem)]
+            + [m + e for m, e in zip(typ_mean, typ_sem)]
+            + inv_mean
+            + [m - e for m, e in zip(inv_mean, inv_sem)]
+            + [m + e for m, e in zip(inv_mean, inv_sem)]
+        )
         if np.isfinite(v)
     ]
     for v in (ws_slope, lm_slope):
         if np.isfinite(v):
             all_vals.append(v)
 
-    fig, ax = plt.subplots(figsize=(7.4, 4.4))
-    yerr_typ_lo = [m - lo for m, lo in zip(typ_mean, typ_lo)]
-    yerr_typ_hi = [hi - m for m, hi in zip(typ_mean, typ_hi)]
+    fig, ax = plt.subplots(figsize=(7.6, 4.7))
     ax.errorbar(
-        x_eq,
+        depths,
         typ_mean,
-        yerr=[yerr_typ_lo, yerr_typ_hi],
+        yerr=typ_sem,
         fmt="o-",
         color="#4C72B0",
         mfc="white",
@@ -695,49 +806,38 @@ def plot_dual_exponent_convergence(
         capsize=3.0,
         capthick=1.0,
         zorder=4,
-        label=rf"$c_{{\mathrm{{typ}}}}$ median $1/p$ ({len(seeds)} seeds)",
+        label="Median runtime",
     )
     ps_typ = np.asarray(depths, dtype=float)
     ys_typ = np.asarray(typ_mean, dtype=float)
     mask_typ = np.isfinite(ys_typ)
     if mask_typ.sum() >= 3:
         ps_f, ys_f = ps_typ[mask_typ], ys_typ[mask_typ]
-        exp_fit = _fit_exp_only(ps_f, ys_f)
-        if exp_fit is not None:
-            fn = _MODELS_DEF["exp"][0]
-            p_line = np.linspace(float(np.min(ps_f)), p_max * 1.2, 400)
-            x_line = _p_to_x(p_line)
-            y_fit = fn(p_line, *exp_fit["params"])
-            c_inf, c_err = exp_fit["c_inf"], exp_fit["c_inf_err"]
-            beta = float(exp_fit["params"][2])
-            beta_err = float(exp_fit["param_err"][2])
+        power_fit = _fit_offset_power(ps_f, ys_f)
+        if power_fit is not None:
+            fn = power_fit["fn"]
+            p_line = np.linspace(float(np.min(ps_f)), p_max, 400)
+            y_fit = fn(p_line, *power_fit["params"])
             ax.plot(
-                x_line,
+                p_line,
                 y_fit,
                 color="#4C72B0",
                 lw=1.6,
-                ls="--",
+                ls=":",
                 alpha=0.85,
                 zorder=2,
-                label=(
-                    rf"$2^{{-cn}}$ fit: $c_\infty={c_inf:.3f}\!\pm\!{c_err:.3f}$, "
-                    rf"$\beta={beta:.3f}\!\pm\!{beta_err:.3f}$"
-                ),
+                label="Power-law fit",
             )
             all_vals.extend(y_fit.tolist())
     if has_mean_line:
-        yerr_inv_lo = [m - lo for m, lo in zip(inv_mean, inv_lo)]
-        yerr_inv_hi = [hi - m for m, hi in zip(inv_mean, inv_hi)]
         mean_label = (
-            rf"$c_{{1/\langle p\rangle}}$ mean $1/p$ ({n_mean_seeds} seed"
-            + ("s" if n_mean_seeds != 1 else "")
-            + ", rebenchmark)"
+            "Inverse mean success"
         )
         ax.errorbar(
-            x_eq,
+            depths,
             inv_mean,
-            yerr=[yerr_inv_lo, yerr_inv_hi],
-            fmt="s--",
+            yerr=inv_sem,
+            fmt="s-",
             color="#DD8452",
             mfc="white",
             mec="#DD8452",
@@ -750,27 +850,62 @@ def plot_dual_exponent_convergence(
             zorder=3,
             label=mean_label,
         )
-    _draw_baseline_refs(ax, ws_slope, lm_slope, label_right=True)
+        ps_inv = np.asarray(depths, dtype=float)
+        ys_inv = np.asarray(inv_mean, dtype=float)
+        mask_inv = np.isfinite(ys_inv)
+        if mask_inv.sum() >= 3:
+            ps_f, ys_f = ps_inv[mask_inv], ys_inv[mask_inv]
+            power_fit = _fit_pure_power(ps_f, ys_f)
+            if power_fit is not None:
+                fn = power_fit["fn"]
+                p_line = np.linspace(float(np.min(ps_f)), p_max, 400)
+                y_fit = fn(p_line, *power_fit["params"])
+                ax.plot(
+                    p_line,
+                    y_fit,
+                    color="#DD8452",
+                    lw=1.6,
+                    ls=":",
+                    alpha=0.95,
+                    zorder=2,
+                    label="_nolegend_",
+                )
+                all_vals.extend(y_fit.tolist())
+    _draw_baseline_refs(ax, ws_slope, lm_slope, label_in_axes=True)
 
     y_min = float(np.nanmin(all_vals))
     y_max = float(np.nanmax(all_vals))
     span = max(y_max - y_min, 0.05)
-    pad = max(0.012, 0.08 * span)
+    pad = max(0.018, 0.12 * span)
     ax.set_ylim(y_min - pad, y_max + pad)
     ax.set_xlabel(r"QAOA depth $p$", fontsize=11)
-    ax.set_ylabel(
-        r"Scaling exponent $c$ ($p_{\mathrm{succ}} \propto 2^{-cn}$)",
-        fontsize=11,
+    ax.set_ylabel(r"Scaling exponent $c$", fontsize=11)
+    x_ticks = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels([str(d) for d in x_ticks])
+    ax.grid(True, alpha=0.16, linewidth=0.6)
+    handles, labels = ax.get_legend_handles_labels()
+    legend_order = [
+        "Median runtime",
+        "Inverse mean success",
+        "Power-law fit",
+    ]
+    ordered: List[int] = []
+    for key in legend_order:
+        ordered.extend(i for i, label in enumerate(labels) if key in label and i not in ordered)
+    ordered.extend(i for i in range(len(labels)) if i not in ordered)
+    ax.legend(
+        [handles[i] for i in ordered],
+        [labels[i] for i in ordered],
+        fontsize=8.2,
+        loc="upper center",
+        ncol=3,
+        bbox_to_anchor=(0.5, 0.99),
+        columnspacing=1.2,
+        handlelength=2.2,
+        handletextpad=0.5,
+        framealpha=0.95,
     )
-    ax.set_title(
-        rf"Multi-seed exponent convergence (train $n={train_n}$, "
-        rf"mean$_p$ training, $n \in [{n_lo},{n_hi}]$)",
-        fontsize=11,
-    )
-    ax.set_xticks(x_eq)
-    ax.set_xticklabels([str(int(d)) for d in depths])
-    ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=8.5, loc="upper right", framealpha=0.95)
     if not has_mean_line:
         ax.text(
             0.02,
@@ -1112,8 +1247,8 @@ def main() -> None:
     p.add_argument("--include-baseline-seed27", action="store_true", default=True)
     p.add_argument(
         "--depths",
-        default="10,20,40,50,60,80,100",
-        help="Comma-separated depths to plot (default: 10,20,40,50,60,80,100).",
+        default="2,10,20,40,50,60,80,100",
+        help="Comma-separated depths to plot (default: 2,10,20,40,50,60,80,100).",
     )
     p.add_argument(
         "--eval-window",

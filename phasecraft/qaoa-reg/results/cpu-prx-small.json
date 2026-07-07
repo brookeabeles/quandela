@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "kind": "qaoa_reg_scaling_benchmark",
+  "run_stem": "cpu-prx-small",
+  "created_at_unix": 1782845654.726857,
+  "config": {
+    "k": 8,
+    "r": 176.54,
+    "seed": 27,
+    "eval_seed": 100027,
+    "depths": [
+      2,
+      5
+    ],
+    "training_mode": "bm24_mean_p_fixed_n",
+    "train_n": 12,
+    "train_size": 20,
+    "n_min": 12,
+    "n_max": 13,
+    "test_size": 20,
+    "m_sampling": "notebook",
+    "sat_filter": true,
+    "max_trials_per_n": 1000000,
+    "gamma_bounds": [
+      -2.0,
+      0.0
+    ],
+    "beta_bounds": [
+      0.0,
+      4.0
+    ],
+    "optimizer": "COBYLA",
+    "maxiter": 60,
+    "tol": 0.001,
+    "restarts": 2,
+    "perturb_scale": 0.1,
+    "depth_warm_start": true,
+    "anti_regression": true,
+    "collapse_guard": true,
+    "eps": 1e-300,
+    "compare_lr": true,
+    "lr_checkpoint": null,
+    "lr_beta_schedule": "decreasing",
+    "lr_skip_grid": true,
+    "lr_cobyla_maxiter": 60,
+    "lr_cobyla_restarts": 2,
+    "lr_cobyla_perturb_scale": 0.2,
+    "lr_grid_top_k": 5,
+    "gpu_batch_size": 32,
+    "force_cpu": true,
+    "batch_on_cpu": false,
+    "output_dir": "/Users/b/Quandela/phasecraft/qaoa-reg/results",
+    "run_stem": "cpu-prx-small"
+  },
+  "trace": [
+    {
+      "depth": 2,
+      "training_mode": "bm24_mean_p_fixed_n",
+      "train_n": 12,
+      "qaoa_log2_slope": 0.17220532214299086,
+      "qaoa_mean_success_exponent_log2": 0.21462892495971703,
+      "qaoa_median_runtime_per_n": {
+        "12": 80.1422306285512,
+        "13": 90.3026288577947
+      },
+      "qaoa_mean_p_succ_per_n": {
+        "12": 0.015395419980249589,
+        "13": 0.013267276993561833
+      },
+      "qaoa_betas": [
+        0.720669272933995,
+        0.5394614513801913
+      ],
+      "qaoa_gammas": [
+        -0.7043111682118864,
+        -1.0720163081428742
+      ],
+      "qaoa_diagnostics": {
+        "training_mode": "bm24_mean_p_fixed_n",
+        "train_n": 12,
+        "depth": 2,
+        "objective": "maximize mean(p_succ) at fixed train_n",
+        "simulator": "bm24",
+        "ansatz": "regular_qaoa",
+        "uses_multi_n_training": false,
+        "eval_slope_only": true,
+        "angle_convention": "bm24_half_angle",
+        "best_gammas": [
+          -0.7043111682118864,
+          -1.0720163081428742
+        ],
+        "best_betas": [
+          0.720669272933995,
+          0.5394614513801913
+        ],
+        "trained_gammas": [
+          -0.7043111682118864,
+          -1.0720163081428742
+        ],
+        "trained_betas": [
+          0.720669272933995,
+          0.5394614513801913
+        ],
+        "best_train_objective": -0.018627936768977747,
+        "best_avg_train_p_succ": 0.018627936768977747,
+        "train_rejected": false,
+        "train_reject_reason": "",
+        "collapse_guard_applied": false,
+        "anti_regression_applied": false,
+        "warm_start_used": false,
+        "optimizer": "COBYLA",
+        "optimizer_restarts": 2,
+        "optimizer_rhobeg_used": 0.54,
+        "gamma_bounds": [
+          -2.0,
+          0.0
+        ],
+        "beta_bounds": [
+          0.0,
+          4.0
+        ],
+        "restart_records": [
+          {
+            "restart_idx": 0,
+            "x0": [
+              -0.01,
+              -0.01,
+              0.01,
+              0.01
+            ],
+            "x_final": [
+              -0.7043111682118864,
+              -1.0720163081428742,
+              0.720669272933995,
+              0.5394614513801913
+            ],
+            "obj": -0.018627936768977747
+          },
+          {
+            "restart_idx": 1,
+            "x0": [
+              -0.16114965171575713,
+              0.0,
+              0.25277556308363125,
+              0.3789710717329111
+            ],
+            "x_final": [
+              -0.7092856151955763,
+              -1.0797758088565692,
+              0.7238407496467597,
+              0.5380999186290433
+            ],
+            "obj": -0.01862588620350591
+          }
+        ]
+      },
+      "lr_log2_slope": 0.42416221056864145,
+      "lr_reference_source": null,
+      "lr_diagnostics": {
+        "training_mode": "bm24_mean_p_fixed_n",
+        "train_n": 12,
+        "depth": 2,
+        "objective": "maximize mean(p_succ) at fixed train_n",
+        "simulator": "bm24",
+        "uses_multi_n_training": false,
+        "eval_slope_only": true,
+        "best_deltas": [
+          -1.8017832966849794,
+          1.2991349102683478
+        ],
+        "trained_deltas": [
+          -1.8017832966849794,
+          1.2991349102683478
+        ],
+        "best_train_objective": -0.006544823361831426,
+        "best_avg_train_p_succ": 0.006544823361831426,
+        "train_rejected": false,
+        "train_reject_reason": "",
+        "collapse_guard_applied": false,
+        "anti_regression_applied": false,
+        "warm_start_used": false,
+        "grid_skipped": true,
+        "cobyla_restarts": 2,
+        "cobyla_rhobeg_used": 0.589,
+        "restart_records": [
+          {
+            "restart_idx": 0,
+            "x0": [
+              -0.8,
+              0.49
+            ],
+            "x_final": [
+              -1.8017832966849794,
+              1.2991349102683478
+            ],
+            "obj": -0.006544823361831426
+          },
+          {
+            "restart_idx": 1,
+            "x0": [
+              -0.9011371839110376,
+              0.9870052527414519
+            ],
+            "x_final": [
+              -1.8017609738820632,
+              1.2988103885288216
+            ],
+            "obj": -0.0065448224910195614
+          }
+        ]
+      },
+      "lr_eval": {
+        "per_n": {
+          "12": {
+            "N": 20,
+            "mean_p_succ": 0.005572258802432858,
+            "median_p_succ": 0.004233346980326905,
+            "median_runtime": 236.26313309738103,
+            "fraction_zero_success": 0.0
+          },
+          "13": {
+            "N": 20,
+            "mean_p_succ": 0.004621806707963175,
+            "median_p_succ": 0.003184032621197635,
+            "median_runtime": 317.01623751641273,
+            "fraction_zero_success": 0.0
+          }
+        },
+        "median_runtime_log2_slope": 0.42416221056864145,
+        "mean_success_exponent_log2": 0.26980534013625906
+      },
+      "elapsed_s": 3.555572032928467
+    },
+    {
+      "depth": 5,
+      "training_mode": "bm24_mean_p_fixed_n",
+      "train_n": 12,
+      "qaoa_log2_slope": 0.1169732356205452,
+      "qaoa_mean_success_exponent_log2": 0.281466051430734,
+      "qaoa_median_runtime_per_n": {
+        "12": 18.21604533723891,
+        "13": 19.754523164215385
+      },
+      "qaoa_mean_p_succ_per_n": {
+        "12": 0.06729946603835524,
+        "13": 0.05537093973435845
+      },
+      "qaoa_betas": [
+        0.7303789372886146,
+        0.663163179236432,
+        0.6267228132249744,
+        0.5247569907116808,
+        0.3621631657176755
+      ],
+      "qaoa_gammas": [
+        -0.48806472302038695,
+        -0.7655834306397262,
+        -0.9283224145027362,
+        -1.0396623464016852,
+        -1.151692236853283
+      ],
+      "qaoa_diagnostics": {
+        "training_mode": "bm24_mean_p_fixed_n",
+        "train_n": 12,
+        "depth": 5,
+        "objective": "maximize mean(p_succ) at fixed train_n",
+        "simulator": "bm24",
+        "ansatz": "regular_qaoa",
+        "uses_multi_n_training": false,
+        "eval_slope_only": true,
+        "angle_convention": "bm24_half_angle",
+        "best_gammas": [
+          -0.48806472302038695,
+          -0.7655834306397262,
+          -0.9283224145027362,
+          -1.0396623464016852,
+          -1.151692236853283
+        ],
+        "best_betas": [
+          0.7303789372886146,
+          0.663163179236432,
+          0.6267228132249744,
+          0.5247569907116808,
+          0.3621631657176755
+        ],
+        "trained_gammas": [
+          -0.48806472302038695,
+          -0.7655834306397262,
+          -0.9283224145027362,
+          -1.0396623464016852,
+          -1.151692236853283
+        ],
+        "trained_betas": [
+          0.7303789372886146,
+          0.663163179236432,
+          0.6267228132249744,
+          0.5247569907116808,
+          0.3621631657176755
+        ],
+        "best_train_objective": -0.08002652521378976,
+        "best_avg_train_p_succ": 0.08002652521378976,
+        "train_rejected": false,
+        "train_reject_reason": "",
+        "collapse_guard_applied": false,
+        "anti_regression_applied": false,
+        "warm_start_used": true,
+        "optimizer": "COBYLA",
+        "optimizer_restarts": 2,
+        "optimizer_rhobeg_used": 0.4651306827192645,
+        "gamma_bounds": [
+          -2.0,
+          0.0
+        ],
+        "beta_bounds": [
+          0.0,
+          4.0
+        ],
+        "restart_records": [
+          {
+            "restart_idx": 0,
+            "x0": [
+              -0.7043111682118864,
+              -0.7962374531946333,
+              -0.8881637381773804,
+              -0.9800900231601273,
+              -1.0720163081428742,
+              0.720669272933995,
+              0.675367317545544,
+              0.6300653621570931,
+              0.5847634067686422,
+              0.5394614513801913
+            ],
+            "x_final": [
+              -0.48806472302038695,
+              -0.7655834306397262,
+              -0.9283224145027362,
+              -1.0396623464016852,
+              -1.151692236853283,
+              0.7303789372886146,
+              0.663163179236432,
+              0.6267228132249744,
+              0.5247569907116808,
+              0.3621631657176755
+            ],
+            "obj": -0.08002652521378976
+          },
+          {
+            "restart_idx": 1,
+            "x0": [
+              -0.01,
+              -0.01,
+              -0.01,
+              -0.01,
+              -0.01,
+              0.01,
+              0.01,
+              0.01,
+              0.01,
+              0.01
+            ],
+            "x_final": [
+              -0.4732177028356115,
+              -0.29761552184799345,
+              -0.3956664432695389,
+              -0.28261158247489937,
+              -0.29743698012299696,
+              0.5797972469493197,
+              0.0,
+              8.59983689825784e-17,
+              0.4918877815698476,
+              5.007532075459784e-17
+            ],
+            "obj": -0.015552933340693381
+          }
+        ]
+      },
+      "lr_log2_slope": 0.43808070902339735,
+      "lr_reference_source": null,
+      "lr_diagnostics": {
+        "training_mode": "bm24_mean_p_fixed_n",
+        "train_n": 12,
+        "depth": 5,
+        "objective": "maximize mean(p_succ) at fixed train_n",
+        "simulator": "bm24",
+        "uses_multi_n_training": false,
+        "eval_slope_only": true,
+        "best_deltas": [
+          -1.7188757749182801,
+          1.1147969616910767
+        ],
+        "trained_deltas": [
+          -1.7188757749182801,
+          1.1147969616910767
+        ],
+        "best_train_objective": -0.03426395967049748,
+        "best_avg_train_p_succ": 0.03426395967049748,
+        "train_rejected": false,
+        "train_reject_reason": "",
+        "collapse_guard_applied": false,
+        "anti_regression_applied": false,
+        "warm_start_used": true,
+        "grid_skipped": true,
+        "cobyla_restarts": 2,
+        "cobyla_rhobeg_used": 0.507336985410457,
+        "restart_records": [
+          {
+            "restart_idx": 0,
+            "x0": [
+              -1.8017832966849794,
+              1.2991349102683478
+            ],
+            "x_final": [
+              -1.7188757749182801,
+              1.1147969616910767
+            ],
+            "obj": -0.03426395967049748
+          },
+          {
+            "restart_idx": 1,
+            "x0": [
+              -1.8757267482622182,
+              0.1
+            ],
+            "x_final": [
+              -1.719392314023456,
+              1.1149514489552215
+            ],
+            "obj": -0.03426394546785773
+          }
+        ]
+      },
+      "lr_eval": {
+        "per_n": {
+          "12": {
+            "N": 20,
+            "mean_p_succ": 0.026676851153841784,
+            "median_p_succ": 0.021794257304191128,
+            "median_runtime": 45.89120065729963,
+            "fraction_zero_success": 0.0
+          },
+          "13": {
+            "N": 20,
+            "mean_p_succ": 0.020854405925584064,
+            "median_p_succ": 0.01619779165705124,
+            "median_runtime": 62.17343386278385,
+            "fraction_zero_success": 0.0
+          }
+        },
+        "median_runtime_log2_slope": 0.43808070902339735,
+        "mean_success_exponent_log2": 0.3552361705736318
+      },
+      "elapsed_s": 8.017282009124756
+    }
+  ]
+}
