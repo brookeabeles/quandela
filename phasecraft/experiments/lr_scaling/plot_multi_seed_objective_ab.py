@@ -752,8 +752,11 @@ def plot_dual_exponent_convergence(
     classical: Optional[dict] = None,
     png_name: str = "multi_seed_exponent_convergence.png",
     thesis_style: bool = False,
+    paper_style: bool = False,
 ) -> Path:
     """c_typ and inverse-mean-success exponents on one true-depth axis."""
+    if paper_style:
+        thesis_style = True
     out_dir.mkdir(parents=True, exist_ok=True)
     depths = focus_depths or sorted(
         {int(r["depth"]) for r in ctyp_rows} | {int(r["depth"]) for r in mean_rows}
@@ -790,7 +793,7 @@ def plot_dual_exponent_convergence(
         )
         if np.isfinite(v)
     ]
-    for v in (ws_slope, lm_slope):
+    for v in (lm_slope,) if paper_style else (ws_slope, lm_slope):
         if np.isfinite(v):
             all_vals.append(v)
 
@@ -802,8 +805,34 @@ def plot_dual_exponent_convergence(
         else rf"$k{{=}}8$ analytic (${_K8_ANALYTIC_AMP}\,p^{{-{_K8_ANALYTIC_EXP}}}$)"
     )
     analytic_legend_key = "BM24 analytic" if thesis_style else "k=8 analytic"
-    if thesis_style and png_name == "multi_seed_exponent_convergence.png":
+    if paper_style:
+        png_name = "multi_seed_exponent_convergence_thesis_paper.png"
+    elif thesis_style and png_name == "multi_seed_exponent_convergence.png":
         png_name = "multi_seed_exponent_convergence_thesis.png"
+
+    label_fs = 16 if paper_style else 11
+    tick_fs = 13 if paper_style else None
+    legend_fs = 12 if paper_style else 8.2
+    baseline_fs = 12 if paper_style else 8.0
+    xlabel = r"Depth ($p$)" if paper_style else r"QAOA depth $p$"
+    ylabel = "Exponent" if paper_style else r"Scaling exponent $c$"
+    paper_rc = (
+        {
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "axes.unicode_minus": False,
+            "font.size": 14,
+            "axes.labelsize": label_fs,
+            "xtick.labelsize": tick_fs,
+            "ytick.labelsize": tick_fs,
+            "legend.fontsize": legend_fs,
+        }
+        if paper_style
+        else {}
+    )
+
+    if paper_style:
+        plt.rcParams.update(paper_rc)
 
     fig, ax = plt.subplots(figsize=(7.6, 4.7))
     ax.errorbar(
@@ -904,10 +933,11 @@ def plot_dual_exponent_convergence(
     )
     _draw_baseline_refs(
         ax,
-        ws_slope,
+        float("nan") if paper_style else ws_slope,
         lm_slope,
         label_in_axes=True,
         label_offsets=baseline_label_offsets,
+        label_fontsize=baseline_fs,
     )
 
     y_min = float(np.nanmin(all_vals))
@@ -915,8 +945,10 @@ def plot_dual_exponent_convergence(
     span = max(y_max - y_min, 0.05)
     pad = max(0.018, 0.12 * span)
     ax.set_ylim(y_min - pad, y_max + pad)
-    ax.set_xlabel(r"QAOA depth $p$", fontsize=11)
-    ax.set_ylabel(r"Scaling exponent $c$", fontsize=11)
+    ax.set_xlabel(xlabel, fontsize=label_fs)
+    ax.set_ylabel(ylabel, fontsize=label_fs)
+    if tick_fs is not None:
+        ax.tick_params(axis="both", labelsize=tick_fs)
     x_ticks = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     ax.set_xticks(x_ticks)
     ax.set_xticklabels([str(d) for d in x_ticks])
@@ -932,36 +964,242 @@ def plot_dual_exponent_convergence(
     for key in legend_order:
         ordered.extend(i for i, label in enumerate(labels) if key in label and i not in ordered)
     ordered.extend(i for i in range(len(labels)) if i not in ordered)
-    ax.legend(
-        [handles[i] for i in ordered],
-        [labels[i] for i in ordered],
-        fontsize=8.2,
-        loc="upper center",
-        ncol=2,
-        bbox_to_anchor=(0.5, 0.99),
-        columnspacing=1.2,
-        handlelength=2.2,
-        handletextpad=0.5,
-        framealpha=0.95,
-    )
-    if not has_mean_line:
-        ax.text(
-            0.02,
-            0.02,
-            "Mean $1/p$ line: run plot_ctyp_vs_cann.py (rebenchmark) per seed",
-            transform=ax.transAxes,
-            fontsize=7.5,
-            color="#555555",
-            va="bottom",
+    if paper_style:
+        ax.legend(
+            [handles[i] for i in ordered],
+            [labels[i] for i in ordered],
+            fontsize=legend_fs,
+            loc="lower center",
+            ncol=2,
+            bbox_to_anchor=(0.5, 1.02),
+            columnspacing=1.4,
+            handlelength=2.2,
+            handletextpad=0.5,
+            frameon=False,
         )
-    fig.subplots_adjust(right=0.88)
-    fig.tight_layout()
+        fig.subplots_adjust(right=0.88)
+        fig.tight_layout(rect=[0, 0, 1, 0.84])
+    else:
+        ax.legend(
+            [handles[i] for i in ordered],
+            [labels[i] for i in ordered],
+            fontsize=legend_fs,
+            loc="upper center",
+            ncol=2,
+            bbox_to_anchor=(0.5, 0.99),
+            columnspacing=1.2,
+            handlelength=2.2,
+            handletextpad=0.5,
+            framealpha=0.95,
+        )
+        if not has_mean_line:
+            ax.text(
+                0.02,
+                0.02,
+                "Mean $1/p$ line: run plot_ctyp_vs_cann.py (rebenchmark) per seed",
+                transform=ax.transAxes,
+                fontsize=7.5,
+                color="#555555",
+                va="bottom",
+            )
+        fig.subplots_adjust(right=0.88)
+        fig.tight_layout()
 
     png = out_dir / png_name
     fig.savefig(png, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Wrote {png}")
     return png
+
+
+def plot_split_exponent_convergence_paper(
+    ctyp_rows: List[dict],
+    mean_rows: List[dict],
+    out_dir: Path,
+    *,
+    focus_depths: Optional[List[int]] = None,
+    eval_window: Tuple[int, int] = (12, 18),
+    classical: Optional[dict] = None,
+) -> List[Path]:
+    """Three paper-style panels split from the combined exponent-convergence plot."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    depths = focus_depths or sorted(
+        {int(r["depth"]) for r in ctyp_rows} | {int(r["depth"]) for r in mean_rows}
+    )
+    seeds = sorted({int(r["seed"]) for r in ctyp_rows})
+    typ_mean, typ_sem, _ = _aggregate_seed_mean_sem(ctyp_rows, "c_typ", depths, seeds)
+
+    mean_seeds = sorted({int(r["seed"]) for r in mean_rows if r.get("has_mean_rebenchmark")})
+    inv_mean, inv_sem, _ = _aggregate_seed_mean_sem(
+        [r for r in mean_rows if r.get("has_mean_rebenchmark")],
+        "c_inv_mean",
+        depths,
+        mean_seeds,
+    )
+
+    _, lm_slope = classical_slopes(classical, eval_window[0], eval_window[1]) if classical else (float("nan"), float("nan"))
+
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "axes.unicode_minus": False,
+            "font.size": 10,
+            "axes.labelsize": 11,
+            "xtick.labelsize": 9.5,
+            "ytick.labelsize": 9.5,
+            "legend.fontsize": 9,
+            "axes.linewidth": 0.8,
+            "axes.grid": True,
+            "grid.alpha": 0.18,
+            "grid.linewidth": 0.45,
+        }
+    )
+
+    color_runtime = "#0072B2"
+    color_mean = "#CC79A7"
+    color_analytic = "#009E73"
+    color_walksat = "0.35"
+    p_max = float(max(depths))
+    p_k8 = np.linspace(1.0, p_max, 400)
+    y_k8 = _K8_ANALYTIC_AMP * p_k8 ** (-_K8_ANALYTIC_EXP)
+
+    def finish(fig, ax, stem: str, values: Sequence[float]) -> Path:
+        vals = [float(v) for v in values if np.isfinite(v)]
+        if vals:
+            y_min, y_max = min(vals), max(vals)
+            pad = max(0.018, 0.12 * max(y_max - y_min, 0.05))
+            ax.set_ylim(y_min - pad, y_max + pad)
+        ax.set_xlim(0, p_max + 3)
+        ax.set_xticks([d for d in range(0, int(p_max) + 1, 10)])
+        ax.set_xlabel(r"Depth ($p$)")
+        ax.set_ylabel("Exponent")
+        ax.grid(True, alpha=0.18, linewidth=0.45)
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.20),
+            ncol=2,
+            frameon=False,
+            columnspacing=1.0,
+            handlelength=1.6,
+        )
+        fig.tight_layout(rect=(0, 0, 1, 0.90))
+        png = out_dir / f"{stem}.png"
+        pdf = out_dir / f"{stem}.pdf"
+        fig.savefig(png, dpi=300, bbox_inches="tight", facecolor="white")
+        fig.savefig(pdf, bbox_inches="tight", facecolor="white")
+        plt.close(fig)
+        print(f"Wrote {png}")
+        print(f"Wrote {pdf}")
+        return png
+
+    written: List[Path] = []
+
+    fig, ax = plt.subplots(figsize=(5.2, 3.05))
+    ax.errorbar(
+        depths,
+        typ_mean,
+        yerr=typ_sem,
+        fmt="o-",
+        color=color_runtime,
+        mfc="white",
+        mec=color_runtime,
+        mew=0.9,
+        lw=1.45,
+        ms=4.8,
+        elinewidth=0.75,
+        capsize=2.0,
+        capthick=0.75,
+        label="LR-QAOA median runtime",
+    )
+    if np.isfinite(lm_slope):
+        ax.axhline(lm_slope, color=color_walksat, lw=1.2, ls="--", label="WalkSATlm")
+    written.append(
+        finish(
+            fig,
+            ax,
+            "multi_seed_split_median_runtime_vs_walksat",
+            list(typ_mean) + [lm_slope],
+        )
+    )
+
+    fig, ax = plt.subplots(figsize=(5.2, 3.05))
+    ax.errorbar(
+        depths,
+        typ_mean,
+        yerr=typ_sem,
+        fmt="o-",
+        color=color_runtime,
+        mfc="white",
+        mec=color_runtime,
+        mew=0.9,
+        lw=1.45,
+        ms=4.8,
+        elinewidth=0.75,
+        capsize=2.0,
+        capthick=0.75,
+        label="LR-QAOA median runtime",
+    )
+    ax.errorbar(
+        depths,
+        inv_mean,
+        yerr=inv_sem,
+        fmt="s-",
+        color=color_mean,
+        mfc=color_mean,
+        mec=color_mean,
+        mew=0.7,
+        lw=1.45,
+        ms=4.4,
+        elinewidth=0.75,
+        capsize=2.0,
+        capthick=0.75,
+        label="LR-QAOA mean success probability",
+    )
+    written.append(
+        finish(
+            fig,
+            ax,
+            "multi_seed_split_median_runtime_vs_lr_qaoa_mean_success",
+            list(typ_mean) + list(inv_mean),
+        )
+    )
+
+    fig, ax = plt.subplots(figsize=(5.2, 3.05))
+    ax.errorbar(
+        depths,
+        inv_mean,
+        yerr=inv_sem,
+        fmt="s-",
+        color=color_mean,
+        mfc=color_mean,
+        mec=color_mean,
+        mew=0.7,
+        lw=1.45,
+        ms=4.4,
+        elinewidth=0.75,
+        capsize=2.0,
+        capthick=0.75,
+        label="LR-QAOA mean success probability",
+    )
+    ax.plot(
+        p_k8,
+        y_k8,
+        color=color_analytic,
+        lw=1.45,
+        ls="--",
+        label="QAOA (BM24 analytic)",
+    )
+    written.append(
+        finish(
+            fig,
+            ax,
+            "multi_seed_split_mean_success_vs_qaoa_bm24_analytic",
+            list(inv_mean) + y_k8.tolist(),
+        )
+    )
+
+    return written
 
 
 def plot_seed_overlay(
@@ -1351,6 +1589,16 @@ def main() -> None:
         eval_window=eval_window,
         classical=classical,
     )
+    plot_dual_exponent_convergence(
+        ctyp_rows,
+        mean_rows,
+        out_dir,
+        focus_depths=focus_depths,
+        train_n=train_n,
+        eval_window=eval_window,
+        classical=classical,
+        paper_style=True,
+    )
     plot_seed_overlay(all_rows, out_dir, focus_depths=focus_depths)
     plot_summary(all_rows, out_dir, focus_depths=focus_depths)
     mirror = _PHASECRAFT / "results/bm24_runs/analysis/multi_seed_ctyp_cann"
@@ -1373,6 +1621,16 @@ def main() -> None:
             train_n=train_n,
             eval_window=eval_window,
             classical=classical,
+        )
+        plot_dual_exponent_convergence(
+            ctyp_rows,
+            mean_rows,
+            mirror,
+            focus_depths=focus_depths,
+            train_n=train_n,
+            eval_window=eval_window,
+            classical=classical,
+            paper_style=True,
         )
         plot_seed_overlay(all_rows, mirror, focus_depths=focus_depths)
         plot_summary(all_rows, mirror, focus_depths=focus_depths)

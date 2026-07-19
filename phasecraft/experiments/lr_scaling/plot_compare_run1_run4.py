@@ -790,6 +790,7 @@ def _draw_baseline_refs(
     label_in_axes: bool = False,
     color: str = "0.45",
     linewidth: float = 0.75,
+    label_fontsize: float = 8.0,
     label_offsets: Tuple[Tuple[float, str], Tuple[float, str]] | None = None,
 ) -> None:
     from matplotlib.transforms import blended_transform_factory
@@ -814,7 +815,7 @@ def _draw_baseline_refs(
                 transform=trans,
                 va=va,
                 ha="right",
-                fontsize=8,
+                fontsize=label_fontsize,
                 color=color,
                 clip_on=True,
             )
@@ -826,7 +827,7 @@ def _draw_baseline_refs(
                 transform=ax.get_yaxis_transform(),
                 va=va,
                 ha="left",
-                fontsize=8,
+                fontsize=label_fontsize,
                 color=color,
             )
 

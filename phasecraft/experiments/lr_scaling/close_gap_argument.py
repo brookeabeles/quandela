@@ -227,11 +227,13 @@ def print_spread_table(results: List[dict]) -> None:
 
 DEPTH_COLORS = {
     2: "#0072B2",
-    5: "#009E73",
-    10: "#E69F00",
-    20: "#D55E00",
-    50: "#CC79A7",
+    5: "#0072B2",
+    10: "#CC79A7",
+    20: "#009E73",
+    50: "#D55E00",
 }
+DEPTH_MARKERS = {5: "o", 10: "s", 20: "^", 50: "D"}
+DEPTH_LINESTYLES = {5: "-", 10: "-", 20: "-", 50: "-"}
 PAPER_PT2_DEPTHS = (5, 10, 20, 50)  # drop p=2: gap ≈0.03, adds clutter without new physics
 
 # Stable output names (no ".pt2.png" — editors/OS misparsed that as a broken extension).
@@ -245,15 +247,14 @@ DEFAULT_OUT_DIR = "CLOSE_gap_analysis"
 def _apply_paper_rcparams() -> None:
     plt.rcParams.update(
         {
-            "font.family": "sans-serif",
-            "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
-            "mathtext.fontset": "dejavusans",
-            "font.size": 8.5,
-            "axes.labelsize": 9,
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "font.size": 10,
+            "axes.labelsize": 11,
             "axes.titlesize": 9,
-            "legend.fontsize": 7.5,
-            "xtick.labelsize": 8,
-            "ytick.labelsize": 8,
+            "legend.fontsize": 8,
+            "xtick.labelsize": 9.5,
+            "ytick.labelsize": 9.5,
             "axes.linewidth": 0.8,
             "axes.edgecolor": "0.2",
             "axes.labelcolor": "0.1",
@@ -379,9 +380,9 @@ def plot_log2_ratio_vs_n_pt2(
         if len(sub) < 2:
             raise ValueError(f"need ≥2 depth curves for train_n={train_n}, depths={depths}")
 
-        fig, ax = plt.subplots(figsize=(4.9, 3.15))
+        fig, ax = plt.subplots(figsize=(4.05, 3.05))
         n_min = min(min(r["ns"]) for r in sub)
-        n_max = max(max(r["ns"]) for r in sub)
+        n_max = min(20, max(max(r["ns"]) for r in sub))
 
         legend_handles, legend_labels = [], []
 
@@ -390,7 +391,7 @@ def plot_log2_ratio_vs_n_pt2(
             lr = np.array(r["log2_ratio"])
             bs = np.array(r["bootstrap_se"])
             col = DEPTH_COLORS.get(r["depth"], "gray")
-            finite = np.isfinite(lr) & np.isfinite(bs)
+            finite = np.isfinite(lr) & np.isfinite(bs) & (ns <= n_max)
             if finite.sum() < 2:
                 continue
 
@@ -399,45 +400,76 @@ def plot_log2_ratio_vs_n_pt2(
                 ns[finite],
                 lr[finite],
                 yerr=ci_sigma * bs[finite],
-                fmt="o",
+                fmt=DEPTH_MARKERS.get(r["depth"], "o"),
                 color=col,
                 ecolor=col,
                 capsize=2.0,
-                ms=4.0,
-                mew=0.8,
-                elinewidth=0.9,
+                ms=3.8,
+                mfc=col,
+                mec=col,
+                mew=0.7,
+                elinewidth=0.65,
+                capthick=0.65,
                 zorder=3,
             )
             fit = np.polyfit(ns[finite], lr[finite], 1)
-            x_range = np.linspace(n_min - 0.35, n_max + 0.55, 80)
+            x_range = np.linspace(n_min, n_max, 80)
             ax.plot(
                 x_range,
                 np.polyval(fit, x_range),
-                "-",
+                DEPTH_LINESTYLES.get(r["depth"], "-"),
                 color=col,
-                linewidth=1.2,
-                alpha=0.74,
+                linewidth=1.45,
+                alpha=0.95,
                 zorder=2,
             )
             legend_handles.append(eb.lines[0])
             legend_labels.append(rf"$p={r['depth']}$" + "\n" + rf"$\Delta c={delta_c:.3f}$")
 
-        ax.set_xlim(n_min - 0.6, n_max + 0.6)
+        ax.set_xlim(n_min - 0.35, n_max + 0.65)
         ax.set_ylim(bottom=0)
-        ax.set_xticks(sorted({n for r in sub for n in r["ns"]}))
-        ax.set_xlabel("System size $n$")
-        ax.set_ylabel(r"$\log_2(\mathrm{mean}/\mathrm{median})$")
-        ax.legend(
-            legend_handles,
-            legend_labels,
-            loc="upper center",
-            ncol=len(legend_labels),
-            frameon=False,
-            bbox_to_anchor=(0.5, 1.2),
-            handlelength=1.1,
-            columnspacing=1.25,
-            handletextpad=0.45,
-        )
+        ax.set_xticks(sorted({n for r in sub for n in r["ns"] if n <= n_max}))
+        ax.set_xlabel("System size (n)", fontsize=10)
+        ax.set_ylabel(r"$\log_2(\mathrm{mean}/\mathrm{median})$", fontsize=11)
+        # Manual legend: keep each marker aligned with the p-value line, with
+        # the slope centered directly underneath.
+        legend_xs = np.linspace(0.10, 0.90, len(sub))
+        legend_y = 1.17
+        for x_leg, r in zip(legend_xs, sub):
+            col = DEPTH_COLORS.get(r["depth"], "gray")
+            marker = DEPTH_MARKERS.get(r["depth"], "o")
+            ax.plot(
+                [x_leg - 0.075],
+                [legend_y + 0.002],
+                marker=marker,
+                color=col,
+                markerfacecolor=col,
+                markeredgecolor=col,
+                markersize=4.2,
+                linestyle="None",
+                transform=ax.transAxes,
+                clip_on=False,
+            )
+            ax.text(
+                x_leg,
+                legend_y,
+                rf"$p={r['depth']}$",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                clip_on=False,
+                fontsize=9,
+            )
+            ax.text(
+                x_leg,
+                legend_y - 0.075,
+                rf"$\Delta c={r['spread_slope']:.3f}$",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                clip_on=False,
+                fontsize=9,
+            )
         ax.grid(True, axis="y")
         ax.grid(False, axis="x")
         ax.spines["top"].set_visible(False)

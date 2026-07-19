@@ -53,6 +53,7 @@ BETA = 0.5433996420760803
 PHI_PREF = -0.6896093750000001
 
 BLUE = "#2b6cb0"
+SEED_BLUE = "#0870f8"
 ORANGE = "#dd6b20"
 GREEN = "#2f855a"
 RED = "#c53030"
@@ -60,10 +61,11 @@ PURPLE = "#6b46c1"
 GRAY = "#4a5568"
 
 # Sparse exact-n curves shown on the rate-overlay figure (same color, distinct linestyles).
-RATE_OVERLAY_EXACT_NS = [20, 100]
+RATE_OVERLAY_EXACT_NS = [100]
 FULL_GAMMA_LO = -2.25
 CROSSOVER_GAMMA_LO = -1.95
 CROSSOVER_GAMMA_HI = -1.70
+RATE_OVERLAY_REF_FIGSIZE = (6.8, 5.0)
 
 
 def crossover_gammas() -> list[float]:
@@ -429,6 +431,11 @@ def _auto_ylim(
     return lo - pad_lo * span, hi + pad_hi * span
 
 
+def _rate_overlay_font_scale(figsize: tuple[float, float]) -> float:
+    ref_w, ref_h = RATE_OVERLAY_REF_FIGSIZE
+    return 0.5 * (figsize[0] / ref_w + figsize[1] / ref_h)
+
+
 def _plot_rate_overlay(
     data: dict[str, Any],
     n_values: list[int],
@@ -441,16 +448,17 @@ def _plot_rate_overlay(
     figsize: tuple[float, float] = (7.0, 5.25),
     x_abs_gamma: bool = False,
 ) -> list[str]:
+    font_scale = _rate_overlay_font_scale(figsize)
     plt.rcParams.update(
         {
-            "font.size": 14,
-            "axes.labelsize": 16,
-            "xtick.labelsize": 13,
-            "ytick.labelsize": 13,
-            "legend.fontsize": 11,
+            "font.size": 14 * font_scale,
+            "axes.labelsize": 18 * font_scale,
+            "xtick.labelsize": 13 * font_scale,
+            "ytick.labelsize": 13 * font_scale,
+            "legend.fontsize": 11 * font_scale,
         }
     )
-    lw = 2.5
+    lw = 3.1
     gamma = np.asarray(data["gamma"], dtype=float)
     mask = (gamma >= gamma_lo) & (gamma <= gamma_hi)
     if x_abs_gamma:
@@ -465,25 +473,21 @@ def _plot_rate_overlay(
     exact_ys = [np.asarray(data["lambda_abs"][n])[mask][order] for n in exact_ns]
 
     fig, ax = plt.subplots(figsize=figsize)
-    ax.plot(x, seed_y, color=BLUE, lw=lw, ls="--", label="seed exponent")
-    ax.plot(x, pair_y, color=ORANGE, lw=lw, ls="-", label="merged 43/46 exponent")
-    exact_linestyles = ["-", "--"]
-    exact_lw = lw * 0.55 if x_abs_gamma else lw
-    for i, (n, y) in enumerate(zip(exact_ns, exact_ys)):
-        ls = exact_linestyles[i % len(exact_linestyles)]
-        ax.plot(x, y, lw=exact_lw, color=GRAY, ls=ls, alpha=0.95, label=f"exact $n={n}$")
+    ax.plot(x, seed_y, color=SEED_BLUE, lw=lw, ls="-", label="Seed", zorder=6, solid_capstyle="round")
+    ax.plot(x, pair_y, color=ORANGE, lw=lw, ls="-", label="Conjugate pair", solid_capstyle="round")
 
     anti = float(data["anti_stokes_gamma"])
-    if gamma_lo <= anti <= gamma_hi:
+    anti_in_window = gamma_lo <= anti <= gamma_hi
+    if anti_in_window:
         anti_x = abs(anti) if x_abs_gamma else anti
         ax.axvline(
             anti_x,
             color=RED,
             ls=":",
-            lw=lw * 0.95,
-            alpha=0.9,
+            lw=lw * 1.0,
+            alpha=0.95,
             zorder=1,
-            label="anti-Stokes crossing",
+            label="Anti-Stokes crossing",
         )
         y_seed = interpolate_series(anti, gamma, data["seed_exp"])
         y_pair = interpolate_series(anti, gamma, data["pair_exp"])
@@ -492,12 +496,26 @@ def _plot_rate_overlay(
             anti_x,
             y_star,
             marker="*",
-            markersize=16,
+            markersize=16 * font_scale,
             color="gold",
             markeredgecolor="black",
             markeredgewidth=0.6,
             zorder=8,
             linestyle="none",
+        )
+
+    exact_lw = lw * 0.72 if x_abs_gamma else lw * 0.9
+    for n, y in zip(exact_ns, exact_ys):
+        ax.plot(
+            x,
+            y,
+            lw=exact_lw * 1.55,
+            color="#000000",
+            ls=(0, (1.6, 1.0)),
+            alpha=1.0,
+            zorder=5,
+            label=f"Exact $n={n}$",
+            solid_capstyle="round",
         )
 
     if ylim is None:
@@ -506,19 +524,18 @@ def _plot_rate_overlay(
     ax.set_ylim(*ylim)
     ax.set_xlabel(r"$|\gamma|$" if x_abs_gamma else r"$\gamma$")
     ax.set_ylabel("Exponent" if x_abs_gamma else r"Rate exponent")
-    ax.grid(True, alpha=0.2)
+    ax.grid(True, alpha=0.15)
     if x_abs_gamma:
         ax.legend(
-            loc="lower left",
-            bbox_to_anchor=(0.0, 1.01, 1.0, 0.18),
-            mode="expand",
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.02),
             ncol=2,
             frameon=False,
-            columnspacing=1.0,
-            handletextpad=0.45,
+            columnspacing=1.4 * font_scale,
+            handletextpad=0.55,
             borderaxespad=0.0,
         )
-        fig.tight_layout(rect=[0, 0, 1, 0.86])
+        fig.tight_layout(rect=[0, 0, 1, 0.84])
     else:
         ax.legend(
             loc="lower center",
@@ -558,7 +575,7 @@ def plot_rate_overlay_full_gamma(data: dict[str, Any], n_values: list[int]) -> l
     """Extended view: |gamma| from 0 to the data edge (gamma from -2.25 up to 0)."""
     gamma = np.asarray(data["gamma"], dtype=float)
     mask = (gamma >= FULL_GAMMA_LO) & (gamma <= float(np.max(gamma)))
-    x_hi = float(np.max(np.abs(gamma[mask]))) + 0.02
+    x_hi = float(np.max(np.abs(gamma[mask]))) + 0.10
     return _plot_rate_overlay(
         data,
         n_values,
@@ -567,7 +584,7 @@ def plot_rate_overlay_full_gamma(data: dict[str, Any], n_values: list[int]) -> l
         xlim=(0.0, x_hi),
         ylim=None,
         filename_stem="rate_overlay_seed_pair_exact_n_full_gamma",
-        figsize=(7.0, 5.25),
+        figsize=(9.2, 6.75),
         x_abs_gamma=True,
     )
 

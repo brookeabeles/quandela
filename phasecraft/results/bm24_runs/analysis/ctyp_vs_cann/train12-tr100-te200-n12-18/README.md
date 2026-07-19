@@ -22,26 +22,4 @@ Rebenchmarked: True
 
 | depth | mode | c_typ | c_emp_mean | c_ann | gap_mean_ann | gap_typ_annrt |
 |------:|------|------:|-----------:|------:|-------------:|--------------:|
-| 10 | mean_p train | 0.5132 | -0.4687 | nan | nan | nan |
-| 10 | median_rt train | 0.5187 | -0.4735 | nan | nan | nan |
-| 20 | mean_p train | 0.4219 | -0.3815 | nan | nan | nan |
-| 20 | median_rt train | 0.4202 | -0.3836 | nan | nan | nan |
-| 40 | mean_p train | 0.3687 | -0.3048 | nan | nan | nan |
-| 40 | median_rt train | 0.3827 | -0.3146 | nan | nan | nan |
-| 50 | mean_p train | 0.3603 | -0.2807 | nan | nan | nan |
-| 50 | median_rt train | 0.3710 | -0.2895 | nan | nan | nan |
-| 80 | mean_p train | 0.3334 | -0.2315 | nan | nan | nan |
-| 80 | median_rt train | 0.3340 | -0.2392 | nan | nan | nan |
-| 100 | mean_p train | 0.3178 | -0.2096 | nan | nan | nan |
-| 100 | median_rt train | 0.3215 | -0.2126 | nan | nan | nan |
-
-## Median vs mean training (same depth)
-
-| depth | Δ c_typ | Δ gap_mean_ann |
-|------:|--------:|---------------:|
-| 10 | +0.0055 | +nan |
-| 20 | -0.0017 | +nan |
-| 40 | +0.0140 | +nan |
-| 50 | +0.0107 | +nan |
-| 80 | +0.0006 | +nan |
-| 100 | +0.0037 | +nan |
+| 30 | mean_p train | 0.3930 | -0.3376 | nan | nan | nan |

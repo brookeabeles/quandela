@@ -1,14 +1,47 @@
-"""Backend selection and future batch-evaluation boundary."""
+"""Public GPU/backend compatibility helpers.
+
+The implementation delegates to the maintained batched backend in
+``experiments.lr_scaling.gpu.backend``.  This keeps the stable
+``phasecraft.lib.gpu`` import path while avoiding the old per-instance loop.
+"""
 
 from __future__ import annotations
 
+import numpy as np
 
-def get_array_module(backend: str = "numpy"):
+from phasecraft.experiments.lr_scaling.gpu.backend import (
+    BackendName,
+    detect_device,
+    get_xp,
+    run_qaoa_batch,
+    success_probability_batch,
+)
+
+
+def _device_for_backend(backend: str):
     if backend == "numpy":
-        import numpy as np
+        return detect_device(prefer="numpy")
+    if backend == "cupy":
+        return detect_device(prefer="cupy")
+    raise ValueError(f"Unsupported backend: {backend!r}")
 
-        return np
-    raise ValueError(f"Unsupported backend: {backend}")
+
+def get_array_module(backend: BackendName = "numpy"):
+    """Return NumPy or CuPy for callers that still choose backends manually."""
+    return get_xp(_device_for_backend(backend))
+
+
+def _as_numpy_array(value) -> np.ndarray:
+    if hasattr(value, "get"):
+        return np.asarray(value.get())
+    return np.asarray(value)
+
+
+def _infer_num_qubits(state_size: int) -> int:
+    n = int(state_size).bit_length() - 1
+    if (1 << n) != int(state_size):
+        raise ValueError("Second dimension must be a power of two (2**n).")
+    return n
 
 
 def qaoa_success_probabilities_batch(
@@ -30,33 +63,21 @@ def qaoa_success_probabilities_batch(
 
     returns: success probabilities with shape (B,)
     """
-    xp = get_array_module(backend=backend)
-    from phasecraft.lib.sim.bm24_qaoa_sim import (
-        per_instance_success_probability,
-        run_qaoa,
-    )
-
-    h_diag_batch = xp.asarray(h_diag_batch)
-    if h_diag_batch.ndim != 2:
+    h_diag_batch_np = _as_numpy_array(h_diag_batch)
+    if h_diag_batch_np.ndim != 2:
         raise ValueError("h_diag_batch must have shape (B, 2**n)")
 
-    state_size = int(h_diag_batch.shape[1])
-    n = int(round(state_size.bit_length() - 1))
-    if (1 << n) != state_size:
-        raise ValueError("Second dimension must be a power of two (2**n).")
-
-    betas = xp.asarray(betas)
-    gammas = xp.asarray(gammas)
-    chunk = int(batch_size) if batch_size else int(h_diag_batch.shape[0])
+    n = _infer_num_qubits(int(h_diag_batch_np.shape[1]))
+    device = _device_for_backend(backend)
+    xp = get_xp(device)
+    chunk = int(batch_size) if batch_size else int(h_diag_batch_np.shape[0])
     if chunk <= 0:
         raise ValueError("batch_size must be positive when provided.")
 
-    out = xp.empty(int(h_diag_batch.shape[0]), dtype=xp.float64)
-    for start in range(0, int(h_diag_batch.shape[0]), chunk):
-        stop = min(start + chunk, int(h_diag_batch.shape[0]))
-        for i in range(start, stop):
-            h_diag = xp.asarray(h_diag_batch[i])
-            psi = run_qaoa(h_diag, betas, gammas, n)
-            out[i] = per_instance_success_probability(psi, h_diag)
+    out = np.empty(int(h_diag_batch_np.shape[0]), dtype=np.float64)
+    for start in range(0, int(h_diag_batch_np.shape[0]), chunk):
+        stop = min(start + chunk, int(h_diag_batch_np.shape[0]))
+        stack = h_diag_batch_np[start:stop]
+        psi = run_qaoa_batch(stack, np.asarray(betas), np.asarray(gammas), n, xp=xp)
+        out[start:stop] = success_probability_batch(psi, stack, xp=xp)
     return out
-

@@ -246,6 +246,9 @@ def _save_gamma_vs_exponents_plot(
     stem: str = "gamma_vs_exponents",
 ) -> None:
     paper_style = {
+        "font.family": "serif",
+        "mathtext.fontset": "cm",
+        "axes.unicode_minus": False,
         "font.size": 14,
         "axes.labelsize": 16,
         "xtick.labelsize": 13,

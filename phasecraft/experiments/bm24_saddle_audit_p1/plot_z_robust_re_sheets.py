@@ -42,6 +42,17 @@ STATUS_PL = "competitor_pl_active"
 STATUS_DUP = "seed_duplicate"
 STATUS_SEED = "seed_certified_local"
 
+# Matches thesis-ready figures (gamma_vs_exponents-full_gamma, etc.).
+_THESIS_PAPER_RCPARAMS = {
+    "font.family": "serif",
+    "mathtext.fontset": "cm",
+    "axes.unicode_minus": False,
+    "font.size": 14,
+    "axes.labelsize": 16,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+}
+
 # Highlight colours for key branches in tracked v2 plot.
 V2_BRANCH_COLORS: dict[int, str] = {
     43: "#2ca02c",
@@ -486,64 +497,66 @@ def plot_sweep_re_scatter_by_branch_id(
     }
     unassigned_color = (0.75, 0.75, 0.75, 0.35)
 
-    fig, ax = plt.subplots(figsize=(13, 6.5))
+    with plt.rc_context(_THESIS_PAPER_RCPARAMS):
+        fig, ax = plt.subplots(figsize=(13, 6.5))
 
-    for bid in palette_ids:
-        br = branches_by_id.get(bid)
-        if not br:
-            continue
-        pts = sorted(br.get("points", []), key=lambda p: float(p["gamma"]), reverse=True)
-        g_line = [float(p["gamma"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
-        re_line = [float(p["Phi_eff_real"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
-        if len(g_line) < 2:
-            continue
-        lbl = br.get("label", f"branch {bid}")
-        lw = 2.5 if br.get("is_seed_sheet") else 1.4
+        for bid in palette_ids:
+            br = branches_by_id.get(bid)
+            if not br:
+                continue
+            pts = sorted(br.get("points", []), key=lambda p: float(p["gamma"]), reverse=True)
+            g_line = [float(p["gamma"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
+            re_line = [float(p["Phi_eff_real"]) for p in pts if re_lo <= float(p["Phi_eff_real"]) <= re_hi]
+            if len(g_line) < 2:
+                continue
+            lbl = br.get("label", f"branch {bid}")
+            lw = 2.5 if br.get("is_seed_sheet") else 1.4
+            ax.plot(
+                g_line,
+                re_line,
+                "-",
+                color=id_to_color[bid],
+                lw=lw,
+                alpha=0.85 if br.get("is_seed_sheet") else 0.55,
+                zorder=4,
+                label=lbl,
+            )
+
+        for g, y, bid in zip(xs, ys, bids):
+            if bid < 0:
+                ax.scatter(g, y, c=[unassigned_color], s=14, edgecolors="none", zorder=2)
+            else:
+                col = id_to_color.get(bid, (0.5, 0.5, 0.5, 0.6))
+                ax.scatter(g, y, c=[col], s=26, edgecolors="k", linewidths=0.2, zorder=5)
+
+        sg = [float(r["gamma"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+        sr = [float(r["Phi_eff_real"]) for r in sweep["points"] if r.get("krawczyk_certified")]
+        order = np.argsort(sg)[::-1]
         ax.plot(
-            g_line,
-            re_line,
-            "-",
-            color=id_to_color[bid],
-            lw=lw,
-            alpha=0.85 if br.get("is_seed_sheet") else 0.55,
-            zorder=4,
-            label=lbl,
+            np.array(sg)[order],
+            np.array(sr)[order],
+            "k--",
+            lw=1.2,
+            alpha=0.5,
+            zorder=3,
+            label="seed row (sweep)",
         )
 
-    for g, y, bid in zip(xs, ys, bids):
-        if bid < 0:
-            ax.scatter(g, y, c=[unassigned_color], s=14, edgecolors="none", zorder=2)
-        else:
-            col = id_to_color.get(bid, (0.5, 0.5, 0.5, 0.6))
-            ax.scatter(g, y, c=[col], s=26, edgecolors="k", linewidths=0.2, zorder=5)
-
-    sg = [float(r["gamma"]) for r in sweep["points"] if r.get("krawczyk_certified")]
-    sr = [float(r["Phi_eff_real"]) for r in sweep["points"] if r.get("krawczyk_certified")]
-    order = np.argsort(sg)[::-1]
-    ax.plot(np.array(sg)[order], np.array(sr)[order], "k--", lw=1.2, alpha=0.5, zorder=3, label="seed row (sweep)")
-
-    n_matched = sum(1 for b in bids if b >= 0)
-    n_unassigned = sum(1 for b in bids if b < 0)
-    ax.set_ylim(re_lo - 0.1, re_hi + 0.1)
-    ax.set_ylabel(r"Re $\Phi_M$")
-    ax.set_title(
-        f"Sweep competitors colored by resolved branch_id  "
-        f"({n_matched} matched, {n_unassigned} unassigned, {n_hidden} out-of-band hidden)"
-    )
-    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), fontsize=7, framealpha=0.95)
-    ax.grid(True, alpha=0.2)
-    _style_gamma_axis_reading_zero_to_negative(ax)
-    fig.text(
-        0.01,
-        0.01,
-        "Lines = resolved tracks; dots = sweep hits matched by z (branch_step_tol=0.35). Gray = no track match.",
-        fontsize=8,
-        color="0.35",
-    )
-    fig.tight_layout()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
+        ax.set_ylim(re_lo - 0.1, re_hi + 0.1)
+        ax.set_ylabel(r"Re $\Phi_M$")
+        ax.grid(True, alpha=0.2)
+        _style_gamma_axis_reading_zero_to_negative(ax)
+        fig.text(
+            0.01,
+            0.01,
+            "Lines = resolved tracks; dots = sweep hits matched by z (branch_step_tol=0.35). Gray = no track match.",
+            fontsize=8,
+            color="0.35",
+        )
+        fig.tight_layout()
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
     return out_path
 
 

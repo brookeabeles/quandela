@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_gap_seed_audit",
+  "angles": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/angles_grid_existing.json",
+  "eval_seed": 300027,
+  "train_seed": 27,
+  "train_size": 100,
+  "train_ns": [
+    12
+  ],
+  "N": 500,
+  "sat_filter": true,
+  "m_sampling": "notebook",
+  "train_eval_entropy_roots_disjoint": true,
+  "train_eval_seed_overlap": 0,
+  "passed": false,
+  "fail_reasons": [
+    "n=15 missing from audit"
+  ],
+  "per_n": [
+    {
+      "n": 18,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 853,
+      "eval_seed": 300027,
+      "mean_alpha_candidates": 176.5319786374886,
+      "std_alpha_candidates": 3.120223337594419,
+      "mean_alpha_accepted": 176.13011111111112,
+      "sat_fraction_candidates": 0.5861664712778429,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 2179775,
+      "seed_max": 4293058722
+    },
+    {
+      "n": 19,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 805,
+      "eval_seed": 300027,
+      "mean_alpha_candidates": 176.54024190912062,
+      "std_alpha_candidates": 3.165751682252029,
+      "mean_alpha_accepted": 176.17147368421053,
+      "sat_fraction_candidates": 0.6211180124223602,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 1257578,
+      "seed_max": 4292758491
+    },
+    {
+      "n": 20,
+      "requested_N": 500,
+      "accepted_N": 500,
+      "candidate_count": 810,
+      "eval_seed": 300027,
+      "mean_alpha_candidates": 176.43500000000003,
+      "std_alpha_candidates": 2.9042061160324852,
+      "mean_alpha_accepted": 176.0937,
+      "sat_fraction_candidates": 0.6172839506172839,
+      "sat_fraction_accepted": 1.0,
+      "seed_min": 5802784,
+      "seed_max": 4286583163
+    }
+  ]
+}

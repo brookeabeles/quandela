@@ -1,0 +1,12 @@
+{
+  "figure": {
+    "png": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/PAPER-RESULTS/four_stage_competitor_workflow.png",
+    "pdf": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/PAPER-RESULTS/four_stage_competitor_workflow.pdf"
+  },
+  "sources": {
+    "competitor_dominance_summary": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/archive/competitor_dominance/competitor_dominance_summary.json",
+    "competitors_robust_z": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/archive/competitor_dominance/z_robust_full/competitors_robust_z.json",
+    "resolved_robust_z": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/archive/competitor_dominance/z_robust_full/resolved_robust_z.json",
+    "seed_branch_continuation": "/Users/b/Quandela/phasecraft/results/bm24_saddle_audit_p1/run_seed_branch_g-2pi/seed_branch_continuation.json"
+  }
+}
