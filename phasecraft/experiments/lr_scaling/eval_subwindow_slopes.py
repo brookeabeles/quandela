@@ -58,12 +58,21 @@ _DEFAULT_EXTRA_CACHE = (
 
 
 def _fit_log2_slope(ns: List[int], ys: List[float]) -> float:
+    slope, _stderr = _fit_log2_slope_stderr(ns, ys)
+    return slope
+
+
+def _fit_log2_slope_stderr(ns: List[int], ys: List[float]) -> Tuple[float, float]:
+    """Return (log2 slope, 1σ OLS stderr) from linregress on log(y) vs n."""
     n_arr = np.asarray(ns, dtype=float)
     y_arr = np.asarray(ys, dtype=float)
     mask = np.isfinite(y_arr) & (y_arr > 0)
     if int(mask.sum()) < 2:
-        return float("nan")
-    return float(linregress(n_arr[mask], np.log(y_arr[mask])).slope / LN2)
+        return float("nan"), float("nan")
+    res = linregress(n_arr[mask], np.log(y_arr[mask]))
+    slope = float(res.slope / LN2)
+    stderr = float(res.stderr / LN2) if res.stderr is not None else float("nan")
+    return slope, stderr
 
 
 def _merge_per_n(base: dict, extra: dict) -> Dict[str, float]:
@@ -120,11 +129,19 @@ def parse_ranges(spec: str) -> List[Tuple[int, int]]:
 
 
 def fit_range_slope(per_n: Dict[str, float], n_lo: int, n_hi: int) -> float:
+    slope, _stderr = fit_range_slope_stderr(per_n, n_lo, n_hi)
+    return slope
+
+
+def fit_range_slope_stderr(
+    per_n: Dict[str, float], n_lo: int, n_hi: int
+) -> Tuple[float, float]:
+    """Return (log2 slope, 1σ OLS stderr) over n in [n_lo, n_hi]."""
     win_ns = [n for n in sorted(int(k) for k in per_n) if n_lo <= n <= n_hi]
     if len(win_ns) < 2:
-        return float("nan")
+        return float("nan"), float("nan")
     win_ys = [float(per_n[str(n)]) for n in win_ns]
-    return _fit_log2_slope(win_ns, win_ys)
+    return _fit_log2_slope_stderr(win_ns, win_ys)
 
 
 def subwindow_slopes(
@@ -155,10 +172,15 @@ def analyze_ranges(
             if not per_n:
                 continue
             all_ns = sorted(int(k) for k in per_n)
-            range_slopes = [
-                {"n_lo": lo, "n_hi": hi, "slope": fit_range_slope(per_n, lo, hi)}
-                for lo, hi in ranges
-            ]
+            range_slopes = []
+            for lo, hi in ranges:
+                slope, stderr = fit_range_slope_stderr(per_n, lo, hi)
+                range_slopes.append({
+                    "n_lo": lo,
+                    "n_hi": hi,
+                    "slope": slope,
+                    "stderr": stderr,
+                })
             out[mode_label].append({
                 "depth": int(row["depth"]),
                 "all_ns": all_ns,

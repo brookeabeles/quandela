@@ -105,8 +105,8 @@ def eval_slice(
                     re_phi[i, j] = float(sys_w.Phi_eff(v).real)
                 else:
                     sys_z = SaddleSystem.build(q=Q, r=R, betas=betas, gammas=gammas)
-                    g = sys_z.G_complex(v)
-                    f = v - g
+                    # Saddle equation is G(z)=0 (not the fixed-point residual z-G).
+                    f = sys_z.G_complex(v)
                     log_res[i, j] = np.log10(float(np.sum(np.abs(f) ** 2)) + 1e-30)
                     re_phi[i, j] = float(compute_phi(v, q=Q, r=R, betas=betas, gammas=gammas).real)
             except (ValueError, FloatingPointError, ZeroDivisionError):
@@ -211,7 +211,7 @@ def cross_section(
                 re_phi[k] = float(sys.Phi_eff(v).real)
             else:
                 sys_z = SaddleSystem.build(q=Q, r=R, betas=np.array([BETA]), gammas=np.array([gamma]))
-                f = v - sys_z.G_complex(v)
+                f = sys_z.G_complex(v)
                 log_res[k] = np.log10(float(np.sum(np.abs(f) ** 2)) + 1e-30)
                 re_phi[k] = float(compute_phi(v, q=Q, r=R, betas=[BETA], gammas=[gamma]).real)
         except (ValueError, FloatingPointError, ZeroDivisionError):
@@ -293,9 +293,9 @@ def main() -> None:
         z_re,
         z_im,
         z_logf,
-        title=rf"z — $\log_{{10}}|F(z)|^2$  (slice $z_{{{z_idx}}}$)",
+        title=rf"z — $\log_{{10}}|G(z)|^2$  (slice $z_{{{z_idx}}}$)",
         cmap="magma_r",
-        cbar_label=r"$\log_{10}|F|^2$",
+        cbar_label=r"$\log_{10}|G|^2$",
         seed_xy=seed_z_xy,
         comp_xy=z_comp_xy,
     )

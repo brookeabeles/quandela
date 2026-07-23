@@ -191,20 +191,29 @@ def build_h_diagonal(clauses: List[List[Tuple[int, bool]]], n: int
     automatically unsatisfied by no assignment -> contribute 0 everywhere.
     """
     H = np.zeros(2 ** n, dtype=np.int64)
-    y = np.arange(2 ** n)
     for clause in clauses:
-        unsat = np.ones(2 ** n, dtype=bool)
+        fixed_mask = 0
+        required_ones = 0
+        impossible = False
         for var_idx, is_negated in clause:
-            bit = (y >> var_idx) & 1
-            if is_negated:
-                # literal ~x_i  is false iff y_i == 1
-                unsat &= (bit == 1)
-            else:
-                # literal  x_i  is false iff y_i == 0
-                unsat &= (bit == 0)
-            if not unsat.any():
-                break  # short-circuit tautologies / impossible clauses
-        H[unsat] += 1
+            bit = 1 if is_negated else 0
+            bit_mask = 1 << int(var_idx)
+            if fixed_mask & bit_mask:
+                if bool(required_ones & bit_mask) != bool(bit):
+                    impossible = True
+                    break  # Tautology / contradictory unsatisfied condition.
+                continue
+            fixed_mask |= bit_mask
+            if bit:
+                required_ones |= bit_mask
+        if impossible:
+            continue
+
+        free_bits = [1 << i for i in range(n) if not (fixed_mask & (1 << i))]
+        offsets = np.array([0], dtype=np.intp)
+        for bit in free_bits:
+            offsets = np.concatenate((offsets, offsets + bit))
+        H[required_ones + offsets] += 1
     return H
 
 

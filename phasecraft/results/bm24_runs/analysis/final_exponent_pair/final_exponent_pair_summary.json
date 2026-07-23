@@ -1,0 +1,125 @@
+{
+  "less_depth_more_instances": {
+    "depths": [
+      2,
+      5,
+      10,
+      20,
+      50
+    ],
+    "c_rt": [
+      0.6653492982025508,
+      0.5771144502986469,
+      0.4971543271017755,
+      0.4277467833021432,
+      0.367547342752739
+    ],
+    "c_sp": [
+      0.671999502133715,
+      0.562751570367869,
+      0.4664116930297371,
+      0.37647247303828446,
+      0.2878562917628421
+    ],
+    "e_rt": [
+      0.00839493956585322,
+      0.004848820430265129,
+      0.005829497796525528,
+      0.007729176549231802,
+      0.008090194886783203
+    ],
+    "e_sp": [
+      0.005320063008213309,
+      0.0039971260670589,
+      0.004672229404848303,
+      0.004755550869498962,
+      0.0057825396680352605
+    ],
+    "walksat": 0.4046448015622218,
+    "walksat_im": 0.346309706545203,
+    "fit_rt": {
+      "factor": 0.7669838886186718,
+      "alpha": 0.18932565815755104,
+      "r2_log": 0.9961863403382997,
+      "factor_error_bm24_half_sample": 0.011080932288955452,
+      "alpha_error_bm24_half_sample": 0.007260130905667688
+    },
+    "fit_sp": {
+      "factor": 0.8391053378325716,
+      "alpha": 0.2675436738117547,
+      "r2_log": 0.9917053725603218,
+      "factor_error_bm24_half_sample": 0.008920673029622581,
+      "alpha_error_bm24_half_sample": 0.005641008007607759
+    }
+  },
+  "more_depth_less_instances": {
+    "depths": [
+      2,
+      5,
+      8,
+      10,
+      15,
+      20,
+      30,
+      40,
+      50
+    ],
+    "c_rt": [
+      0.6739652855856011,
+      0.5626203497093057,
+      0.5323522263235121,
+      0.5145925286129432,
+      0.47221150871786544,
+      0.42979306889055413,
+      0.40321940232474324,
+      0.3872073332867794,
+      0.373651194897341
+    ],
+    "c_sp": [
+      0.6777790189220054,
+      0.5782582740854482,
+      0.5100970468356208,
+      0.482030956728308,
+      0.4328248937916374,
+      0.3964921906465398,
+      0.3550446568810188,
+      0.3236832102424892,
+      0.3006005559235358
+    ],
+    "e_rt": [
+      0.014086135626446776,
+      0.012144588800727883,
+      0.01452548333493854,
+      0.014747483871080456,
+      0.014301203089520138,
+      0.01289172178894476,
+      0.006948564614776898,
+      0.014957201769330453,
+      0.018918844943543817
+    ],
+    "e_sp": [
+      0.012382689403463354,
+      0.014594259728701566,
+      0.018831008637731635,
+      0.019674328328071,
+      0.01908280923351297,
+      0.01878985851134064,
+      0.008896957482404003,
+      0.00897547957427303,
+      0.008794981770350931
+    ],
+    "walksat": 0.4046448015622218,
+    "walksat_im": 0.346309706545203,
+    "fit_rt": {
+      "factor": 0.7724304053885328,
+      "alpha": 0.18712379943492638,
+      "r2_log": 0.9925660129280002
+    },
+    "fit_sp": {
+      "factor": 0.8540143696216271,
+      "alpha": 0.2585366575946298,
+      "r2_log": 0.9893712588264216
+    }
+  },
+  "captions": "Figure A: Fewer-depth, more-instance BM24-style exponent comparison. LR-QAOA parameters are trained at n=12 on the mean-success objective and evaluated over n=12..20 using raw per-instance success probabilities. Error bars use BM24-style half-sample resampling. The all-p power-law fits are c_rt = 0.77 p^-0.19 and c_sp = 0.84 p^-0.27. Horizontal references show WalkSAT and WalkSATlm median-runtime exponents over the same n window.\n\nFigure B: More-depth, fewer-instance aggregate exponent comparison. The same train-n=12 mean-success LR-QAOA protocol is evaluated over n=12..20 at depths p=2,5,8,10,15,20,30,40,50 using the aggregate N=200 summaries from the earlier run. Error bars are regression standard errors over n, not BM24 half-sample errors, because the raw per-instance rows for p=8,15,30,40 are not present. The all-p power-law fits are c_rt = 0.77 p^-0.19 and c_sp = 0.85 p^-0.26."
+}

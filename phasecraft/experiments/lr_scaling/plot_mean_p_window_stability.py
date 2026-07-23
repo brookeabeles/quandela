@@ -22,7 +22,7 @@ from eval_subwindow_slopes import (  # noqa: E402
     _DEFAULT_CACHE,
     _DEFAULT_EXTRA_CACHE,
     analyze_ranges,
-    fit_range_slope,
+    fit_range_slope_stderr,
     load_per_n_cache,
     parse_ranges,
 )
@@ -190,14 +190,15 @@ def analyze_ranges_metric(
             if not per_n:
                 continue
             all_ns = sorted(int(k) for k in per_n)
-            range_slopes = [
-                {
+            range_slopes = []
+            for lo, hi in ranges:
+                slope, stderr = fit_range_slope_stderr(per_n, lo, hi)
+                range_slopes.append({
                     "n_lo": lo,
                     "n_hi": hi,
-                    "slope": slope_sign * fit_range_slope(per_n, lo, hi),
-                }
-                for lo, hi in ranges
-            ]
+                    "slope": slope_sign * slope,
+                    "stderr": abs(slope_sign) * stderr,
+                })
             out[mode_label].append({
                 "depth": int(row["depth"]),
                 "all_ns": all_ns,
@@ -210,6 +211,17 @@ def _slopes_for_range(rows: List[dict], n_lo: int, n_hi: int) -> List[float]:
     return [
         next(
             (s["slope"] for s in row["range_slopes"]
+             if s["n_lo"] == n_lo and s["n_hi"] == n_hi),
+            float("nan"),
+        )
+        for row in rows
+    ]
+
+
+def _stderrs_for_range(rows: List[dict], n_lo: int, n_hi: int) -> List[float]:
+    return [
+        next(
+            (float(s.get("stderr", float("nan"))) for s in row["range_slopes"]
              if s["n_lo"] == n_lo and s["n_hi"] == n_hi),
             float("nan"),
         )
@@ -346,10 +358,12 @@ def _plot_panel(
         style = style_by_range.get((n_lo, n_hi))
         if style is None:
             continue
-        slopes = _slopes_for_range(rows, n_lo, n_hi)
-        ax.plot(
+        slopes = np.asarray(_slopes_for_range(rows, n_lo, n_hi), dtype=float)
+        stderrs = np.asarray(_stderrs_for_range(rows, n_lo, n_hi), dtype=float)
+        ax.errorbar(
             depths,
             slopes,
+            yerr=stderrs,
             color=style["color"],
             ls=style["ls"],
             marker=style["marker"],
@@ -358,6 +372,8 @@ def _plot_panel(
             mfc="white" if colorblind else style["color"],
             mec=style["color"],
             mew=1.4,
+            capsize=2.5,
+            elinewidth=1.1,
             label=rf"$n={n_lo}$–${n_hi}$",
             zorder=style["zorder"],
         )
@@ -426,11 +442,16 @@ def _panel_y_limits(rows_list: Sequence[List[dict]], ranges: List[Tuple[int, int
     vals: List[float] = []
     for rows in rows_list:
         for n_lo, n_hi in ranges:
-            vals.extend(_slopes_for_range(rows, n_lo, n_hi))
-    finite = [v for v in vals if np.isfinite(v)]
-    if not finite:
+            slopes = _slopes_for_range(rows, n_lo, n_hi)
+            stderrs = _stderrs_for_range(rows, n_lo, n_hi)
+            for s, e in zip(slopes, stderrs):
+                if not np.isfinite(s):
+                    continue
+                err = float(e) if np.isfinite(e) else 0.0
+                vals.extend([s - err, s + err])
+    if not vals:
         return 0.0, 1.0
-    y_lo, y_hi = float(np.min(finite)), float(np.max(finite))
+    y_lo, y_hi = float(np.min(vals)), float(np.max(vals))
     pad = 0.04 * (y_hi - y_lo)
     return y_lo - pad, y_hi + pad
 
@@ -493,6 +514,154 @@ def plot_side_by_side(
     fig.subplots_adjust(left=0.10, right=0.99, top=0.86, bottom=0.14, wspace=0.12)
     axes_top = max(ax.get_position().y1 for ax in axes)
     _legend_above(fig, axes[0], ncol=3, y_anchor=axes_top + 0.01)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=200, facecolor="white", bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+
+
+def plot_overlay_same_axis(
+    median_analysis: Dict[str, List[dict]],
+    mean_analysis: Dict[str, List[dict]],
+    *,
+    out_path: Path,
+    ranges: List[Tuple[int, int]],
+    colorblind: bool = True,
+    walksat_baselines: dict | None = None,
+) -> None:
+    """Mean-success (top) and median-runtime (bottom) on a shared vertical stack."""
+    _apply_paper_rcparams()
+    med_rows = median_analysis.get("mean_p") or []
+    mean_rows = mean_analysis.get("mean_p") or []
+    if not med_rows or not mean_rows:
+        raise ValueError("both analyses required for overlay plot")
+
+    depths = _common_depths(median_analysis, mean_analysis)
+    if len(depths) == 0:
+        raise ValueError("no common depths between median-runtime and mean-success analyses")
+
+    med_rows = _filter_rows_to_depths(med_rows, depths)
+    mean_rows = _filter_rows_to_depths(mean_rows, depths)
+    y_lo, y_hi = _panel_y_limits([med_rows, mean_rows], ranges)
+    if walksat_baselines:
+        for v in walksat_baselines.values():
+            if np.isfinite(v):
+                y_lo = min(y_lo, float(v))
+                y_hi = max(y_hi, float(v))
+    y_pad = 0.04 * (y_hi - y_lo)
+    y_lo -= y_pad
+    y_hi += y_pad
+
+    fig, axes = plt.subplots(
+        2, 1, figsize=(7.8, 7.0), sharex=True, sharey=True,
+        gridspec_kw={"hspace": 0.08},
+    )
+
+    _plot_panel(
+        axes[0], mean_rows, depths, ranges,
+        ylabel=_METRIC_CFG["mean_success"]["ylabel"],
+        colorblind=colorblind,
+        show_legend=False,
+        panel_label="(a)",
+    )
+    _plot_panel(
+        axes[1], med_rows, depths, ranges,
+        ylabel=_METRIC_CFG["median_runtime"]["ylabel"],
+        colorblind=colorblind,
+        show_legend=False,
+        panel_label="(b)",
+    )
+    for ax in axes:
+        _draw_walksat_baselines(ax, walksat_baselines)
+        ax.set_ylim(y_lo, y_hi)
+    axes[0].tick_params(labelbottom=False)
+    axes[0].set_xlabel("")
+
+    fig.subplots_adjust(left=0.14, right=0.98, top=0.90, bottom=0.08)
+    axes_top = axes[0].get_position().y1
+    _legend_above(fig, axes[0], ncol=3, y_anchor=axes_top + 0.01)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=200, facecolor="white", bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
+    print(f"Wrote {out_path}")
+
+
+def plot_crt_csp_window(
+    median_analysis: Dict[str, List[dict]],
+    mean_analysis: Dict[str, List[dict]],
+    *,
+    out_path: Path,
+    n_lo: int = 12,
+    n_hi: int = 20,
+    colorblind: bool = True,
+    walksat_baselines: dict | None = None,
+) -> None:
+    """Single-window plot: c_rt and c_sp vs depth (n=12–20 by default)."""
+    _apply_paper_rcparams()
+    med_rows = median_analysis.get("mean_p") or []
+    mean_rows = mean_analysis.get("mean_p") or []
+    if not med_rows or not mean_rows:
+        raise ValueError("both analyses required for c_rt/c_sp plot")
+
+    depths = _common_depths(median_analysis, mean_analysis)
+    if len(depths) == 0:
+        raise ValueError("no common depths between median-runtime and mean-success analyses")
+
+    med_rows = _filter_rows_to_depths(med_rows, depths)
+    mean_rows = _filter_rows_to_depths(mean_rows, depths)
+    ranges = [(n_lo, n_hi)]
+    c_rt = np.asarray(_slopes_for_range(med_rows, n_lo, n_hi), dtype=float)
+    e_rt = np.asarray(_stderrs_for_range(med_rows, n_lo, n_hi), dtype=float)
+    c_sp = np.asarray(_slopes_for_range(mean_rows, n_lo, n_hi), dtype=float)
+    e_sp = np.asarray(_stderrs_for_range(mean_rows, n_lo, n_hi), dtype=float)
+
+    y_lo, y_hi = _panel_y_limits([med_rows, mean_rows], ranges)
+    if walksat_baselines:
+        for v in walksat_baselines.values():
+            if np.isfinite(v):
+                y_lo = min(y_lo, float(v))
+                y_hi = max(y_hi, float(v))
+    y_pad = 0.05 * (y_hi - y_lo)
+    y_lo -= y_pad
+    y_hi += y_pad
+
+    color = "#000000"
+    fig, ax = plt.subplots(figsize=(7.6, 4.6))
+    ax.errorbar(
+        depths, c_rt, yerr=e_rt,
+        color=color, ls="-", marker="D", lw=3.0, ms=7.5,
+        mfc=color if not colorblind else "white",
+        mec=color, mew=1.4,
+        capsize=2.5, elinewidth=1.1,
+        label=r"$c_{\mathrm{rt}}$",
+        zorder=5,
+    )
+    ax.errorbar(
+        depths, c_sp, yerr=e_sp,
+        color=color, ls="--", marker="D", lw=2.6, ms=7.0,
+        mfc="white", mec=color, mew=1.4,
+        capsize=2.5, elinewidth=1.1,
+        label=r"$c_{\mathrm{sp}}$",
+        zorder=4,
+    )
+    _draw_walksat_baselines(ax, walksat_baselines)
+    _style_axis_labels(
+        ax,
+        xlabel=r"Depth ($p$)",
+        ylabel="Exponent",
+    )
+    _apply_depth_axis(ax, depths)
+    ax.set_ylim(y_lo, y_hi)
+    ax.grid(True, alpha=0.16, linewidth=0.6)
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        fontsize=_PAPER_LEGEND_FS,
+        frameon=False,
+        handlelength=2.6,
+    )
+    fig.subplots_adjust(left=0.14, right=0.98, top=0.84, bottom=0.14)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=200, facecolor="white", bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
@@ -739,6 +908,23 @@ def main() -> None:
                 analyses["mean_success"],
                 out_path=out_dir / f"window_stability_side_by_side_{suffix}.png",
                 ranges=ranges,
+                colorblind=colorblind,
+                walksat_baselines=walksat_baselines,
+            )
+            plot_overlay_same_axis(
+                analyses["median_runtime"],
+                analyses["mean_success"],
+                out_path=out_dir / f"window_stability_overlay_{suffix}.png",
+                ranges=ranges,
+                colorblind=colorblind,
+                walksat_baselines=walksat_baselines,
+            )
+            plot_crt_csp_window(
+                analyses["median_runtime"],
+                analyses["mean_success"],
+                out_path=out_dir / f"crt-csp-12-20_{suffix}.png",
+                n_lo=12,
+                n_hi=20,
                 colorblind=colorblind,
                 walksat_baselines=walksat_baselines,
             )

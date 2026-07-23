@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 import os
 import tempfile
@@ -132,6 +133,27 @@ def bootstrap_log2_ratio(ps: np.ndarray, *, B: int = 1000, rng: np.random.Genera
     return float(np.mean(arr)), float(np.std(arr))
 
 
+def bootstrap_second_moment_log_ratio(
+    ps: np.ndarray,
+    *,
+    B: int = 1000,
+    rng: np.random.Generator,
+) -> Tuple[float, float]:
+    """Bootstrap SE of ln(E[p^2] / E[p]^2)."""
+    estimates = []
+    n = len(ps)
+    for _ in range(B):
+        s = rng.choice(ps, size=n, replace=True)
+        mp = float(np.mean(s))
+        mp2 = float(np.mean(s * s))
+        if mp > 0 and mp2 > 0:
+            estimates.append(math.log(mp2 / (mp * mp)))
+    if len(estimates) < 10:
+        return float("nan"), float("nan")
+    arr = np.array(estimates)
+    return float(np.mean(arr)), float(np.std(arr))
+
+
 # ---------------------------------------------------------------------------
 # Identity verification and gap decomposition
 # ---------------------------------------------------------------------------
@@ -148,6 +170,7 @@ def compute_gap_decomposition(
         ns = np.array(ns_sorted, dtype=float)
         mean_ps = np.array([float(np.mean(by_n[n])) for n in ns_sorted])
         med_ps = np.array([float(np.median(by_n[n])) for n in ns_sorted])
+        mean_p2s = np.array([float(np.mean(by_n[n] * by_n[n])) for n in ns_sorted])
         Ns = np.array([len(by_n[n]) for n in ns_sorted])
 
         # Exact identity: these two must agree to machine precision
@@ -163,12 +186,32 @@ def compute_gap_decomposition(
         ])
         spread_slope = slope_plain(ns, log2_ratio)
 
+        second_moment_ratio = np.array([
+            mp2 / (mp * mp) if mp > 0 and mp2 > 0 else float("nan")
+            for mp, mp2 in zip(mean_ps, mean_p2s)
+        ])
+        log_second_moment_ratio = np.array([
+            math.log(ratio) if ratio > 0 else float("nan")
+            for ratio in second_moment_ratio
+        ])
+        log2_second_moment_ratio = log_second_moment_ratio / LN2
+        second_moment_slope_ln = slope_plain(ns, log_second_moment_ratio)
+        second_moment_slope_log2 = second_moment_slope_ln / LN2
+
         # Bootstrap SE per n
         bootstrap_mean, bootstrap_se = [], []
+        second_moment_bootstrap_mean, second_moment_bootstrap_se = [], []
         for n in ns_sorted:
             bm, bs = bootstrap_log2_ratio(by_n[n], B=500, rng=rng)
             bootstrap_mean.append(bm)
             bootstrap_se.append(bs)
+            sm_bm, sm_bs = bootstrap_second_moment_log_ratio(
+                by_n[n],
+                B=500,
+                rng=rng,
+            )
+            second_moment_bootstrap_mean.append(sm_bm)
+            second_moment_bootstrap_se.append(sm_bs)
 
         results.append({
             "train_n": train_n,
@@ -177,6 +220,7 @@ def compute_gap_decomposition(
             "Ns": Ns.tolist(),
             "mean_ps": mean_ps.tolist(),
             "med_ps": med_ps.tolist(),
+            "mean_p2s": mean_p2s.tolist(),
             "log2_ratio": log2_ratio.tolist(),
             "bootstrap_mean": bootstrap_mean,
             "bootstrap_se": bootstrap_se,
@@ -186,6 +230,13 @@ def compute_gap_decomposition(
             "spread_slope": spread_slope,
             "identity_residual": direct_gap - spread_slope,
             "spread_ratio_per_n": (med_ps / mean_ps).tolist(),
+            "second_moment_ratio": second_moment_ratio.tolist(),
+            "log_second_moment_ratio": log_second_moment_ratio.tolist(),
+            "log2_second_moment_ratio": log2_second_moment_ratio.tolist(),
+            "second_moment_bootstrap_mean": second_moment_bootstrap_mean,
+            "second_moment_bootstrap_se": second_moment_bootstrap_se,
+            "second_moment_slope_ln": second_moment_slope_ln,
+            "second_moment_slope_log2": second_moment_slope_log2,
         })
     return results
 
@@ -221,6 +272,33 @@ def print_spread_table(results: List[dict]) -> None:
         print(f"    → slope = {r['spread_slope']:.4f}  (= exponent gap {r['direct_gap']:.4f})\n")
 
 
+def print_second_moment_table(results: List[dict]) -> None:
+    print("=== Second-moment concentration: ln(E[p^2]/E[p]^2) vs n ===\n")
+    print(
+        f"{'train_n':>7} {'depth':>5}  {'slope ln/n':>10}  {'slope log2/n':>12}"
+        f"  {'ratio first':>11}  {'ratio last':>10}  {'N/n':>5}"
+    )
+    print("-" * 72)
+    for r in results:
+        ratios = np.asarray(r["second_moment_ratio"], dtype=float)
+        finite = np.isfinite(ratios)
+        if int(finite.sum()) < 2:
+            continue
+        first = float(ratios[finite][0])
+        last = float(ratios[finite][-1])
+        avg_N = int(np.mean(r["Ns"]))
+        print(
+            f"{r['train_n']:>7} {r['depth']:>5}"
+            f"  {r['second_moment_slope_ln']:>+10.5f}"
+            f"  {r['second_moment_slope_log2']:>+12.5f}"
+            f"  {first:>11.3f}  {last:>10.3f}  {avg_N:>5d}"
+        )
+    print(
+        "\nFlat ln(E[p^2]/E[p]^2) means the mean success probability is self-averaging;"
+        "\npositive linear slope means increasing rare-easy-instance concentration.\n"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Figures
 # ---------------------------------------------------------------------------
@@ -234,6 +312,14 @@ DEPTH_COLORS = {
 }
 DEPTH_MARKERS = {5: "o", 10: "s", 20: "^", 50: "D"}
 DEPTH_LINESTYLES = {5: "-", 10: "-", 20: "-", 50: "-"}
+SECOND_MOMENT_COLORS = {
+    2: "#666666",
+    5: "#0072B2",
+    10: "#CC79A7",
+    20: "#009E73",
+    50: "#D55E00",
+}
+SECOND_MOMENT_MARKERS = {2: "o", 5: "P", 10: "s", 20: "^", 50: "D"}
 PAPER_PT2_DEPTHS = (5, 10, 20, 50)  # drop p=2: gap ≈0.03, adds clutter without new physics
 
 # Stable output names (no ".pt2.png" — editors/OS misparsed that as a broken extension).
@@ -241,6 +327,9 @@ OUT_SPREAD = "01_spread_vs_n.png"
 OUT_SPREAD_PAPER = "01_spread_vs_n_paper.png"
 OUT_GAP_VS_DEPTH = "02_gap_vs_depth.png"
 OUT_SKEW_RATIO = "03_skew_ratio_vs_n.png"
+OUT_SECOND_MOMENT = "00_second_moment_ratio_vs_n.png"
+OUT_SECOND_MOMENT_SUMMARY = "00_second_moment_ratio_summary.json"
+OUT_SAMPLING_REL_SE = "00_sampling_relative_se_vs_n.png"
 DEFAULT_OUT_DIR = "CLOSE_gap_analysis"
 
 
@@ -534,6 +623,246 @@ def plot_spread_ratio_vs_n(results: List[dict], out: Path) -> None:
     plt.close(fig)
 
 
+def plot_second_moment_ratio_vs_n(results: List[dict], out: Path) -> None:
+    """Plot ln(E[p^2]/E[p]^2) vs n to test concentration of mean p_succ."""
+    _apply_paper_rcparams()
+    try:
+        train_ns = sorted(set(r["train_n"] for r in results))
+        fig, axes = plt.subplots(
+            1,
+            len(train_ns),
+            figsize=(3.55 * len(train_ns), 2.85),
+            sharey=True,
+            squeeze=False,
+        )
+        legend_handles, legend_labels = [], []
+
+        for ax, tn in zip(axes[0], train_ns):
+            sub = [r for r in results if r["train_n"] == tn]
+            n_min = min(min(r["ns"]) for r in sub)
+            n_max = max(max(r["ns"]) for r in sub)
+
+            for r in sorted(sub, key=lambda x: x["depth"]):
+                ns = np.array(r["ns"], dtype=float)
+                lr = np.array(r["log_second_moment_ratio"], dtype=float)
+                bs = np.array(r["second_moment_bootstrap_se"], dtype=float)
+                col = SECOND_MOMENT_COLORS.get(r["depth"], "0.35")
+
+                finite = np.isfinite(lr) & np.isfinite(bs)
+                if finite.sum() < 2:
+                    continue
+
+                eb = ax.errorbar(
+                    ns[finite],
+                    lr[finite],
+                    yerr=1.96 * bs[finite],
+                    fmt=SECOND_MOMENT_MARKERS.get(r["depth"], "o"),
+                    color=col,
+                    ecolor=col,
+                    capsize=2.0,
+                    ms=3.8,
+                    mew=0.7,
+                    elinewidth=0.8,
+                    alpha=0.95,
+                    zorder=3,
+                )
+                fit = np.polyfit(ns[finite], lr[finite], 1)
+                x_range = np.linspace(n_min - 0.35, n_max + 0.35, 80)
+                ax.plot(
+                    x_range,
+                    np.polyval(fit, x_range),
+                    "-",
+                    color=col,
+                    linewidth=1.2,
+                    alpha=0.78,
+                    zorder=2,
+                )
+                label = rf"$p={r['depth']}$"
+                if label not in legend_labels:
+                    legend_handles.append(eb.lines[0])
+                    legend_labels.append(label)
+
+            ax.set_xlim(n_min - 0.55, n_max + 0.55)
+            ax.set_ylim(bottom=0)
+            ax.set_xticks(sorted({n for r in sub for n in r["ns"] if n % 2 == 0}))
+            ax.set_xlabel("System size $n$")
+            ax.grid(True, axis="y")
+            ax.grid(False, axis="x")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.text(
+                0.03,
+                0.94,
+                rf"trained $n={tn}$",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=8.5,
+            )
+
+        axes[0, 0].set_ylabel(r"$\ln\left(E[p^2]/E[p]^2\right)$")
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="upper center",
+            ncol=len(legend_labels),
+            frameon=False,
+            bbox_to_anchor=(0.5, 1.03),
+            handlelength=1.2,
+            columnspacing=1.0,
+        )
+        fig.tight_layout(rect=(0, 0, 1, 0.94), w_pad=1.3)
+        fig.savefig(out, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    finally:
+        _reset_rcparams()
+
+
+def plot_sampling_relative_se_vs_n(results: List[dict], out: Path) -> None:
+    """Plot relative standard error of mean-p estimates from the second moment."""
+    _apply_paper_rcparams()
+    try:
+        train_ns = sorted(set(r["train_n"] for r in results))
+        fig, axes = plt.subplots(
+            1,
+            len(train_ns),
+            figsize=(3.55 * len(train_ns), 2.85),
+            sharey=True,
+            squeeze=False,
+        )
+        legend_handles, legend_labels = [], []
+        max_y = 0.0
+
+        for ax, tn in zip(axes[0], train_ns):
+            sub = [r for r in results if r["train_n"] == tn]
+            n_min = min(min(r["ns"]) for r in sub)
+            n_max = max(max(r["ns"]) for r in sub)
+
+            for r in sorted(sub, key=lambda x: x["depth"]):
+                ns = np.asarray(r["ns"], dtype=float)
+                ratios = np.asarray(r["second_moment_ratio"], dtype=float)
+                cell_ns = np.asarray(r["Ns"], dtype=float)
+                rel_se = np.sqrt(np.maximum(ratios - 1.0, 0.0) / cell_ns)
+                col = SECOND_MOMENT_COLORS.get(r["depth"], "0.35")
+
+                finite = np.isfinite(rel_se)
+                if finite.sum() < 2:
+                    continue
+                max_y = max(max_y, float(np.max(rel_se[finite])))
+
+                line = ax.plot(
+                    ns[finite],
+                    100.0 * rel_se[finite],
+                    marker=SECOND_MOMENT_MARKERS.get(r["depth"], "o"),
+                    color=col,
+                    linewidth=1.35,
+                    markersize=3.8,
+                    alpha=0.95,
+                    zorder=3,
+                )[0]
+                label = rf"$p={r['depth']}$"
+                if label not in legend_labels:
+                    legend_handles.append(line)
+                    legend_labels.append(label)
+
+            ax.axhline(5.0, color="0.35", linestyle="--", linewidth=0.8, alpha=0.55)
+            ax.axhline(10.0, color="0.35", linestyle=":", linewidth=0.8, alpha=0.45)
+            ax.text(
+                0.03,
+                0.94,
+                rf"trained $n={tn}$",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=8.5,
+            )
+            ax.text(
+                0.98,
+                5.0,
+                "5%",
+                transform=ax.get_yaxis_transform(),
+                ha="right",
+                va="bottom",
+                fontsize=7.5,
+                color="0.35",
+            )
+            ax.text(
+                0.98,
+                10.0,
+                "10%",
+                transform=ax.get_yaxis_transform(),
+                ha="right",
+                va="bottom",
+                fontsize=7.5,
+                color="0.35",
+            )
+            ax.set_xlim(n_min - 0.55, n_max + 0.55)
+            ax.set_xticks(sorted({n for r in sub for n in r["ns"] if n % 2 == 0}))
+            ax.set_xlabel("System size $n$")
+            ax.grid(True, axis="y")
+            ax.grid(False, axis="x")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+        axes[0, 0].set_ylabel(r"relative SE of $\widehat{E[p]}$ (%)")
+        y_top = max(11.0, 100.0 * max_y * 1.25)
+        for ax in axes[0]:
+            ax.set_ylim(0.0, y_top)
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="upper center",
+            ncol=len(legend_labels),
+            frameon=False,
+            bbox_to_anchor=(0.5, 1.03),
+            handlelength=1.2,
+            columnspacing=1.0,
+        )
+        fig.tight_layout(rect=(0, 0, 1, 0.94), w_pad=1.3)
+        fig.savefig(out, dpi=300, bbox_inches="tight")
+        plt.close(fig)
+    finally:
+        _reset_rcparams()
+
+
+def write_second_moment_summary(results: List[dict], out: Path) -> None:
+    """Write machine-readable second-moment concentration diagnostics."""
+    payload = {
+        "observable": "E[p_succ^2] / E[p_succ]^2",
+        "log_observable": "ln(E[p_succ^2] / E[p_succ]^2)",
+        "interpretation": {
+            "flat": "self-averaging mean success probability in this n window",
+            "positive_linear_slope": "increasing concentration of E[p_succ] in rare easy instances",
+        },
+        "groups": [],
+    }
+    for r in results:
+        payload["groups"].append(
+            {
+                "train_n": int(r["train_n"]),
+                "depth": int(r["depth"]),
+                "ns": [int(n) for n in r["ns"]],
+                "Ns": [int(n) for n in r["Ns"]],
+                "mean_p": [float(x) for x in r["mean_ps"]],
+                "mean_p2": [float(x) for x in r["mean_p2s"]],
+                "second_moment_ratio": [float(x) for x in r["second_moment_ratio"]],
+                "log_second_moment_ratio": [float(x) for x in r["log_second_moment_ratio"]],
+                "log2_second_moment_ratio": [float(x) for x in r["log2_second_moment_ratio"]],
+                "relative_se_sample_mean": [
+                    float(math.sqrt(max(ratio - 1.0, 0.0) / max(cell_n, 1)))
+                    for ratio, cell_n in zip(r["second_moment_ratio"], r["Ns"])
+                ],
+                "bootstrap_log_mean": [float(x) for x in r["second_moment_bootstrap_mean"]],
+                "bootstrap_log_se": [float(x) for x in r["second_moment_bootstrap_se"]],
+                "slope_ln_per_n": float(r["second_moment_slope_ln"]),
+                "slope_log2_per_n": float(r["second_moment_slope_log2"]),
+            }
+        )
+    with out.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+        f.write("\n")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -564,6 +893,7 @@ def main(argv=None):
 
     print_identity_table(results)
     print_spread_table(results)
+    print_second_moment_table(results)
 
     total_N = sum(sum(r["Ns"]) for r in results)
     print(f"Total instances across all (depth, n) cells: {total_N:,}")
@@ -583,6 +913,9 @@ def main(argv=None):
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    plot_second_moment_ratio_vs_n(results, out_dir / OUT_SECOND_MOMENT)
+    plot_sampling_relative_se_vs_n(results, out_dir / OUT_SAMPLING_REL_SE)
+    write_second_moment_summary(results, out_dir / OUT_SECOND_MOMENT_SUMMARY)
     plot_log2_ratio_vs_n(results, out_dir / OUT_SPREAD)
     plot_gap_vs_depth(results, out_dir / OUT_GAP_VS_DEPTH)
     plot_spread_ratio_vs_n(results, out_dir / OUT_SKEW_RATIO)
@@ -594,6 +927,9 @@ def main(argv=None):
         )
 
     print(f"\nWrote figures to: {out_dir}")
+    print(f"  {OUT_SECOND_MOMENT} — ln(E[p^2]/E[p]^2) concentration vs n")
+    print(f"  {OUT_SAMPLING_REL_SE} — implied relative SE of mean-p estimates")
+    print(f"  {OUT_SECOND_MOMENT_SUMMARY} — second-moment concentration summary")
     print(f"  {OUT_SPREAD}        — spread vs n (all train_n panels)")
     if not args.no_paper:
         print(f"  {OUT_SPREAD_PAPER} — paper panel (p=5,10,20,50; train_n={args.pt2_train_n})")

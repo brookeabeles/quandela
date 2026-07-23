@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "bm24_gap_eval_rows",
+  "angles": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/angles_train12_mean_p_p2-5-8-10-15-20-30-40-50_from_run1.json",
+  "output": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/N500_missing_p8-15-30-40_n12-20_mean_p_train12_from_run1_fastdiag.csv",
+  "k": 8,
+  "r": 176.54,
+  "n_values": [
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "N": 500,
+  "eval_seed": 100027,
+  "sat_filter": true,
+  "m_sampling": "notebook",
+  "angle_count": 4,
+  "row_count": 18000,
+  "required_columns": [
+    "seed",
+    "n",
+    "p",
+    "objective",
+    "train_n",
+    "X",
+    "p_succ"
+  ],
+  "seed_audit": "/Users/b/Quandela/phasecraft/results/bm24_runs/bm24_gap_audit/N500_missing_p8-15-30-40_n12-20_mean_p_train12_from_run1_fastdiag.seed_audit.json",
+  "backend": "CPU via NumPy",
+  "batched": false,
+  "gpu_batch_size": 8
+}
